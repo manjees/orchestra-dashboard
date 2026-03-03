@@ -155,3 +155,4 @@ temp/
 *.bak
 *.swp
 *.swo
+.claude/
