@@ -1,0 +1,157 @@
+# ============================================================
+# orchestra-dashboard — .gitignore
+# Covers: Kotlin/JVM, Android, iOS/Xcode, Gradle, IntelliJ,
+#         VS Code, macOS, Linux, Windows, secrets
+# ============================================================
+
+# ─── Secrets & Credentials (STRICT — never commit) ──────────
+.env
+.env.*
+.env.local
+.env.production
+.env.staging
+local.properties
+*.local.properties
+secrets.json
+secrets.yaml
+secrets.yml
+*secret*
+*credentials*
+*api_key*
+google-services.json
+GoogleService-Info.plist
+
+# ─── Build Outputs ──────────────────────────────────────────
+build/
+out/
+dist/
+*.class
+*.jar
+*.war
+*.ear
+*.aar
+*.apk
+*.aab
+*.dex
+
+# ─── Gradle ─────────────────────────────────────────────────
+.gradle/
+gradle-app.setting
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+gradle/wrapper/dists/
+.gradletasknamecache
+
+# ─── IntelliJ IDEA / Android Studio ─────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+crashlytics.properties
+crashlytics-build.properties
+fabric.properties
+
+# ─── VS Code ─────────────────────────────────────────────────
+.vscode/
+*.code-workspace
+
+# ─── Android ────────────────────────────────────────────────
+androidApp/release/
+**/androidTest/results/
+**/test-results/
+captures/
+lint-results*.xml
+lint-results*.html
+
+# ─── iOS / Xcode ────────────────────────────────────────────
+iosApp/*.xcworkspace
+iosApp/Pods/
+iosApp/build/
+iosApp/.build/
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+DerivedData/
+timeline.xctimeline
+playground.xcworkspace
+*.xcscmblueprint
+
+# ─── Kotlin Multiplatform ───────────────────────────────────
+shared/.kotlin/
+shared/build/
+shared/kotlin-js-store/
+
+# ─── Spring Boot / Server ───────────────────────────────────
+server/build/
+server/logs/
+*.log
+*.log.*
+logs/
+application-local.yml
+application-local.properties
+
+# ─── Docker ─────────────────────────────────────────────────
+.docker/
+docker-compose.override.yml
+
+# ─── macOS ──────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# ─── Linux ──────────────────────────────────────────────────
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ─── Windows ────────────────────────────────────────────────
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# ─── Node / JS (tooling only) ───────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── CI / Temp ──────────────────────────────────────────────
+.cache/
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo

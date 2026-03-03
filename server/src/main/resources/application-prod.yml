@@ -1,0 +1,24 @@
+# Production profile — overrides application.yml
+# Activated with: SPRING_PROFILES_ACTIVE=prod
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+    driver-class-name: org.postgresql.Driver
+
+  h2:
+    console:
+      enabled: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    com.orchestradashboard: WARN
+    org.springframework.web: WARN
+    org.hibernate: ERROR
