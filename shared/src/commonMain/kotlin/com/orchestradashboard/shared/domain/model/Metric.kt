@@ -14,5 +14,5 @@ data class Metric(
     val name: String,
     val value: Double,
     val unit: String,
-    val timestamp: Long
+    val timestamp: Long,
 )

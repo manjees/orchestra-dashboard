@@ -19,24 +19,18 @@ data class AgentEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
-
     @field:NotBlank
     @Column(name = "agent_id", unique = true, nullable = false)
     val agentId: String = "",
-
     @field:NotBlank
     @Column(nullable = false)
     val name: String = "",
-
     @Column(nullable = false)
     val type: String = "WORKER",
-
     @Column(nullable = false)
     val status: String = "OFFLINE",
-
     @Column(name = "last_heartbeat", nullable = false)
     val lastHeartbeat: Long = 0L,
-
     @ElementCollection(fetch = FetchType.EAGER)
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 )

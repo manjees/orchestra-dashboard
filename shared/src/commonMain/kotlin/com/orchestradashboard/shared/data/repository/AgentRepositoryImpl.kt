@@ -15,9 +15,8 @@ import kotlinx.coroutines.flow.map
  */
 class AgentRepositoryImpl(
     private val apiClient: DashboardApiClient,
-    private val agentMapper: AgentMapper
+    private val agentMapper: AgentMapper,
 ) : AgentRepository {
-
     override fun observeAgents(): Flow<List<Agent>> {
         return apiClient.agentUpdates()
             .map { dtos -> agentMapper.toDomain(dtos) }

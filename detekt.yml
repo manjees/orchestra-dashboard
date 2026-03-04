@@ -1,0 +1,32 @@
+build:
+  maxIssues: -1
+
+style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+
+complexity:
+  CognitiveComplexMethod:
+    active: true
+    threshold: 30
+  LongMethod:
+    active: true
+    threshold: 60
+  LongParameterList:
+    active: true
+    functionThreshold: 6
+    constructorThreshold: 8
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 20
+    thresholdInClasses: 15
+
+coroutines:
+  active: true
+
+exceptions:
+  active: true
+
+potential-bugs:
+  active: true

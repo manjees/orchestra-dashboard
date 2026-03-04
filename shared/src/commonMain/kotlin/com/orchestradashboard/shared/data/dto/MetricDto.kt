@@ -12,7 +12,7 @@ data class MetricDto(
     val name: String,
     val value: Double,
     val unit: String,
-    val timestamp: Long
+    val timestamp: Long,
 )
 
 /**
@@ -24,5 +24,5 @@ data class AgentEventDto(
     @SerialName("agent_id") val agentId: String,
     val status: String? = null,
     val timestamp: Long,
-    val payload: Map<String, String> = emptyMap()
+    val payload: Map<String, String> = emptyMap(),
 )

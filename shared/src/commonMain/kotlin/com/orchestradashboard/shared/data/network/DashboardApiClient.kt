@@ -22,7 +22,7 @@ import kotlinx.serialization.json.Json
  */
 class DashboardApiClient(
     private val httpClient: HttpClient,
-    private val baseUrl: String
+    private val baseUrl: String,
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -32,10 +32,11 @@ class DashboardApiClient(
      *
      * @return [Flow] emitting agent DTO lists
      */
-    fun agentUpdates(): Flow<List<AgentDto>> = flow {
-        val agents: List<AgentDto> = httpClient.get("$baseUrl/api/v1/agents").body()
-        emit(agents)
-    }
+    fun agentUpdates(): Flow<List<AgentDto>> =
+        flow {
+            val agents: List<AgentDto> = httpClient.get("$baseUrl/api/v1/agents").body()
+            emit(agents)
+        }
 
     /**
      * Fetches a specific agent by ID.
@@ -43,9 +44,10 @@ class DashboardApiClient(
      * @param agentId Unique agent identifier
      * @return [Result] containing the agent DTO on success
      */
-    suspend fun fetchAgent(agentId: String): Result<AgentDto> = runCatching {
-        httpClient.get("$baseUrl/api/v1/agents/$agentId").body()
-    }
+    suspend fun fetchAgent(agentId: String): Result<AgentDto> =
+        runCatching {
+            httpClient.get("$baseUrl/api/v1/agents/$agentId").body()
+        }
 
     /**
      * Registers a new agent with the server.
@@ -53,12 +55,13 @@ class DashboardApiClient(
      * @param agent Domain model to register
      * @return [Result] containing the created agent DTO on success
      */
-    suspend fun registerAgent(agent: Agent): Result<AgentDto> = runCatching {
-        httpClient.post("$baseUrl/api/v1/agents") {
-            contentType(ContentType.Application.Json)
-            setBody(agent)
-        }.body()
-    }
+    suspend fun registerAgent(agent: Agent): Result<AgentDto> =
+        runCatching {
+            httpClient.post("$baseUrl/api/v1/agents") {
+                contentType(ContentType.Application.Json)
+                setBody(agent)
+            }.body()
+        }
 
     /**
      * Deregisters an agent from the monitoring system.
@@ -66,8 +69,9 @@ class DashboardApiClient(
      * @param agentId Unique identifier of the agent to remove
      * @return [Result] containing Unit on success
      */
-    suspend fun deregisterAgent(agentId: String): Result<Unit> = runCatching {
-        httpClient.delete("$baseUrl/api/v1/agents/$agentId")
-        Unit
-    }
+    suspend fun deregisterAgent(agentId: String): Result<Unit> =
+        runCatching {
+            httpClient.delete("$baseUrl/api/v1/agents/$agentId")
+            Unit
+        }
 }

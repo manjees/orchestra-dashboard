@@ -14,7 +14,7 @@ data class AgentDto(
     val type: String,
     val status: String,
     @SerialName("last_heartbeat") val lastHeartbeat: Long,
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -23,5 +23,5 @@ data class AgentDto(
 @Serializable
 data class AgentListDto(
     val agents: List<AgentDto>,
-    val total: Int
+    val total: Int,
 )

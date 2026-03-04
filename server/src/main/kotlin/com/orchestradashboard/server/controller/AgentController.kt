@@ -21,9 +21,8 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/agents")
 class AgentController(
-    private val agentService: AgentService
+    private val agentService: AgentService,
 ) {
-
     /**
      * Returns all registered agents.
      *
@@ -41,7 +40,9 @@ class AgentController(
      * @return 200 OK with agent details, or 404 if not found
      */
     @GetMapping("/{id}")
-    fun getAgent(@PathVariable id: String): ResponseEntity<AgentResponse> {
+    fun getAgent(
+        @PathVariable id: String,
+    ): ResponseEntity<AgentResponse> {
         return agentService.getAgent(id)
             ?.let { ResponseEntity.ok(it) }
             ?: ResponseEntity.notFound().build()
@@ -54,7 +55,9 @@ class AgentController(
      * @return 201 Created with the registered agent, or 409 Conflict if ID is taken
      */
     @PostMapping
-    fun registerAgent(@RequestBody request: CreateAgentRequest): ResponseEntity<AgentResponse> {
+    fun registerAgent(
+        @RequestBody request: CreateAgentRequest,
+    ): ResponseEntity<AgentResponse> {
         return try {
             ResponseEntity.status(201).body(agentService.registerAgent(request))
         } catch (e: IllegalArgumentException) {
@@ -72,7 +75,7 @@ class AgentController(
     @PatchMapping("/{id}/status")
     fun updateAgentStatus(
         @PathVariable id: String,
-        @RequestBody request: UpdateAgentStatusRequest
+        @RequestBody request: UpdateAgentStatusRequest,
     ): ResponseEntity<AgentResponse> {
         return agentService.updateAgentStatus(id, request)
             ?.let { ResponseEntity.ok(it) }
@@ -86,7 +89,9 @@ class AgentController(
      * @return 204 No Content on success, or 404 if not found
      */
     @DeleteMapping("/{id}")
-    fun deregisterAgent(@PathVariable id: String): ResponseEntity<Void> {
+    fun deregisterAgent(
+        @PathVariable id: String,
+    ): ResponseEntity<Void> {
         return if (agentService.deregisterAgent(id)) {
             ResponseEntity.noContent().build()
         } else {

@@ -16,14 +16,14 @@ data class Agent(
     val type: AgentType,
     val status: AgentStatus,
     val lastHeartbeat: Long,
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 ) {
     /** Functional role of the agent within the orchestration pipeline */
     enum class AgentType {
         ORCHESTRATOR,
         WORKER,
         REVIEWER,
-        PLANNER
+        PLANNER,
     }
 
     /** Current operational state of the agent */
@@ -31,7 +31,7 @@ data class Agent(
         RUNNING,
         IDLE,
         ERROR,
-        OFFLINE
+        OFFLINE,
     }
 
     /** Formatted display string combining name and type */

@@ -9,12 +9,12 @@ data class DashboardUiState(
     val selectedAgent: Agent? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED
+    val connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED,
 )
 
 /** Represents the WebSocket connection lifecycle state */
 enum class ConnectionStatus {
     CONNECTED,
     DISCONNECTED,
-    RECONNECTING
+    RECONNECTING,
 }

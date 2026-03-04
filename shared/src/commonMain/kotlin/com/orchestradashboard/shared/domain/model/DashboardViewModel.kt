@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
  */
 class DashboardViewModel(
     private val observeAgentsUseCase: ObserveAgentsUseCase,
-    private val getAgentUseCase: GetAgentUseCase
+    private val getAgentUseCase: GetAgentUseCase,
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -43,7 +43,7 @@ class DashboardViewModel(
                         it.copy(
                             error = e.message ?: "Unknown error",
                             isLoading = false,
-                            connectionStatus = ConnectionStatus.DISCONNECTED
+                            connectionStatus = ConnectionStatus.DISCONNECTED,
                         )
                     }
                 }
@@ -52,7 +52,7 @@ class DashboardViewModel(
                         it.copy(
                             agents = agents,
                             isLoading = false,
-                            connectionStatus = ConnectionStatus.CONNECTED
+                            connectionStatus = ConnectionStatus.CONNECTED,
                         )
                     }
                 }
@@ -72,7 +72,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             getAgentUseCase(agentId).fold(
                 onSuccess = { agent -> _uiState.update { it.copy(selectedAgent = agent) } },
-                onFailure = { e -> _uiState.update { it.copy(error = e.message) } }
+                onFailure = { e -> _uiState.update { it.copy(error = e.message) } },
             )
         }
     }

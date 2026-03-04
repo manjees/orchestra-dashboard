@@ -10,7 +10,6 @@ import org.springframework.stereotype.Repository
  */
 @Repository
 interface ServerAgentRepository : JpaRepository<AgentEntity, Long> {
-
     /**
      * Finds an agent by its domain-level agent ID (not the DB surrogate key).
      *

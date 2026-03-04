@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
  * @param agentRepository Data source for agent information
  */
 class ObserveAgentsUseCase(
-    private val agentRepository: AgentRepository
+    private val agentRepository: AgentRepository,
 ) {
     /**
      * Invokes the use case.
