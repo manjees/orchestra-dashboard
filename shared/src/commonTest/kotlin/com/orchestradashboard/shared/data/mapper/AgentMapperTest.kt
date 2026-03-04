@@ -8,18 +8,18 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class AgentMapperTest {
-
     private val mapper = AgentMapper()
 
     @Test
     fun `toDomain maps valid DTO with ORCHESTRATOR type correctly`() {
-        val dto = AgentDto(
-            id = "agent-1",
-            name = "Main Orchestrator",
-            type = "ORCHESTRATOR",
-            status = "RUNNING",
-            lastHeartbeat = 1700000000L
-        )
+        val dto =
+            AgentDto(
+                id = "agent-1",
+                name = "Main Orchestrator",
+                type = "ORCHESTRATOR",
+                status = "RUNNING",
+                lastHeartbeat = 1700000000L,
+            )
 
         val result = mapper.toDomain(dto)
 
@@ -32,13 +32,14 @@ class AgentMapperTest {
 
     @Test
     fun `toDomain maps valid DTO with WORKER type correctly`() {
-        val dto = AgentDto(
-            id = "worker-42",
-            name = "Worker Alpha",
-            type = "WORKER",
-            status = "IDLE",
-            lastHeartbeat = 1700000001L
-        )
+        val dto =
+            AgentDto(
+                id = "worker-42",
+                name = "Worker Alpha",
+                type = "WORKER",
+                status = "IDLE",
+                lastHeartbeat = 1700000001L,
+            )
 
         val result = mapper.toDomain(dto)
 
@@ -49,13 +50,14 @@ class AgentMapperTest {
 
     @Test
     fun `toDomain handles unknown type by defaulting to WORKER`() {
-        val dto = AgentDto(
-            id = "x",
-            name = "Unknown",
-            type = "INVALID_TYPE",
-            status = "RUNNING",
-            lastHeartbeat = 0L
-        )
+        val dto =
+            AgentDto(
+                id = "x",
+                name = "Unknown",
+                type = "INVALID_TYPE",
+                status = "RUNNING",
+                lastHeartbeat = 0L,
+            )
 
         val result = mapper.toDomain(dto)
 
@@ -64,13 +66,14 @@ class AgentMapperTest {
 
     @Test
     fun `toDomain handles unknown status by defaulting to OFFLINE`() {
-        val dto = AgentDto(
-            id = "x",
-            name = "Unknown",
-            type = "WORKER",
-            status = "UNKNOWN_STATUS",
-            lastHeartbeat = 0L
-        )
+        val dto =
+            AgentDto(
+                id = "x",
+                name = "Unknown",
+                type = "WORKER",
+                status = "UNKNOWN_STATUS",
+                lastHeartbeat = 0L,
+            )
 
         val result = mapper.toDomain(dto)
 
@@ -80,13 +83,14 @@ class AgentMapperTest {
 
     @Test
     fun `toDomain handles case-insensitive type parsing`() {
-        val dto = AgentDto(
-            id = "p",
-            name = "Planner",
-            type = "planner",
-            status = "running",
-            lastHeartbeat = 0L
-        )
+        val dto =
+            AgentDto(
+                id = "p",
+                name = "Planner",
+                type = "planner",
+                status = "running",
+                lastHeartbeat = 0L,
+            )
 
         val result = mapper.toDomain(dto)
 
@@ -96,14 +100,15 @@ class AgentMapperTest {
 
     @Test
     fun `toDomain maps metadata correctly`() {
-        val dto = AgentDto(
-            id = "m",
-            name = "Meta Agent",
-            type = "WORKER",
-            status = "IDLE",
-            lastHeartbeat = 0L,
-            metadata = mapOf("region" to "us-east-1", "version" to "2.1")
-        )
+        val dto =
+            AgentDto(
+                id = "m",
+                name = "Meta Agent",
+                type = "WORKER",
+                status = "IDLE",
+                lastHeartbeat = 0L,
+                metadata = mapOf("region" to "us-east-1", "version" to "2.1"),
+            )
 
         val result = mapper.toDomain(dto)
 
@@ -113,13 +118,14 @@ class AgentMapperTest {
 
     @Test
     fun `toDomain maps empty metadata to empty map`() {
-        val dto = AgentDto(
-            id = "e",
-            name = "Empty",
-            type = "WORKER",
-            status = "IDLE",
-            lastHeartbeat = 0L
-        )
+        val dto =
+            AgentDto(
+                id = "e",
+                name = "Empty",
+                type = "WORKER",
+                status = "IDLE",
+                lastHeartbeat = 0L,
+            )
 
         val result = mapper.toDomain(dto)
 
@@ -128,11 +134,12 @@ class AgentMapperTest {
 
     @Test
     fun `toDomain list variant maps all elements`() {
-        val dtos = listOf(
-            AgentDto("1", "Agent One", "WORKER", "RUNNING", 100L),
-            AgentDto("2", "Agent Two", "PLANNER", "IDLE", 200L),
-            AgentDto("3", "Agent Three", "REVIEWER", "ERROR", 300L)
-        )
+        val dtos =
+            listOf(
+                AgentDto("1", "Agent One", "WORKER", "RUNNING", 100L),
+                AgentDto("2", "Agent Two", "PLANNER", "IDLE", 200L),
+                AgentDto("3", "Agent Three", "REVIEWER", "ERROR", 300L),
+            )
 
         val results = mapper.toDomain(dtos)
 

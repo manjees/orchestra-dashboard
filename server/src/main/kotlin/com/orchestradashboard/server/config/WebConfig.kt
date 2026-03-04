@@ -10,12 +10,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  */
 @Configuration
 class WebConfig : WebMvcConfigurer {
-
     override fun addCorsMappings(registry: CorsRegistry) {
-        val allowedOrigins = System.getenv("ALLOWED_ORIGINS")
-            ?.split(",")
-            ?.toTypedArray()
-            ?: arrayOf("http://localhost:*")
+        val allowedOrigins =
+            System.getenv("ALLOWED_ORIGINS")
+                ?.split(",")
+                ?.toTypedArray()
+                ?: arrayOf("http://localhost:*")
 
         registry.addMapping("/api/**")
             .allowedOriginPatterns(*allowedOrigins)

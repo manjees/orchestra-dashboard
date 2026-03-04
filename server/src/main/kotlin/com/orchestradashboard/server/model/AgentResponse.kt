@@ -12,7 +12,7 @@ data class AgentResponse(
     val type: String,
     val status: String,
     @JsonProperty("last_heartbeat") val lastHeartbeat: Long,
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -22,7 +22,7 @@ data class CreateAgentRequest(
     val id: String,
     val name: String,
     val type: String,
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -30,15 +30,16 @@ data class CreateAgentRequest(
  */
 data class UpdateAgentStatusRequest(
     val status: String,
-    @JsonProperty("last_heartbeat") val lastHeartbeat: Long = System.currentTimeMillis()
+    @JsonProperty("last_heartbeat") val lastHeartbeat: Long = System.currentTimeMillis(),
 )
 
 /** Extension to convert [AgentEntity] to [AgentResponse] */
-fun AgentEntity.toResponse(): AgentResponse = AgentResponse(
-    id = this.agentId,
-    name = this.name,
-    type = this.type,
-    status = this.status,
-    lastHeartbeat = this.lastHeartbeat,
-    metadata = this.metadata
-)
+fun AgentEntity.toResponse(): AgentResponse =
+    AgentResponse(
+        id = this.agentId,
+        name = this.name,
+        type = this.type,
+        status = this.status,
+        lastHeartbeat = this.lastHeartbeat,
+        metadata = this.metadata,
+    )

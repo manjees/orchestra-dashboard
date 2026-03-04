@@ -7,7 +7,6 @@ import kotlinx.coroutines.flow.Flow
  * Repository interface for accessing agent performance metrics.
  */
 interface MetricRepository {
-
     /**
      * Observes the latest metrics for a specific agent.
      *

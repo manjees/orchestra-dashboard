@@ -7,7 +7,6 @@ import com.orchestradashboard.shared.domain.model.Metric
  * Maps between [MetricDto] (network layer) and [Metric] (domain layer).
  */
 class MetricMapper {
-
     /**
      * Converts an API metric DTO to a domain model.
      *
@@ -20,7 +19,7 @@ class MetricMapper {
             name = dto.name,
             value = dto.value,
             unit = dto.unit,
-            timestamp = dto.timestamp
+            timestamp = dto.timestamp,
         )
     }
 

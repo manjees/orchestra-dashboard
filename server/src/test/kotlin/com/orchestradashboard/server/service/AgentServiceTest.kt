@@ -19,7 +19,6 @@ import java.util.Optional
 import java.util.function.Function
 
 class AgentServiceTest {
-
     // ─── Fake Repository ────────────────────────────────────────
 
     private class FakeAgentRepository : ServerAgentRepository {
@@ -28,52 +27,98 @@ class AgentServiceTest {
 
         override fun findByAgentId(agentId: String): AgentEntity? = store[agentId]
 
-        override fun findAllByStatus(status: String): List<AgentEntity> =
-            store.values.filter { it.status == status }
+        override fun findAllByStatus(status: String): List<AgentEntity> = store.values.filter { it.status == status }
 
         override fun findStaleAgents(threshold: Long): List<AgentEntity> =
             store.values.filter { it.lastHeartbeat < threshold && it.status != "OFFLINE" }
 
         override fun <S : AgentEntity> save(entity: S): S {
-            val persisted = if (entity.id == 0L) {
-                @Suppress("UNCHECKED_CAST")
-                entity.copy(id = idSeq++) as S
-            } else entity
+            val persisted =
+                if (entity.id == 0L) {
+                    @Suppress("UNCHECKED_CAST")
+                    entity.copy(id = idSeq++) as S
+                } else {
+                    entity
+                }
             store[persisted.agentId] = persisted
             return persisted
         }
 
         override fun findAll(): List<AgentEntity> = store.values.toList()
+
         override fun findAll(sort: Sort): List<AgentEntity> = store.values.toList()
+
         override fun findAll(pageable: Pageable): Page<AgentEntity> = Page.empty()
-        override fun findById(id: Long): Optional<AgentEntity> =
-            store.values.find { it.id == id }.let { Optional.ofNullable(it) }
+
+        override fun findById(id: Long): Optional<AgentEntity> = store.values.find { it.id == id }.let { Optional.ofNullable(it) }
+
         override fun existsById(id: Long): Boolean = store.values.any { it.id == id }
+
         override fun count(): Long = store.size.toLong()
-        override fun deleteById(id: Long) { store.entries.removeIf { it.value.id == id } }
-        override fun delete(entity: AgentEntity) { store.remove(entity.agentId) }
-        override fun deleteAllById(ids: Iterable<Long>) { ids.forEach { deleteById(it) } }
-        override fun deleteAll(entities: Iterable<AgentEntity>) { entities.forEach { delete(it) } }
-        override fun deleteAll() { store.clear() }
+
+        override fun deleteById(id: Long) {
+            store.entries.removeIf { it.value.id == id }
+        }
+
+        override fun delete(entity: AgentEntity) {
+            store.remove(entity.agentId)
+        }
+
+        override fun deleteAllById(ids: Iterable<Long>) {
+            ids.forEach { deleteById(it) }
+        }
+
+        override fun deleteAll(entities: Iterable<AgentEntity>) {
+            entities.forEach { delete(it) }
+        }
+
+        override fun deleteAll() {
+            store.clear()
+        }
+
         override fun <S : AgentEntity> saveAll(entities: Iterable<S>): List<S> = entities.map { save(it) }
-        override fun findAllById(ids: Iterable<Long>): List<AgentEntity> =
-            ids.mapNotNull { id -> store.values.find { it.id == id } }
+
+        override fun findAllById(ids: Iterable<Long>): List<AgentEntity> = ids.mapNotNull { id -> store.values.find { it.id == id } }
+
         override fun <S : AgentEntity> findAll(example: Example<S>): List<S> = emptyList()
-        override fun <S : AgentEntity> findAll(example: Example<S>, sort: Sort): List<S> = emptyList()
-        override fun <S : AgentEntity> findAll(example: Example<S>, pageable: Pageable): Page<S> = Page.empty()
+
+        override fun <S : AgentEntity> findAll(
+            example: Example<S>,
+            sort: Sort,
+        ): List<S> = emptyList()
+
+        override fun <S : AgentEntity> findAll(
+            example: Example<S>,
+            pageable: Pageable,
+        ): Page<S> = Page.empty()
+
         override fun <S : AgentEntity> findOne(example: Example<S>): Optional<S> = Optional.empty()
+
         override fun <S : AgentEntity> count(example: Example<S>): Long = 0
+
         override fun <S : AgentEntity> exists(example: Example<S>): Boolean = false
-        override fun <S : AgentEntity, R> findBy(example: Example<S>, queryFunction: Function<FetchableFluentQuery<S>, R>): R =
-            throw UnsupportedOperationException()
+
+        override fun <S : AgentEntity, R> findBy(
+            example: Example<S>,
+            queryFunction: Function<FetchableFluentQuery<S>, R>,
+        ): R = throw UnsupportedOperationException()
+
         override fun <S : AgentEntity> saveAndFlush(entity: S): S = save(entity)
+
         override fun <S : AgentEntity> saveAllAndFlush(entities: Iterable<S>): List<S> = saveAll(entities)
+
         override fun deleteAllInBatch(entities: Iterable<AgentEntity>) = deleteAll(entities)
+
         override fun deleteAllByIdInBatch(ids: Iterable<Long>) = deleteAllById(ids)
+
         override fun deleteAllInBatch() = deleteAll()
+
         override fun getOne(id: Long): AgentEntity = findById(id).orElseThrow()
+
         override fun getById(id: Long): AgentEntity = findById(id).orElseThrow()
+
         override fun getReferenceById(id: Long): AgentEntity = findById(id).orElseThrow()
+
         override fun flush() {}
     }
 

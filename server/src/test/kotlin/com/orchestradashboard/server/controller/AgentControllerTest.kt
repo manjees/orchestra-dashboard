@@ -1,23 +1,25 @@
 package com.orchestradashboard.server.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.orchestradashboard.server.config.SecurityConfig
 import com.orchestradashboard.server.model.AgentResponse
 import com.orchestradashboard.server.model.CreateAgentRequest
 import com.orchestradashboard.server.service.AgentService
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import org.mockito.Mockito.`when` as whenever
 
 @WebMvcTest(AgentController::class)
+@Import(SecurityConfig::class)
 class AgentControllerTest {
-
     @Autowired
     lateinit var mockMvc: MockMvc
 
@@ -27,13 +29,14 @@ class AgentControllerTest {
     @MockBean
     lateinit var agentService: AgentService
 
-    private val sampleResponse = AgentResponse(
-        id = "agent-1",
-        name = "Worker Alpha",
-        type = "WORKER",
-        status = "RUNNING",
-        lastHeartbeat = 1700000000L
-    )
+    private val sampleResponse =
+        AgentResponse(
+            id = "agent-1",
+            name = "Worker Alpha",
+            type = "WORKER",
+            status = "RUNNING",
+            lastHeartbeat = 1700000000L,
+        )
 
     @Test
     fun `GET api-v1-agents returns 200 with agent list`() {

@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.Flow
  * Streaming operations return [Flow]; one-shot operations return [Result].
  */
 interface AgentRepository {
-
     /**
      * Observes all registered agents in real-time.
      *

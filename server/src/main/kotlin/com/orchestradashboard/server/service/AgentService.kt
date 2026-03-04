@@ -15,9 +15,8 @@ import org.springframework.stereotype.Service
  */
 @Service
 class AgentService(
-    private val agentRepository: ServerAgentRepository
+    private val agentRepository: ServerAgentRepository,
 ) {
-
     /**
      * Retrieves all registered agents.
      *
@@ -48,14 +47,15 @@ class AgentService(
         require(agentRepository.findByAgentId(request.id) == null) {
             "Agent with id '${request.id}' is already registered"
         }
-        val entity = AgentEntity(
-            agentId = request.id,
-            name = request.name,
-            type = request.type,
-            status = "OFFLINE",
-            lastHeartbeat = System.currentTimeMillis(),
-            metadata = request.metadata
-        )
+        val entity =
+            AgentEntity(
+                agentId = request.id,
+                name = request.name,
+                type = request.type,
+                status = "OFFLINE",
+                lastHeartbeat = System.currentTimeMillis(),
+                metadata = request.metadata,
+            )
         return agentRepository.save(entity).toResponse()
     }
 
@@ -66,12 +66,16 @@ class AgentService(
      * @param request Status update payload
      * @return Updated agent response DTO, or null if agent not found
      */
-    fun updateAgentStatus(agentId: String, request: UpdateAgentStatusRequest): AgentResponse? {
+    fun updateAgentStatus(
+        agentId: String,
+        request: UpdateAgentStatusRequest,
+    ): AgentResponse? {
         val existing = agentRepository.findByAgentId(agentId) ?: return null
-        val updated = existing.copy(
-            status = request.status,
-            lastHeartbeat = request.lastHeartbeat
-        )
+        val updated =
+            existing.copy(
+                status = request.status,
+                lastHeartbeat = request.lastHeartbeat,
+            )
         return agentRepository.save(updated).toResponse()
     }
 

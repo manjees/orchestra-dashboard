@@ -8,7 +8,6 @@ import com.orchestradashboard.shared.domain.model.Agent
  * Stateless — safe to share across threads and coroutines.
  */
 class AgentMapper {
-
     /**
      * Converts an API DTO to a domain model.
      * Unknown enum values are mapped to safe defaults to avoid crashes.
@@ -23,7 +22,7 @@ class AgentMapper {
             type = parseAgentType(dto.type),
             status = parseAgentStatus(dto.status),
             lastHeartbeat = dto.lastHeartbeat,
-            metadata = dto.metadata
+            metadata = dto.metadata,
         )
     }
 
