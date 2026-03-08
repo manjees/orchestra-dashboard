@@ -19,8 +19,15 @@ subprojects {
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
-    configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
-        config.setFrom(rootProject.files("detekt.yml"))
+    tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+        config.setFrom(rootProject.files("config/detekt/detekt.yml"))
         buildUponDefaultConfig = true
+    }
+
+    configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+        filter {
+            exclude { it.file.path.contains("/build/") }
+            exclude { it.file.path.contains("/generated/") }
+        }
     }
 }

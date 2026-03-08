@@ -15,7 +15,6 @@ class OrchestraApplication : Application()
  * Main entry point for the Android app.
  */
 class MainActivity : ComponentActivity() {
-
     private lateinit var viewModel: DashboardViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {

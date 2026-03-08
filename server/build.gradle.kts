@@ -26,6 +26,7 @@ dependencies {
 
     // Test
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.mockito.kotlin)
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.testcontainers.core)
     testImplementation(libs.testcontainers.junit5)

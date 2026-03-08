@@ -39,7 +39,7 @@ import com.orchestradashboard.shared.domain.model.DashboardViewModel
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -60,20 +60,22 @@ fun DashboardScreen(
         topBar = {
             TopAppBar(title = { Text("Orchestra Dashboard") })
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             when {
                 uiState.isLoading -> LoadingOverlay()
                 uiState.agents.isEmpty() -> EmptyAgentState()
-                else -> AgentList(
-                    agents = uiState.agents,
-                    onSelect = { viewModel.selectAgent(it.id) }
-                )
+                else ->
+                    AgentList(
+                        agents = uiState.agents,
+                        onSelect = { viewModel.selectAgent(it.id) },
+                    )
             }
         }
     }
@@ -83,12 +85,12 @@ fun DashboardScreen(
 private fun AgentList(
     agents: List<Agent>,
     onSelect: (Agent) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         items(agents, key = { it.id }) { agent ->
             AgentCard(agent = agent, onClick = { onSelect(agent) })
@@ -100,25 +102,26 @@ private fun AgentList(
 private fun AgentCard(
     agent: Agent,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = agent.displayName,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
             )
             Text(
                 text = "Status: ${agent.status.name}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (agent.isHealthy) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                }
+                color =
+                    if (agent.isHealthy) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
             )
         }
     }
@@ -128,7 +131,7 @@ private fun AgentCard(
 private fun LoadingOverlay(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         CircularProgressIndicator()
     }
@@ -138,11 +141,11 @@ private fun LoadingOverlay(modifier: Modifier = Modifier) {
 private fun EmptyAgentState(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Text(
             text = "No agents registered.\nStart an agent to see it here.",
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyLarge,
         )
     }
 }

@@ -156,3 +156,4 @@ temp/
 *.swp
 *.swo
 .claude/
+*.klib

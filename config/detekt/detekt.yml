@@ -1,0 +1,66 @@
+build:
+  maxIssues: -1
+
+naming:
+  FunctionNaming:
+    excludes:
+      - "**/ui/**"
+      - "**/*Screen*"
+      - "**/*Component*"
+      - "**/*Composable*"
+
+style:
+  MagicNumber:
+    ignoreNumbers:
+      - "-1"
+      - "0"
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "8"
+      - "10"
+      - "100"
+      - "200"
+      - "300"
+      - "400"
+      - "500"
+      - "1000"
+      - "3000"
+      - "8080"
+    ignoreHashCodeFunction: true
+    ignorePropertyDeclaration: true
+    ignoreLocalVariableDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreEnums: true
+  MaxLineLength:
+    maxLineLength: 150
+    excludeCommentStatements: true
+
+complexity:
+  CognitiveComplexMethod:
+    active: true
+    threshold: 30
+  LongMethod:
+    active: true
+    threshold: 60
+  LongParameterList:
+    active: true
+    functionThreshold: 6
+    constructorThreshold: 8
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 20
+    thresholdInClasses: 15
+
+coroutines:
+  active: true
+
+exceptions:
+  active: true
+
+potential-bugs:
+  active: true

@@ -20,7 +20,6 @@ import kotlinx.serialization.json.Json
  * All dependencies are lazily initialized and singletons unless noted.
  */
 object AppContainer {
-
     // ─── Configuration ──────────────────────────────────────────
 
     private val serverBaseUrl: String
@@ -31,10 +30,12 @@ object AppContainer {
     private val httpClient: HttpClient by lazy {
         HttpClient(OkHttp) {
             install(ContentNegotiation) {
-                json(Json {
-                    ignoreUnknownKeys = true
-                    coerceInputValues = true
-                })
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        coerceInputValues = true
+                    },
+                )
             }
             install(Logging) {
                 level = LogLevel.INFO
@@ -68,6 +69,5 @@ object AppContainer {
 
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 
-    fun createDashboardViewModel(): DashboardViewModel =
-        DashboardViewModel(observeAgentsUseCase, getAgentUseCase)
+    fun createDashboardViewModel(): DashboardViewModel = DashboardViewModel(observeAgentsUseCase, getAgentUseCase)
 }
