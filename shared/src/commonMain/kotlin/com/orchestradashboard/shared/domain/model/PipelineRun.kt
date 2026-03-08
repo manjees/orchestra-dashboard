@@ -8,7 +8,7 @@ enum class PipelineRunStatus {
     RUNNING,
     PASSED,
     FAILED,
-    CANCELLED
+    CANCELLED,
 }
 
 /**
@@ -19,7 +19,7 @@ enum class StepStatus {
     RUNNING,
     PASSED,
     FAILED,
-    SKIPPED
+    SKIPPED,
 }
 
 /**
@@ -34,7 +34,7 @@ data class PipelineStep(
     val name: String,
     val status: StepStatus,
     val detail: String,
-    val elapsedMs: Long
+    val elapsedMs: Long,
 )
 
 /**
@@ -57,7 +57,7 @@ data class PipelineRun(
     val steps: List<PipelineStep>,
     val startedAt: Long,
     val finishedAt: Long?,
-    val triggerInfo: String
+    val triggerInfo: String,
 ) {
     /** Total duration in milliseconds, or null if the run has not finished */
     val duration: Long? get() = if (finishedAt != null) finishedAt - startedAt else null

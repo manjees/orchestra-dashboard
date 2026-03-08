@@ -8,7 +8,7 @@ enum class EventType {
     STATUS_CHANGE,
     PIPELINE_STARTED,
     PIPELINE_COMPLETED,
-    ERROR
+    ERROR,
 }
 
 /**
@@ -25,5 +25,5 @@ data class AgentEvent(
     val agentId: String,
     val type: EventType,
     val payload: String,
-    val timestamp: Long
+    val timestamp: Long,
 )
