@@ -1,6 +1,7 @@
 package com.orchestradashboard.shared.domain.repository
 
 import com.orchestradashboard.shared.domain.model.Agent
+import com.orchestradashboard.shared.domain.model.Agent.AgentStatus
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -22,6 +23,14 @@ interface AgentRepository {
      * @return [Result] containing the agent on success, or an exception on failure
      */
     suspend fun getAgent(agentId: String): Result<Agent>
+
+    /**
+     * Retrieves agents filtered by their operational status.
+     *
+     * @param status The status to filter by
+     * @return [Result] containing the matching agents on success
+     */
+    suspend fun getAgentsByStatus(status: AgentStatus): Result<List<Agent>>
 
     /**
      * Registers a new agent with the monitoring system.
