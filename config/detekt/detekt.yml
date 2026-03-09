@@ -8,6 +8,8 @@ naming:
       - "**/*Screen*"
       - "**/*Component*"
       - "**/*Composable*"
+      - "**/test/**"
+      - "**/androidTest/**"
 
 style:
   MagicNumber:
