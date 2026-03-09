@@ -20,7 +20,7 @@ data class AgentEventEntity(
     @Column(nullable = false)
     val type: String = "",
     @Column(columnDefinition = "TEXT")
-    val payload: String = "",
+    val payload: String = "{}",
     @Column(nullable = false)
     val timestamp: Long = 0L,
     @ManyToOne(fetch = FetchType.LAZY)

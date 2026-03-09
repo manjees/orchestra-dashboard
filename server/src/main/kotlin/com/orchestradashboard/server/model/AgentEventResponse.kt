@@ -6,12 +6,12 @@ data class AgentEventResponse(
     val id: String,
     @JsonProperty("agent_id") val agentId: String,
     val type: String,
-    val payload: String,
+    val payload: Map<String, Any> = emptyMap(),
     val timestamp: Long,
 )
 
 data class CreateEventRequest(
     @JsonProperty("agent_id") val agentId: String,
     val type: String,
-    val payload: String = "",
+    val payload: Map<String, Any> = emptyMap(),
 )
