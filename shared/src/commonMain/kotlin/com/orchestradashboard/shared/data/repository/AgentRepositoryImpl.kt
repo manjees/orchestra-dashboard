@@ -3,8 +3,10 @@ package com.orchestradashboard.shared.data.repository
 import com.orchestradashboard.shared.data.mapper.AgentMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.domain.model.Agent
+import com.orchestradashboard.shared.domain.model.Agent.AgentStatus
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -26,6 +28,11 @@ class AgentRepositoryImpl(
         return apiClient.fetchAgent(agentId)
             .mapCatching { dto -> agentMapper.toDomain(dto) }
     }
+
+    override suspend fun getAgentsByStatus(status: AgentStatus): Result<List<Agent>> =
+        runCatching {
+            observeAgents().first().filter { it.status == status }
+        }
 
     override suspend fun registerAgent(agent: Agent): Result<Agent> {
         return apiClient.registerAgent(agent)
