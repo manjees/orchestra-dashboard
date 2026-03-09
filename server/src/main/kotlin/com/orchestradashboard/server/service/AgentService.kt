@@ -1,93 +1,55 @@
 package com.orchestradashboard.server.service
 
 import com.orchestradashboard.server.model.AgentEntity
+import com.orchestradashboard.server.model.AgentMapper
+import com.orchestradashboard.server.model.AgentRegistrationRequest
 import com.orchestradashboard.server.model.AgentResponse
-import com.orchestradashboard.server.model.CreateAgentRequest
-import com.orchestradashboard.server.model.UpdateAgentStatusRequest
-import com.orchestradashboard.server.model.toResponse
-import com.orchestradashboard.server.repository.ServerAgentRepository
+import com.orchestradashboard.server.repository.AgentJpaRepository
 import org.springframework.stereotype.Service
+import java.util.UUID
 
-/**
- * Business logic for agent lifecycle management.
- *
- * @param agentRepository Persistence layer for agent entities
- */
 @Service
 class AgentService(
-    private val agentRepository: ServerAgentRepository,
+    private val agentRepository: AgentJpaRepository,
+    private val agentMapper: AgentMapper,
 ) {
-    /**
-     * Retrieves all registered agents.
-     *
-     * @return List of agent response DTOs
-     */
-    fun getAllAgents(): List<AgentResponse> {
-        return agentRepository.findAll().map { it.toResponse() }
+    fun getAllAgents(): List<AgentResponse> = agentMapper.toResponseList(agentRepository.findAll())
+
+    fun getAgent(id: String): AgentResponse {
+        val entity =
+            agentRepository.findById(id)
+                .orElseThrow { NoSuchElementException("Agent with id '$id' not found") }
+        return agentMapper.toResponse(entity)
     }
 
-    /**
-     * Retrieves a specific agent by its ID.
-     *
-     * @param agentId Unique agent identifier
-     * @return Agent response DTO, or null if not found
-     */
-    fun getAgent(agentId: String): AgentResponse? {
-        return agentRepository.findByAgentId(agentId)?.toResponse()
-    }
+    fun getAgentsByStatus(status: String): List<AgentResponse> = agentMapper.toResponseList(agentRepository.findByStatus(status))
 
-    /**
-     * Registers a new agent with the monitoring system.
-     *
-     * @param request Registration request with agent details
-     * @return The created agent response DTO
-     * @throws IllegalArgumentException if an agent with the same ID already exists
-     */
-    fun registerAgent(request: CreateAgentRequest): AgentResponse {
-        require(agentRepository.findByAgentId(request.id) == null) {
-            "Agent with id '${request.id}' is already registered"
-        }
+    fun registerAgent(request: AgentRegistrationRequest): AgentResponse {
+        val id = request.id ?: UUID.randomUUID().toString()
         val entity =
             AgentEntity(
-                agentId = request.id,
+                id = id,
                 name = request.name,
                 type = request.type,
                 status = "OFFLINE",
                 lastHeartbeat = System.currentTimeMillis(),
-                metadata = request.metadata,
+                metadata = agentMapper.serializeMetadata(request.metadata),
             )
-        return agentRepository.save(entity).toResponse()
+        return agentMapper.toResponse(agentRepository.save(entity))
     }
 
-    /**
-     * Updates an agent's status and heartbeat timestamp.
-     *
-     * @param agentId Unique agent identifier
-     * @param request Status update payload
-     * @return Updated agent response DTO, or null if agent not found
-     */
-    fun updateAgentStatus(
-        agentId: String,
-        request: UpdateAgentStatusRequest,
-    ): AgentResponse? {
-        val existing = agentRepository.findByAgentId(agentId) ?: return null
+    fun updateHeartbeat(
+        id: String,
+        status: String,
+    ): AgentResponse {
+        val existing =
+            agentRepository.findById(id)
+                .orElseThrow { NoSuchElementException("Agent with id '$id' not found") }
         val updated =
             existing.copy(
-                status = request.status,
-                lastHeartbeat = request.lastHeartbeat,
+                status = status,
+                lastHeartbeat = System.currentTimeMillis(),
             )
-        return agentRepository.save(updated).toResponse()
-    }
-
-    /**
-     * Removes an agent from the monitoring system.
-     *
-     * @param agentId Unique agent identifier
-     * @return true if the agent was removed, false if it was not found
-     */
-    fun deregisterAgent(agentId: String): Boolean {
-        val entity = agentRepository.findByAgentId(agentId) ?: return false
-        agentRepository.delete(entity)
-        return true
+        return agentMapper.toResponse(agentRepository.save(updated))
     }
 }

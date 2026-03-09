@@ -1,195 +1,143 @@
 package com.orchestradashboard.server.service
 
 import com.orchestradashboard.server.model.AgentEntity
-import com.orchestradashboard.server.model.CreateAgentRequest
-import com.orchestradashboard.server.model.UpdateAgentStatusRequest
-import com.orchestradashboard.server.repository.ServerAgentRepository
+import com.orchestradashboard.server.model.AgentMapper
+import com.orchestradashboard.server.model.AgentRegistrationRequest
+import com.orchestradashboard.server.repository.AgentJpaRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.data.domain.Example
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Sort
-import org.springframework.data.repository.query.FluentQuery.FetchableFluentQuery
+import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.util.Optional
-import java.util.function.Function
 
 class AgentServiceTest {
-    // ─── Fake Repository ────────────────────────────────────────
-
-    private class FakeAgentRepository : ServerAgentRepository {
-        val store = mutableMapOf<String, AgentEntity>()
-        private var idSeq = 1L
-
-        override fun findByAgentId(agentId: String): AgentEntity? = store[agentId]
-
-        override fun findAllByStatus(status: String): List<AgentEntity> = store.values.filter { it.status == status }
-
-        override fun findStaleAgents(threshold: Long): List<AgentEntity> =
-            store.values.filter { it.lastHeartbeat < threshold && it.status != "OFFLINE" }
-
-        override fun <S : AgentEntity> save(entity: S): S {
-            val persisted =
-                if (entity.id == 0L) {
-                    @Suppress("UNCHECKED_CAST")
-                    entity.copy(id = idSeq++) as S
-                } else {
-                    entity
-                }
-            store[persisted.agentId] = persisted
-            return persisted
-        }
-
-        override fun findAll(): List<AgentEntity> = store.values.toList()
-
-        override fun findAll(sort: Sort): List<AgentEntity> = store.values.toList()
-
-        override fun findAll(pageable: Pageable): Page<AgentEntity> = Page.empty()
-
-        override fun findById(id: Long): Optional<AgentEntity> = store.values.find { it.id == id }.let { Optional.ofNullable(it) }
-
-        override fun existsById(id: Long): Boolean = store.values.any { it.id == id }
-
-        override fun count(): Long = store.size.toLong()
-
-        override fun deleteById(id: Long) {
-            store.entries.removeIf { it.value.id == id }
-        }
-
-        override fun delete(entity: AgentEntity) {
-            store.remove(entity.agentId)
-        }
-
-        override fun deleteAllById(ids: Iterable<Long>) {
-            ids.forEach { deleteById(it) }
-        }
-
-        override fun deleteAll(entities: Iterable<AgentEntity>) {
-            entities.forEach { delete(it) }
-        }
-
-        override fun deleteAll() {
-            store.clear()
-        }
-
-        override fun <S : AgentEntity> saveAll(entities: Iterable<S>): List<S> = entities.map { save(it) }
-
-        override fun findAllById(ids: Iterable<Long>): List<AgentEntity> = ids.mapNotNull { id -> store.values.find { it.id == id } }
-
-        override fun <S : AgentEntity> findAll(example: Example<S>): List<S> = emptyList()
-
-        override fun <S : AgentEntity> findAll(
-            example: Example<S>,
-            sort: Sort,
-        ): List<S> = emptyList()
-
-        override fun <S : AgentEntity> findAll(
-            example: Example<S>,
-            pageable: Pageable,
-        ): Page<S> = Page.empty()
-
-        override fun <S : AgentEntity> findOne(example: Example<S>): Optional<S> = Optional.empty()
-
-        override fun <S : AgentEntity> count(example: Example<S>): Long = 0
-
-        override fun <S : AgentEntity> exists(example: Example<S>): Boolean = false
-
-        override fun <S : AgentEntity, R> findBy(
-            example: Example<S>,
-            queryFunction: Function<FetchableFluentQuery<S>, R>,
-        ): R = throw UnsupportedOperationException()
-
-        override fun <S : AgentEntity> saveAndFlush(entity: S): S = save(entity)
-
-        override fun <S : AgentEntity> saveAllAndFlush(entities: Iterable<S>): List<S> = saveAll(entities)
-
-        override fun deleteAllInBatch(entities: Iterable<AgentEntity>) = deleteAll(entities)
-
-        override fun deleteAllByIdInBatch(ids: Iterable<Long>) = deleteAllById(ids)
-
-        override fun deleteAllInBatch() = deleteAll()
-
-        override fun getOne(id: Long): AgentEntity = findById(id).orElseThrow()
-
-        override fun getById(id: Long): AgentEntity = findById(id).orElseThrow()
-
-        override fun getReferenceById(id: Long): AgentEntity = findById(id).orElseThrow()
-
-        override fun flush() {}
-    }
-
-    // ─── Tests ─────────────────────────────────────────────────
+    private val repository: AgentJpaRepository = mock()
+    private val mapper = AgentMapper()
+    private val service = AgentService(repository, mapper)
 
     @Test
-    fun `getAllAgents returns empty list when no agents are registered`() {
-        val service = AgentService(FakeAgentRepository())
-        assertTrue(service.getAllAgents().isEmpty())
+    fun `getAllAgents returns empty list when no agents`() {
+        whenever(repository.findAll()).thenReturn(emptyList())
+
+        val result = service.getAllAgents()
+
+        assertTrue(result.isEmpty())
     }
 
     @Test
-    fun `registerAgent creates and returns a new agent`() {
-        val repo = FakeAgentRepository()
-        val service = AgentService(repo)
-        val request = CreateAgentRequest(id = "agent-1", name = "Alpha", type = "WORKER")
+    fun `getAllAgents returns mapped responses`() {
+        val entities =
+            listOf(
+                AgentEntity(id = "a1", name = "Alpha", type = "WORKER", status = "RUNNING", lastHeartbeat = 100L),
+                AgentEntity(id = "a2", name = "Beta", type = "PLANNER", status = "IDLE", lastHeartbeat = 200L),
+            )
+        whenever(repository.findAll()).thenReturn(entities)
+
+        val result = service.getAllAgents()
+
+        assertEquals(2, result.size)
+        assertEquals("a1", result[0].id)
+        assertEquals("a2", result[1].id)
+    }
+
+    @Test
+    fun `getAgent returns response when found`() {
+        val entity = AgentEntity(id = "a1", name = "Alpha", type = "WORKER", status = "RUNNING", lastHeartbeat = 100L)
+        whenever(repository.findById("a1")).thenReturn(Optional.of(entity))
+
+        val result = service.getAgent("a1")
+
+        assertEquals("a1", result.id)
+        assertEquals("Alpha", result.name)
+    }
+
+    @Test
+    fun `getAgent throws NoSuchElementException when not found`() {
+        whenever(repository.findById("missing")).thenReturn(Optional.empty())
+
+        assertThrows<NoSuchElementException> {
+            service.getAgent("missing")
+        }
+    }
+
+    @Test
+    fun `getAgentsByStatus delegates to repository`() {
+        val entities =
+            listOf(
+                AgentEntity(id = "a1", name = "Alpha", type = "WORKER", status = "RUNNING", lastHeartbeat = 100L),
+            )
+        whenever(repository.findByStatus("RUNNING")).thenReturn(entities)
+
+        val result = service.getAgentsByStatus("RUNNING")
+
+        assertEquals(1, result.size)
+        assertEquals("RUNNING", result[0].status)
+        verify(repository).findByStatus("RUNNING")
+    }
+
+    @Test
+    fun `registerAgent auto-assigns UUID when id is null`() {
+        val request = AgentRegistrationRequest(name = "Alpha", type = "WORKER")
+        val captor = argumentCaptor<AgentEntity>()
+        whenever(repository.save(any<AgentEntity>())).thenAnswer { it.arguments[0] as AgentEntity }
+
+        service.registerAgent(request)
+
+        verify(repository).save(captor.capture())
+        assertNotNull(captor.firstValue.id)
+        assertTrue(captor.firstValue.id.isNotBlank())
+    }
+
+    @Test
+    fun `registerAgent uses provided id when present`() {
+        val request = AgentRegistrationRequest(id = "custom-id", name = "Alpha", type = "WORKER")
+        val captor = argumentCaptor<AgentEntity>()
+        whenever(repository.save(any<AgentEntity>())).thenAnswer { it.arguments[0] as AgentEntity }
+
+        service.registerAgent(request)
+
+        verify(repository).save(captor.capture())
+        assertEquals("custom-id", captor.firstValue.id)
+    }
+
+    @Test
+    fun `registerAgent returns created response`() {
+        val request = AgentRegistrationRequest(id = "a1", name = "Alpha", type = "WORKER", metadata = mapOf("env" to "dev"))
+        whenever(repository.save(any<AgentEntity>())).thenAnswer { it.arguments[0] as AgentEntity }
 
         val result = service.registerAgent(request)
 
-        assertEquals("agent-1", result.id)
+        assertEquals("a1", result.id)
         assertEquals("Alpha", result.name)
+        assertEquals("WORKER", result.type)
         assertEquals("OFFLINE", result.status)
-        assertNotNull(repo.store["agent-1"])
+        assertEquals(mapOf("env" to "dev"), result.metadata)
     }
 
     @Test
-    fun `registerAgent throws when agent ID already exists`() {
-        val repo = FakeAgentRepository()
-        repo.store["agent-1"] = AgentEntity(agentId = "agent-1", name = "Existing", type = "WORKER", status = "IDLE", lastHeartbeat = 0L)
-        val service = AgentService(repo)
+    fun `updateHeartbeat updates status and timestamp`() {
+        val entity = AgentEntity(id = "a1", name = "Alpha", type = "WORKER", status = "OFFLINE", lastHeartbeat = 0L)
+        whenever(repository.findById("a1")).thenReturn(Optional.of(entity))
+        whenever(repository.save(any<AgentEntity>())).thenAnswer { it.arguments[0] as AgentEntity }
 
-        assertThrows<IllegalArgumentException> {
-            service.registerAgent(CreateAgentRequest("agent-1", "Duplicate", "WORKER"))
+        val result = service.updateHeartbeat("a1", "RUNNING")
+
+        assertEquals("RUNNING", result.status)
+        assertTrue(result.lastHeartbeat > 0)
+    }
+
+    @Test
+    fun `updateHeartbeat throws when agent not found`() {
+        whenever(repository.findById("missing")).thenReturn(Optional.empty())
+
+        assertThrows<NoSuchElementException> {
+            service.updateHeartbeat("missing", "RUNNING")
         }
-    }
-
-    @Test
-    fun `getAgent returns null when agent not found`() {
-        val service = AgentService(FakeAgentRepository())
-        assertNull(service.getAgent("missing"))
-    }
-
-    @Test
-    fun `updateAgentStatus updates status and heartbeat`() {
-        val repo = FakeAgentRepository()
-        repo.store["agent-1"] = AgentEntity(agentId = "agent-1", name = "Alpha", type = "WORKER", status = "OFFLINE", lastHeartbeat = 0L)
-        val service = AgentService(repo)
-
-        val result = service.updateAgentStatus("agent-1", UpdateAgentStatusRequest(status = "RUNNING", lastHeartbeat = 9999L))
-
-        assertNotNull(result)
-        assertEquals("RUNNING", result!!.status)
-        assertEquals(9999L, result.lastHeartbeat)
-    }
-
-    @Test
-    fun `deregisterAgent returns true and removes the agent`() {
-        val repo = FakeAgentRepository()
-        repo.store["agent-1"] = AgentEntity(agentId = "agent-1", name = "Alpha", type = "WORKER", status = "IDLE", lastHeartbeat = 0L)
-        val service = AgentService(repo)
-
-        val result = service.deregisterAgent("agent-1")
-
-        assertTrue(result)
-        assertNull(repo.store["agent-1"])
-    }
-
-    @Test
-    fun `deregisterAgent returns false when agent not found`() {
-        val service = AgentService(FakeAgentRepository())
-        val result = service.deregisterAgent("missing")
-        assertTrue(!result)
     }
 }

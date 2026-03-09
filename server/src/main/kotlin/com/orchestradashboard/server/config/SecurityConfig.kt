@@ -23,8 +23,10 @@ class SecurityConfig {
                     .requestMatchers("/actuator/health").permitAll()
                     .requestMatchers("/api/**").permitAll()
                     .requestMatchers("/ws/**").permitAll()
+                    .requestMatchers("/h2-console/**").permitAll()
                     .anyRequest().authenticated()
             }
+            .headers { it.frameOptions { fo -> fo.sameOrigin() } }
         return http.build()
     }
 }

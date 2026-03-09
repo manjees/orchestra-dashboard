@@ -12,6 +12,7 @@ kotlin {
 
 dependencies {
     implementation(kotlin("reflect"))
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation(libs.spring.boot.starter.web)
     implementation(libs.spring.boot.starter.data.jpa)
     implementation(libs.spring.boot.starter.websocket)
