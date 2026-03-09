@@ -4,6 +4,7 @@ import com.orchestradashboard.server.model.CreatePipelineRunRequest
 import com.orchestradashboard.server.model.PipelineRunResponse
 import com.orchestradashboard.server.model.UpdateStatusRequest
 import com.orchestradashboard.server.service.PipelineService
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -28,20 +29,21 @@ class PipelineController(
         @RequestParam status: String?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
-    ): ResponseEntity<List<PipelineRunResponse>> {
-        val pageable = PageRequest.of(page, size.coerceAtMost(100))
-        return ResponseEntity.ok(pipelineService.getAllPipelineRuns(agentId, status, pageable))
+    ): ResponseEntity<Page<PipelineRunResponse>> {
+        val clampedSize = size.coerceIn(1, 100)
+        val pageable = PageRequest.of(page, clampedSize)
+        return ResponseEntity.ok(pipelineService.getPipelines(agentId, status, pageable))
     }
 
     @GetMapping("/{id}")
     fun getPipeline(
         @PathVariable id: String,
-    ): ResponseEntity<PipelineRunResponse> = ResponseEntity.ok(pipelineService.getPipelineRun(id))
+    ): ResponseEntity<PipelineRunResponse> = ResponseEntity.ok(pipelineService.getPipeline(id))
 
     @PostMapping
     fun createPipeline(
         @RequestBody request: CreatePipelineRunRequest,
-    ): ResponseEntity<PipelineRunResponse> = ResponseEntity.status(HttpStatus.CREATED).body(pipelineService.createPipelineRun(request))
+    ): ResponseEntity<PipelineRunResponse> = ResponseEntity.status(HttpStatus.CREATED).body(pipelineService.createPipeline(request))
 
     @PutMapping("/{id}/status")
     fun updateStatus(

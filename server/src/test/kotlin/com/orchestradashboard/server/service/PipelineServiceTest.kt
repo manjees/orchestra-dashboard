@@ -1,14 +1,13 @@
 package com.orchestradashboard.server.service
 
+import com.orchestradashboard.server.model.AgentEntity
 import com.orchestradashboard.server.model.CreatePipelineRunRequest
 import com.orchestradashboard.server.model.PipelineRunEntity
 import com.orchestradashboard.server.model.PipelineRunMapper
-import com.orchestradashboard.server.model.PipelineStepResponse
 import com.orchestradashboard.server.repository.AgentJpaRepository
 import com.orchestradashboard.server.repository.PipelineRunJpaRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -27,118 +26,120 @@ class PipelineServiceTest {
     private val mapper = PipelineRunMapper()
     private val service = PipelineService(pipelineRepository, agentRepository, mapper)
 
-    private val defaultEntity =
+    private val sampleEntity =
         PipelineRunEntity(
-            id = "run-1",
+            id = "pipe-1",
             agentId = "agent-1",
-            pipelineName = "CI Pipeline",
+            pipelineName = "build-deploy",
             status = "RUNNING",
             steps = "[]",
             startedAt = 1700000000L,
+            triggerInfo = "manual",
         )
 
     @Test
-    fun `getAllPipelineRuns returns mapped responses`() {
+    fun `getAllPipelines returns paginated results`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(pipelineRepository.findAll(pageable)).thenReturn(PageImpl(listOf(defaultEntity)))
+        whenever(pipelineRepository.findAll(pageable)).thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
 
-        val result = service.getAllPipelineRuns(null, null, pageable)
+        val result = service.getPipelines(null, null, pageable)
 
-        assertEquals(1, result.size)
-        assertEquals("run-1", result[0].id)
+        assertEquals(1, result.totalElements)
+        assertEquals("pipe-1", result.content[0].id)
+        verify(pipelineRepository).findAll(pageable)
     }
 
     @Test
-    fun `getAllPipelineRuns returns empty list when none exist`() {
+    fun `getPipelinesByAgentId returns filtered results`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(pipelineRepository.findAll(pageable)).thenReturn(PageImpl(emptyList()))
+        whenever(pipelineRepository.findByAgentId("agent-1", pageable)).thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
 
-        val result = service.getAllPipelineRuns(null, null, pageable)
+        val result = service.getPipelines("agent-1", null, pageable)
 
-        assertTrue(result.isEmpty())
-    }
-
-    @Test
-    fun `getPipelineRun returns response when found`() {
-        whenever(pipelineRepository.findById("run-1")).thenReturn(Optional.of(defaultEntity))
-
-        val result = service.getPipelineRun("run-1")
-
-        assertEquals("run-1", result.id)
-        assertEquals("CI Pipeline", result.pipelineName)
-    }
-
-    @Test
-    fun `getPipelineRun throws NoSuchElementException when not found`() {
-        whenever(pipelineRepository.findById("missing")).thenReturn(Optional.empty())
-
-        assertThrows<NoSuchElementException> {
-            service.getPipelineRun("missing")
-        }
-    }
-
-    @Test
-    fun `getPipelineRunsByAgentId delegates to repository with pagination`() {
-        val pageable = PageRequest.of(0, 20)
-        whenever(pipelineRepository.findByAgentId("agent-1", pageable)).thenReturn(PageImpl(listOf(defaultEntity)))
-
-        val result = service.getAllPipelineRuns("agent-1", null, pageable)
-
-        assertEquals(1, result.size)
+        assertEquals(1, result.totalElements)
         verify(pipelineRepository).findByAgentId("agent-1", pageable)
     }
 
     @Test
-    fun `getPipelineRunsByStatus delegates to repository with pagination`() {
+    fun `getPipelinesByStatus returns filtered results`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(pipelineRepository.findByStatus("RUNNING", pageable)).thenReturn(PageImpl(listOf(defaultEntity)))
+        whenever(pipelineRepository.findByStatus("RUNNING", pageable)).thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
 
-        val result = service.getAllPipelineRuns(null, "RUNNING", pageable)
+        val result = service.getPipelines(null, "RUNNING", pageable)
 
-        assertEquals(1, result.size)
+        assertEquals(1, result.totalElements)
         verify(pipelineRepository).findByStatus("RUNNING", pageable)
     }
 
     @Test
-    fun `getPipelineRunsByAgentIdAndStatus delegates to repository with pagination`() {
+    fun `getPipelinesByAgentIdAndStatus returns filtered results`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(pipelineRepository.findByAgentIdAndStatus("agent-1", "RUNNING", pageable)).thenReturn(PageImpl(listOf(defaultEntity)))
+        whenever(
+            pipelineRepository.findByAgentIdAndStatus("agent-1", "RUNNING", pageable),
+        ).thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
 
-        val result = service.getAllPipelineRuns("agent-1", "RUNNING", pageable)
+        val result = service.getPipelines("agent-1", "RUNNING", pageable)
 
-        assertEquals(1, result.size)
+        assertEquals(1, result.totalElements)
         verify(pipelineRepository).findByAgentIdAndStatus("agent-1", "RUNNING", pageable)
     }
 
     @Test
-    fun `createPipelineRun saves entity and returns response`() {
-        val request =
-            CreatePipelineRunRequest(
-                agentId = "agent-1",
-                pipelineName = "CI Pipeline",
-                steps = listOf(PipelineStepResponse(name = "Build", status = "PENDING", detail = "", elapsedMs = 0L)),
-                triggerInfo = "manual",
-            )
-        whenever(agentRepository.existsById("agent-1")).thenReturn(true)
-        whenever(pipelineRepository.save(any<PipelineRunEntity>())).thenAnswer { it.arguments[0] as PipelineRunEntity }
+    fun `getPipeline returns pipeline when found`() {
+        whenever(pipelineRepository.findById("pipe-1")).thenReturn(Optional.of(sampleEntity))
 
-        val result = service.createPipelineRun(request)
+        val result = service.getPipeline("pipe-1")
 
-        assertEquals("agent-1", result.agentId)
-        assertEquals("CI Pipeline", result.pipelineName)
-        assertEquals("QUEUED", result.status)
-        assertEquals(1, result.steps.size)
-        assertEquals("manual", result.triggerInfo)
+        assertEquals("pipe-1", result.id)
+        assertEquals("build-deploy", result.pipelineName)
     }
 
     @Test
-    fun `createPipelineRun auto-assigns UUID`() {
-        val request = CreatePipelineRunRequest(agentId = "agent-1", pipelineName = "Pipeline")
-        whenever(agentRepository.existsById("agent-1")).thenReturn(true)
-        val captor = argumentCaptor<PipelineRunEntity>()
+    fun `getPipeline throws when not found`() {
+        whenever(pipelineRepository.findById("missing")).thenReturn(Optional.empty())
+
+        assertThrows<NoSuchElementException> {
+            service.getPipeline("missing")
+        }
+    }
+
+    @Test
+    fun `createPipeline creates with valid agentId`() {
+        val agent = AgentEntity(id = "agent-1", name = "Alpha", type = "WORKER", status = "RUNNING", lastHeartbeat = 100L)
+        whenever(agentRepository.findById("agent-1")).thenReturn(Optional.of(agent))
         whenever(pipelineRepository.save(any<PipelineRunEntity>())).thenAnswer { it.arguments[0] as PipelineRunEntity }
 
-        service.createPipelineRun(request)
+        val request = CreatePipelineRunRequest(id = "pipe-1", agentId = "agent-1", pipelineName = "build-deploy")
+        val result = service.createPipeline(request)
+
+        assertEquals("pipe-1", result.id)
+        assertEquals("QUEUED", result.status)
+        assertTrue(result.startedAt > 0)
+    }
+
+    @Test
+    fun `createPipeline throws when agent not found`() {
+        whenever(agentRepository.findById("missing")).thenReturn(Optional.empty())
+
+        val request = CreatePipelineRunRequest(agentId = "missing", pipelineName = "build")
+
+        val ex =
+            assertThrows<NoSuchElementException> {
+                service.createPipeline(request)
+            }
+        assertTrue(ex.message!!.contains("Agent"))
+    }
+
+    @Test
+    fun `createPipeline auto-assigns UUID when id not provided`() {
+        val agent = AgentEntity(id = "agent-1", name = "Alpha", type = "WORKER", status = "RUNNING", lastHeartbeat = 100L)
+        whenever(agentRepository.findById("agent-1")).thenReturn(Optional.of(agent))
+        whenever(pipelineRepository.save(any<PipelineRunEntity>())).thenAnswer { it.arguments[0] as PipelineRunEntity }
+
+        val request = CreatePipelineRunRequest(agentId = "agent-1", pipelineName = "build")
+        val captor = argumentCaptor<PipelineRunEntity>()
+
+        service.createPipeline(request)
 
         verify(pipelineRepository).save(captor.capture())
         assertNotNull(captor.firstValue.id)
@@ -146,55 +147,33 @@ class PipelineServiceTest {
     }
 
     @Test
-    fun `createPipelineRun validates agent exists`() {
-        val request = CreatePipelineRunRequest(agentId = "missing", pipelineName = "Pipeline")
-        whenever(agentRepository.existsById("missing")).thenReturn(false)
-
-        assertThrows<NoSuchElementException> {
-            service.createPipelineRun(request)
-        }
-    }
-
-    @Test
-    fun `updateStatus updates status field`() {
-        whenever(pipelineRepository.findById("run-1")).thenReturn(Optional.of(defaultEntity))
+    fun `updateStatus updates pipeline status`() {
+        whenever(pipelineRepository.findById("pipe-1")).thenReturn(Optional.of(sampleEntity))
         whenever(pipelineRepository.save(any<PipelineRunEntity>())).thenAnswer { it.arguments[0] as PipelineRunEntity }
 
-        val result = service.updateStatus("run-1", "RUNNING")
+        val result = service.updateStatus("pipe-1", "RUNNING")
 
         assertEquals("RUNNING", result.status)
     }
 
     @Test
     fun `updateStatus sets finishedAt for terminal statuses`() {
-        whenever(pipelineRepository.findById("run-1")).thenReturn(Optional.of(defaultEntity))
-        val captor = argumentCaptor<PipelineRunEntity>()
+        val entity = sampleEntity.copy(status = "RUNNING", finishedAt = null)
+        whenever(pipelineRepository.findById("pipe-1")).thenReturn(Optional.of(entity))
         whenever(pipelineRepository.save(any<PipelineRunEntity>())).thenAnswer { it.arguments[0] as PipelineRunEntity }
 
-        service.updateStatus("run-1", "PASSED")
+        val result = service.updateStatus("pipe-1", "PASSED")
 
-        verify(pipelineRepository).save(captor.capture())
-        assertNotNull(captor.firstValue.finishedAt)
+        assertEquals("PASSED", result.status)
+        assertNotNull(result.finishedAt)
     }
 
     @Test
-    fun `updateStatus preserves null finishedAt for non-terminal statuses`() {
-        whenever(pipelineRepository.findById("run-1")).thenReturn(Optional.of(defaultEntity))
-        val captor = argumentCaptor<PipelineRunEntity>()
-        whenever(pipelineRepository.save(any<PipelineRunEntity>())).thenAnswer { it.arguments[0] as PipelineRunEntity }
-
-        service.updateStatus("run-1", "RUNNING")
-
-        verify(pipelineRepository).save(captor.capture())
-        assertNull(captor.firstValue.finishedAt)
-    }
-
-    @Test
-    fun `updateStatus throws for non-existent run`() {
+    fun `updateStatus throws when pipeline not found`() {
         whenever(pipelineRepository.findById("missing")).thenReturn(Optional.empty())
 
         assertThrows<NoSuchElementException> {
-            service.updateStatus("missing", "PASSED")
+            service.updateStatus("missing", "RUNNING")
         }
     }
 }

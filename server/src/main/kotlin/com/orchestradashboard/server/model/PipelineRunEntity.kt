@@ -27,7 +27,7 @@ data class PipelineRunEntity(
     val startedAt: Long = 0L,
     @Column(name = "finished_at")
     val finishedAt: Long? = null,
-    @Column(name = "trigger_info")
+    @Column(name = "trigger_info", columnDefinition = "TEXT")
     val triggerInfo: String = "",
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "agent_id", insertable = false, updatable = false)

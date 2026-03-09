@@ -6,6 +6,7 @@ import com.orchestradashboard.server.model.PipelineRunMapper
 import com.orchestradashboard.server.model.PipelineRunResponse
 import com.orchestradashboard.server.repository.AgentJpaRepository
 import com.orchestradashboard.server.repository.PipelineRunJpaRepository
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -16,15 +17,11 @@ class PipelineService(
     private val agentRepository: AgentJpaRepository,
     private val mapper: PipelineRunMapper,
 ) {
-    companion object {
-        private val TERMINAL_STATUSES = setOf("PASSED", "FAILED", "CANCELLED")
-    }
-
-    fun getAllPipelineRuns(
+    fun getPipelines(
         agentId: String?,
         status: String?,
         pageable: Pageable,
-    ): List<PipelineRunResponse> {
+    ): Page<PipelineRunResponse> {
         val page =
             when {
                 agentId != null && status != null -> pipelineRepository.findByAgentIdAndStatus(agentId, status, pageable)
@@ -32,23 +29,22 @@ class PipelineService(
                 status != null -> pipelineRepository.findByStatus(status, pageable)
                 else -> pipelineRepository.findAll(pageable)
             }
-        return mapper.toResponseList(page.content)
+        return page.map { mapper.toResponse(it) }
     }
 
-    fun getPipelineRun(id: String): PipelineRunResponse {
+    fun getPipeline(id: String): PipelineRunResponse {
         val entity =
             pipelineRepository.findById(id)
-                .orElseThrow { NoSuchElementException("PipelineRun with id '$id' not found") }
+                .orElseThrow { NoSuchElementException("Pipeline run with id '$id' not found") }
         return mapper.toResponse(entity)
     }
 
-    fun createPipelineRun(request: CreatePipelineRunRequest): PipelineRunResponse {
-        if (!agentRepository.existsById(request.agentId)) {
-            throw NoSuchElementException("Agent with id '${request.agentId}' not found")
-        }
+    fun createPipeline(request: CreatePipelineRunRequest): PipelineRunResponse {
+        agentRepository.findById(request.agentId)
+            .orElseThrow { NoSuchElementException("Agent with id '${request.agentId}' not found") }
         val entity =
             PipelineRunEntity(
-                id = UUID.randomUUID().toString(),
+                id = request.id ?: UUID.randomUUID().toString(),
                 agentId = request.agentId,
                 pipelineName = request.pipelineName,
                 status = "QUEUED",
@@ -65,8 +61,9 @@ class PipelineService(
     ): PipelineRunResponse {
         val existing =
             pipelineRepository.findById(id)
-                .orElseThrow { NoSuchElementException("PipelineRun with id '$id' not found") }
-        val finishedAt = if (status in TERMINAL_STATUSES) System.currentTimeMillis() else existing.finishedAt
+                .orElseThrow { NoSuchElementException("Pipeline run with id '$id' not found") }
+        val terminalStatuses = setOf("PASSED", "FAILED", "CANCELLED")
+        val finishedAt = if (status in terminalStatuses) System.currentTimeMillis() else existing.finishedAt
         val updated = existing.copy(status = status, finishedAt = finishedAt)
         return mapper.toResponse(pipelineRepository.save(updated))
     }

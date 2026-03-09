@@ -1,12 +1,13 @@
 package com.orchestradashboard.server.model
 
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.KotlinModule
 import org.springframework.stereotype.Component
 
 @Component
 class PipelineRunMapper {
-    private val objectMapper = jacksonObjectMapper()
+    private val objectMapper = ObjectMapper().registerModule(KotlinModule.Builder().build())
 
     fun toResponse(entity: PipelineRunEntity): PipelineRunResponse =
         PipelineRunResponse(
@@ -14,15 +15,13 @@ class PipelineRunMapper {
             agentId = entity.agentId,
             pipelineName = entity.pipelineName,
             status = entity.status,
-            steps = deserializeSteps(entity.steps),
+            steps = parseSteps(entity.steps),
             startedAt = entity.startedAt,
             finishedAt = entity.finishedAt,
             triggerInfo = entity.triggerInfo,
         )
 
-    fun toResponseList(entities: List<PipelineRunEntity>): List<PipelineRunResponse> = entities.map { toResponse(it) }
-
-    fun deserializeSteps(json: String): List<PipelineStepResponse> =
+    fun parseSteps(json: String): List<PipelineStepResponse> =
         if (json.isBlank()) {
             emptyList()
         } else {
@@ -33,5 +32,5 @@ class PipelineRunMapper {
             }
         }
 
-    fun serializeSteps(steps: List<PipelineStepResponse>): String = objectMapper.writeValueAsString(steps)
+    fun serializeSteps(steps: List<PipelineStepRequest>): String = objectMapper.writeValueAsString(steps)
 }
