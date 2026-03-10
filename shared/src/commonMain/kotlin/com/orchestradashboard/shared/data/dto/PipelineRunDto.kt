@@ -7,8 +7,8 @@ import kotlinx.serialization.Serializable
 data class PipelineStepDto(
     val name: String,
     val status: String,
-    val detail: String,
-    @SerialName("elapsed_ms") val elapsedMs: Long,
+    val detail: String = "",
+    @SerialName("elapsed_ms") val elapsedMs: Long = 0L,
 )
 
 @Serializable

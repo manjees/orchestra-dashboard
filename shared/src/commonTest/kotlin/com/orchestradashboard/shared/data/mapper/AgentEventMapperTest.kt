@@ -1,7 +1,9 @@
 package com.orchestradashboard.shared.data.mapper
 
 import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.domain.model.AgentEvent
 import com.orchestradashboard.shared.domain.model.EventType
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,14 +13,14 @@ class AgentEventMapperTest {
     private val mapper = AgentEventMapper()
 
     @Test
-    fun `toDomain maps valid DTO with all fields correctly`() {
+    fun `toDomain maps complete AgentEventDto correctly`() {
         val dto =
             AgentEventDto(
                 id = "evt-1",
                 agentId = "agent-1",
                 type = "STATUS_CHANGE",
-                payload = mapOf("status" to JsonPrimitive("RUNNING")),
-                timestamp = 1700000000L,
+                payload = JsonObject(mapOf("key" to JsonPrimitive("value"))),
+                timestamp = 1000L,
             )
 
         val result = mapper.toDomain(dto)
@@ -26,18 +28,35 @@ class AgentEventMapperTest {
         assertEquals("evt-1", result.id)
         assertEquals("agent-1", result.agentId)
         assertEquals(EventType.STATUS_CHANGE, result.type)
-        assertEquals(1700000000L, result.timestamp)
-        assertTrue(result.payload.contains("status"))
+        assertEquals("""{"key":"value"}""", result.payload)
+        assertEquals(1000L, result.timestamp)
     }
 
     @Test
-    fun `toDomain handles unknown event type by defaulting to HEARTBEAT`() {
+    fun `toDomain maps empty payload to empty JSON object string`() {
         val dto =
             AgentEventDto(
                 id = "evt-2",
                 agentId = "agent-1",
-                type = "UNKNOWN_TYPE",
-                timestamp = 0L,
+                type = "HEARTBEAT",
+                payload = JsonObject(emptyMap()),
+                timestamp = 2000L,
+            )
+
+        val result = mapper.toDomain(dto)
+
+        assertEquals("{}", result.payload)
+    }
+
+    @Test
+    fun `toDomain handles unknown EventType by defaulting to HEARTBEAT`() {
+        val dto =
+            AgentEventDto(
+                id = "evt-3",
+                agentId = "agent-1",
+                type = "BOGUS",
+                payload = JsonObject(emptyMap()),
+                timestamp = 3000L,
             )
 
         val result = mapper.toDomain(dto)
@@ -49,61 +68,25 @@ class AgentEventMapperTest {
     fun `toDomain handles case-insensitive type parsing`() {
         val dto =
             AgentEventDto(
-                id = "evt-3",
-                agentId = "agent-1",
-                type = "pipeline_started",
-                timestamp = 0L,
-            )
-
-        val result = mapper.toDomain(dto)
-
-        assertEquals(EventType.PIPELINE_STARTED, result.type)
-    }
-
-    @Test
-    fun `toDomain serializes payload map to JSON string`() {
-        val dto =
-            AgentEventDto(
                 id = "evt-4",
                 agentId = "agent-1",
-                type = "ERROR",
-                payload =
-                    mapOf(
-                        "message" to JsonPrimitive("Something failed"),
-                        "code" to JsonPrimitive(500),
-                    ),
-                timestamp = 0L,
+                type = "error",
+                payload = JsonObject(emptyMap()),
+                timestamp = 4000L,
             )
 
         val result = mapper.toDomain(dto)
 
-        assertTrue(result.payload.contains("Something failed"))
-        assertTrue(result.payload.contains("500"))
-    }
-
-    @Test
-    fun `toDomain handles empty payload map`() {
-        val dto =
-            AgentEventDto(
-                id = "evt-5",
-                agentId = "agent-1",
-                type = "HEARTBEAT",
-                payload = emptyMap(),
-                timestamp = 0L,
-            )
-
-        val result = mapper.toDomain(dto)
-
-        assertEquals("{}", result.payload)
+        assertEquals(EventType.ERROR, result.type)
     }
 
     @Test
     fun `toDomain list variant maps all elements`() {
         val dtos =
             listOf(
-                AgentEventDto("e1", "a1", "HEARTBEAT", emptyMap(), 100L),
-                AgentEventDto("e2", "a1", "ERROR", emptyMap(), 200L),
-                AgentEventDto("e3", "a2", "STATUS_CHANGE", emptyMap(), 300L),
+                AgentEventDto("e1", "a1", "HEARTBEAT", JsonObject(emptyMap()), 100L),
+                AgentEventDto("e2", "a2", "ERROR", JsonObject(emptyMap()), 200L),
+                AgentEventDto("e3", "a3", "STATUS_CHANGE", JsonObject(emptyMap()), 300L),
             )
 
         val results = mapper.toDomain(dtos)
@@ -118,5 +101,73 @@ class AgentEventMapperTest {
     fun `toDomain list variant maps empty list`() {
         val results = mapper.toDomain(emptyList())
         assertTrue(results.isEmpty())
+    }
+
+    @Test
+    fun `toDto maps domain AgentEvent to DTO correctly`() {
+        val domain =
+            AgentEvent(
+                id = "evt-1",
+                agentId = "agent-1",
+                type = EventType.STATUS_CHANGE,
+                payload = """{"k":"v"}""",
+                timestamp = 1000L,
+            )
+
+        val result = mapper.toDto(domain)
+
+        assertEquals("evt-1", result.id)
+        assertEquals("agent-1", result.agentId)
+        assertEquals("STATUS_CHANGE", result.type)
+        assertEquals(JsonObject(mapOf("k" to JsonPrimitive("v"))), result.payload)
+        assertEquals(1000L, result.timestamp)
+    }
+
+    @Test
+    fun `toDto maps invalid JSON payload to empty JsonObject`() {
+        val domain =
+            AgentEvent(
+                id = "evt-2",
+                agentId = "agent-1",
+                type = EventType.ERROR,
+                payload = "not json",
+                timestamp = 2000L,
+            )
+
+        val result = mapper.toDto(domain)
+
+        assertEquals(JsonObject(emptyMap()), result.payload)
+    }
+
+    @Test
+    fun `toDto maps empty string payload to empty JsonObject`() {
+        val domain =
+            AgentEvent(
+                id = "evt-3",
+                agentId = "agent-1",
+                type = EventType.HEARTBEAT,
+                payload = "",
+                timestamp = 3000L,
+            )
+
+        val result = mapper.toDto(domain)
+
+        assertEquals(JsonObject(emptyMap()), result.payload)
+    }
+
+    @Test
+    fun `toDto round-trips correctly`() {
+        val originalDto =
+            AgentEventDto(
+                id = "rt",
+                agentId = "a1",
+                type = "PIPELINE_STARTED",
+                payload = JsonObject(mapOf("pipeline" to JsonPrimitive("build"))),
+                timestamp = 999L,
+            )
+
+        val roundTripped = mapper.toDto(mapper.toDomain(originalDto))
+
+        assertEquals(originalDto, roundTripped)
     }
 }
