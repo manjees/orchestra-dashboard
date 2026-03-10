@@ -2,86 +2,118 @@ package com.orchestradashboard.shared.data.repository
 
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.mapper.AgentMapper
-import com.orchestradashboard.shared.data.network.FakeDashboardApiClient
 import com.orchestradashboard.shared.domain.model.Agent
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class AgentRepositoryImplTest {
-    private val fakeApi = FakeDashboardApiClient()
-    private val mapper = AgentMapper()
-    private val repository = AgentRepositoryImpl(fakeApi, mapper, pollingIntervalMs = 50L)
+    private val agentMapper = AgentMapper()
+
+    private fun createFakeClient() = FakeDashboardApiClient(pollingIntervalMs = 5000L)
 
     private val sampleAgentDto =
         AgentDto(
             id = "agent-1",
-            name = "Worker One",
+            name = "Alpha",
             type = "WORKER",
             status = "RUNNING",
-            lastHeartbeat = 1700000000L,
+            lastHeartbeat = 1000L,
+            metadata = mapOf("version" to "1.0"),
         )
 
     @Test
-    fun `getAgent returns Result success with mapped domain model on success`() =
+    fun `getAgent returns success with mapped domain model`() =
         runTest {
-            fakeApi.agentResponse = sampleAgentDto
+            val fakeClient = createFakeClient()
+            fakeClient.agents = listOf(sampleAgentDto)
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
 
-            val result = repository.getAgent("agent-1")
+            val result = repo.getAgent("agent-1")
 
             assertTrue(result.isSuccess)
-            assertEquals("agent-1", result.getOrThrow().id)
-            assertEquals("Worker One", result.getOrThrow().name)
-            assertEquals(Agent.AgentType.WORKER, result.getOrThrow().type)
+            val agent = result.getOrThrow()
+            assertEquals("agent-1", agent.id)
+            assertEquals("Alpha", agent.name)
+            assertEquals(Agent.AgentType.WORKER, agent.type)
+            assertEquals(Agent.AgentStatus.RUNNING, agent.status)
         }
 
     @Test
-    fun `getAgent returns Result failure on network error`() =
+    fun `getAgent returns failure on network error`() =
         runTest {
-            fakeApi.errorToThrow = RuntimeException("Network error")
+            val fakeClient = createFakeClient()
+            fakeClient.shouldFail = true
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
 
-            val result = repository.getAgent("agent-1")
+            val result = repo.getAgent("agent-1")
 
             assertTrue(result.isFailure)
-            assertEquals("Network error", result.exceptionOrNull()?.message)
         }
 
     @Test
-    fun `observeAgents emits agent list from API`() =
+    fun `observeAgents emits agent list`() =
         runTest {
-            fakeApi.agentsResponse = listOf(sampleAgentDto)
+            val fakeClient = createFakeClient()
+            fakeClient.agents = listOf(sampleAgentDto)
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
 
-            val agents = repository.observeAgents().first()
+            val result = repo.observeAgents().first()
 
-            assertEquals(1, agents.size)
-            assertEquals("agent-1", agents[0].id)
+            assertEquals(1, result.size)
+            assertEquals("agent-1", result[0].id)
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `observeAgents emits periodically`() =
         runTest {
-            fakeApi.agentsResponse = listOf(sampleAgentDto)
+            val fakeClient = FakeDashboardApiClient(pollingIntervalMs = 1000L)
+            fakeClient.agents = listOf(sampleAgentDto)
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
 
-            val emissions = repository.observeAgents().take(3).toList()
+            val emissions = mutableListOf<List<Agent>>()
+            val job =
+                launch {
+                    repo.observeAgents().take(3).toList(emissions)
+                }
+            advanceTimeBy(3000L)
+            job.join()
 
             assertEquals(3, emissions.size)
-            assertTrue(fakeApi.getAgentsCallCount >= 3)
         }
 
     @Test
-    fun `getAgentsByStatus filters correctly from API`() =
+    fun `observeAgents emits empty list when no agents`() =
         runTest {
-            fakeApi.agentsResponse =
+            val fakeClient = createFakeClient()
+            fakeClient.agents = emptyList()
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
+
+            val result = repo.observeAgents().first()
+
+            assertTrue(result.isEmpty())
+        }
+
+    @Test
+    fun `getAgentsByStatus filters correctly`() =
+        runTest {
+            val fakeClient = createFakeClient()
+            fakeClient.agents =
                 listOf(
                     sampleAgentDto,
                     AgentDto("agent-2", "Idle Agent", "WORKER", "IDLE", 0L),
                 )
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
 
-            val result = repository.getAgentsByStatus(Agent.AgentStatus.RUNNING)
+            val result = repo.getAgentsByStatus(Agent.AgentStatus.RUNNING)
 
             assertTrue(result.isSuccess)
             assertEquals(1, result.getOrThrow().size)
@@ -89,59 +121,66 @@ class AgentRepositoryImplTest {
         }
 
     @Test
-    fun `registerAgent returns Result success with mapped domain model`() =
+    fun `registerAgent returns success with mapped domain model`() =
         runTest {
-            fakeApi.registerResponse = sampleAgentDto
+            val fakeClient = createFakeClient()
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
             val agent =
                 Agent(
                     id = "agent-1",
-                    name = "Worker One",
+                    name = "Alpha",
                     type = Agent.AgentType.WORKER,
                     status = Agent.AgentStatus.RUNNING,
-                    lastHeartbeat = 1700000000L,
+                    lastHeartbeat = 1000L,
+                    metadata = mapOf("version" to "1.0"),
                 )
 
-            val result = repository.registerAgent(agent)
+            val result = repo.registerAgent(agent)
 
             assertTrue(result.isSuccess)
             assertEquals("agent-1", result.getOrThrow().id)
         }
 
     @Test
-    fun `registerAgent returns Result failure on network error`() =
+    fun `registerAgent returns failure on network error`() =
         runTest {
-            fakeApi.errorToThrow = RuntimeException("Network error")
+            val fakeClient = createFakeClient()
+            fakeClient.shouldFail = true
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
             val agent =
                 Agent(
                     id = "agent-1",
-                    name = "Worker One",
+                    name = "Alpha",
                     type = Agent.AgentType.WORKER,
                     status = Agent.AgentStatus.RUNNING,
                     lastHeartbeat = 0L,
                 )
 
-            val result = repository.registerAgent(agent)
+            val result = repo.registerAgent(agent)
 
             assertTrue(result.isFailure)
-            assertEquals("Network error", result.exceptionOrNull()?.message)
         }
 
     @Test
-    fun `deregisterAgent returns Result success`() =
+    fun `deregisterAgent returns success`() =
         runTest {
-            val result = repository.deregisterAgent("agent-1")
+            val fakeClient = createFakeClient()
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
+
+            val result = repo.deregisterAgent("agent-1")
 
             assertTrue(result.isSuccess)
         }
 
     @Test
-    fun `deregisterAgent returns Result failure on network error`() =
+    fun `deregisterAgent returns failure on network error`() =
         runTest {
-            fakeApi.errorToThrow = RuntimeException("Network error")
+            val fakeClient = createFakeClient()
+            fakeClient.shouldFail = true
+            val repo = AgentRepositoryImpl(fakeClient, agentMapper)
 
-            val result = repository.deregisterAgent("agent-1")
+            val result = repo.deregisterAgent("agent-1")
 
             assertTrue(result.isFailure)
-            assertEquals("Network error", result.exceptionOrNull()?.message)
         }
 }

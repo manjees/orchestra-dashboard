@@ -6,24 +6,17 @@ import com.orchestradashboard.shared.data.network.DashboardApi
 import com.orchestradashboard.shared.domain.model.Agent
 import com.orchestradashboard.shared.domain.model.Agent.AgentStatus
 import com.orchestradashboard.shared.domain.repository.AgentRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 
 class AgentRepositoryImpl(
     private val api: DashboardApi,
     private val agentMapper: AgentMapper,
-    private val pollingIntervalMs: Long = 5_000L,
 ) : AgentRepository {
     override fun observeAgents(): Flow<List<Agent>> =
-        flow {
-            while (true) {
-                val agents = api.getAgents()
-                emit(agentMapper.toDomain(agents))
-                delay(pollingIntervalMs)
-            }
-        }
+        api.observeAgents()
+            .map { dtos -> agentMapper.toDomain(dtos) }
 
     override suspend fun getAgent(agentId: String): Result<Agent> =
         runCatching {
