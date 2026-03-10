@@ -6,6 +6,7 @@ import com.orchestradashboard.server.model.AgentEventResponse
 import com.orchestradashboard.server.model.CreateEventRequest
 import com.orchestradashboard.server.repository.AgentEventJpaRepository
 import com.orchestradashboard.server.repository.AgentJpaRepository
+import com.orchestradashboard.server.websocket.AgentEventWebSocketHandler
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import java.util.UUID
@@ -15,6 +16,7 @@ class EventService(
     private val eventRepository: AgentEventJpaRepository,
     private val agentRepository: AgentJpaRepository,
     private val eventMapper: AgentEventMapper,
+    private val webSocketHandler: AgentEventWebSocketHandler,
 ) {
     companion object {
         const val DEFAULT_LIMIT = 20
@@ -48,6 +50,8 @@ class EventService(
                 payload = eventMapper.serializePayload(request.payload),
                 timestamp = System.currentTimeMillis(),
             )
-        return eventMapper.toResponse(eventRepository.save(entity))
+        val response = eventMapper.toResponse(eventRepository.save(entity))
+        webSocketHandler.broadcastEvent(response)
+        return response
     }
 }

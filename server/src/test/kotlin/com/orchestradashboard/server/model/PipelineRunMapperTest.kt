@@ -93,8 +93,8 @@ class PipelineRunMapperTest {
     fun `serializeSteps round-trips through deserializeSteps`() {
         val steps =
             listOf(
-                PipelineStepResponse(name = "Build", status = "PASSED", detail = "OK", elapsedMs = 500L),
-                PipelineStepResponse(name = "Test", status = "RUNNING", detail = "", elapsedMs = 0L),
+                PipelineStepRequest(name = "Build", status = "PASSED", detail = "OK", elapsedMs = 500L),
+                PipelineStepRequest(name = "Test", status = "RUNNING", detail = "", elapsedMs = 0L),
             )
 
         val json = mapper.serializeSteps(steps)

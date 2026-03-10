@@ -32,5 +32,9 @@ class PipelineRunMapper {
             }
         }
 
+    fun toResponseList(entities: List<PipelineRunEntity>): List<PipelineRunResponse> = entities.map { toResponse(it) }
+
+    fun deserializeSteps(json: String): List<PipelineStepResponse> = parseSteps(json)
+
     fun serializeSteps(steps: List<PipelineStepRequest>): String = objectMapper.writeValueAsString(steps)
 }
