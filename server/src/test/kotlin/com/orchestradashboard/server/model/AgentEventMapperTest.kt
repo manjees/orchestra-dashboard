@@ -22,7 +22,7 @@ class AgentEventMapperTest {
         assertEquals("evt-1", response.id)
         assertEquals("agent-1", response.agentId)
         assertEquals("STATUS_CHANGE", response.type)
-        assertEquals("""{"from":"IDLE","to":"RUNNING"}""", response.payload)
+        assertEquals(mapOf("from" to "IDLE", "to" to "RUNNING"), response.payload)
         assertEquals(1700000000L, response.timestamp)
     }
 

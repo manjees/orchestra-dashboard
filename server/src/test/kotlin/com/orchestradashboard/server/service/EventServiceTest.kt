@@ -3,9 +3,11 @@ package com.orchestradashboard.server.service
 import com.orchestradashboard.server.model.AgentEntity
 import com.orchestradashboard.server.model.AgentEventEntity
 import com.orchestradashboard.server.model.AgentEventMapper
+import com.orchestradashboard.server.model.AgentEventResponse
 import com.orchestradashboard.server.model.CreateEventRequest
 import com.orchestradashboard.server.repository.AgentEventJpaRepository
 import com.orchestradashboard.server.repository.AgentJpaRepository
+import com.orchestradashboard.server.websocket.AgentEventWebSocketHandler
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -22,7 +24,8 @@ class EventServiceTest {
     private val eventRepository: AgentEventJpaRepository = mock()
     private val agentRepository: AgentJpaRepository = mock()
     private val eventMapper = AgentEventMapper()
-    private val service = EventService(eventRepository, agentRepository, eventMapper)
+    private val webSocketHandler: AgentEventWebSocketHandler = mock()
+    private val service = EventService(eventRepository, agentRepository, eventMapper, webSocketHandler)
 
     private val sampleEntity =
         AgentEventEntity(
@@ -125,5 +128,20 @@ class EventServiceTest {
         verify(eventRepository).save(captor.capture())
         assertTrue(captor.firstValue.id.isNotBlank())
         assertTrue(captor.firstValue.timestamp > 0)
+    }
+
+    @Test
+    fun `createEvent broadcasts event via WebSocket after save`() {
+        val agent = AgentEntity(id = "agent-1", name = "Alpha", type = "WORKER", status = "RUNNING", lastHeartbeat = 100L)
+        whenever(agentRepository.findById("agent-1")).thenReturn(Optional.of(agent))
+        whenever(eventRepository.save(any<AgentEventEntity>())).thenAnswer { it.arguments[0] as AgentEventEntity }
+
+        val request = CreateEventRequest(agentId = "agent-1", type = "STATUS_CHANGE", payload = mapOf("from" to "IDLE"))
+        service.createEvent(request)
+
+        val captor = argumentCaptor<AgentEventResponse>()
+        verify(webSocketHandler).broadcastEvent(captor.capture())
+        assertEquals("agent-1", captor.firstValue.agentId)
+        assertEquals("STATUS_CHANGE", captor.firstValue.type)
     }
 }
