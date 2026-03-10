@@ -33,26 +33,28 @@ class EventControllerTest {
             id = "evt-1",
             agentId = "agent-1",
             type = "STATUS_CHANGE",
-            payload = """{"from":"IDLE","to":"RUNNING"}""",
+            payload = mapOf("from" to "IDLE", "to" to "RUNNING"),
             timestamp = 1700000000L,
         )
 
     @Test
-    fun `GET api-v1-events returns 200 with event list`() {
-        whenever(eventService.getRecentEvents(null, 50)).thenReturn(listOf(sampleResponse))
+    fun `GET api-v1-events returns 200 with recent events`() {
+        whenever(eventService.getRecentEvents(null)).thenReturn(listOf(sampleResponse))
 
         mockMvc.get("/api/v1/events")
             .andExpect {
                 status { isOk() }
                 content { contentType(MediaType.APPLICATION_JSON) }
                 jsonPath("$[0].id") { value("evt-1") }
+                jsonPath("$[0].agent_id") { value("agent-1") }
                 jsonPath("$[0].type") { value("STATUS_CHANGE") }
+                jsonPath("$[0].timestamp") { value(1700000000) }
             }
     }
 
     @Test
-    fun `GET api-v1-events with agentId param returns filtered list`() {
-        whenever(eventService.getRecentEvents("agent-1", 50)).thenReturn(listOf(sampleResponse))
+    fun `GET api-v1-events with agentId param filters by agent`() {
+        whenever(eventService.getEventsByAgentId("agent-1", null)).thenReturn(listOf(sampleResponse))
 
         mockMvc.get("/api/v1/events?agentId=agent-1")
             .andExpect {
@@ -62,10 +64,20 @@ class EventControllerTest {
     }
 
     @Test
-    fun `GET api-v1-events with limit param respects limit`() {
-        whenever(eventService.getRecentEvents(null, 10)).thenReturn(listOf(sampleResponse))
+    fun `GET api-v1-events with limit param caps results`() {
+        whenever(eventService.getRecentEvents(5)).thenReturn(emptyList())
 
-        mockMvc.get("/api/v1/events?limit=10")
+        mockMvc.get("/api/v1/events?limit=5")
+            .andExpect {
+                status { isOk() }
+            }
+    }
+
+    @Test
+    fun `GET api-v1-events with limit exceeding 100 is capped`() {
+        whenever(eventService.getRecentEvents(200)).thenReturn(emptyList())
+
+        mockMvc.get("/api/v1/events?limit=200")
             .andExpect {
                 status { isOk() }
             }
@@ -73,7 +85,7 @@ class EventControllerTest {
 
     @Test
     fun `POST api-v1-events returns 201 on creation`() {
-        val request = CreateEventRequest(agentId = "agent-1", type = "STATUS_CHANGE", payload = "{}")
+        val request = CreateEventRequest(agentId = "agent-1", type = "STATUS_CHANGE", payload = mapOf("from" to "IDLE"))
         whenever(eventService.createEvent(request)).thenReturn(sampleResponse)
 
         mockMvc.post("/api/v1/events") {
@@ -82,12 +94,13 @@ class EventControllerTest {
         }.andExpect {
             status { isCreated() }
             jsonPath("$.id") { value("evt-1") }
+            jsonPath("$.agent_id") { value("agent-1") }
         }
     }
 
     @Test
     fun `POST api-v1-events returns 404 when agent not found`() {
-        val request = CreateEventRequest(agentId = "missing", type = "ERROR")
+        val request = CreateEventRequest(agentId = "invalid", type = "STATUS_CHANGE")
         whenever(eventService.createEvent(request)).thenThrow(NoSuchElementException("Agent not found"))
 
         mockMvc.post("/api/v1/events") {

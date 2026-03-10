@@ -21,8 +21,16 @@ class EventController(
     @GetMapping
     fun getEvents(
         @RequestParam agentId: String?,
-        @RequestParam(defaultValue = "50") limit: Int,
-    ): ResponseEntity<List<AgentEventResponse>> = ResponseEntity.ok(eventService.getRecentEvents(agentId, limit.coerceAtMost(100)))
+        @RequestParam limit: Int?,
+    ): ResponseEntity<List<AgentEventResponse>> {
+        val events =
+            if (agentId != null) {
+                eventService.getEventsByAgentId(agentId, limit)
+            } else {
+                eventService.getRecentEvents(limit)
+            }
+        return ResponseEntity.ok(events)
+    }
 
     @PostMapping
     fun createEvent(
