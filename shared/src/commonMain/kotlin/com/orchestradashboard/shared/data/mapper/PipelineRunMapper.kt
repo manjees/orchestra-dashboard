@@ -14,7 +14,7 @@ class PipelineRunMapper {
             agentId = dto.agentId,
             pipelineName = dto.pipelineName,
             status = parsePipelineRunStatus(dto.status),
-            steps = dto.steps.map(::mapStep),
+            steps = dto.steps.map(::stepToDomain),
             startedAt = dto.startedAt,
             finishedAt = dto.finishedAt,
             triggerInfo = dto.triggerInfo,
@@ -23,12 +23,36 @@ class PipelineRunMapper {
 
     fun toDomain(dtos: List<PipelineRunDto>): List<PipelineRun> = dtos.map(::toDomain)
 
-    private fun mapStep(dto: PipelineStepDto): PipelineStep {
+    fun toDto(domain: PipelineRun): PipelineRunDto {
+        return PipelineRunDto(
+            id = domain.id,
+            agentId = domain.agentId,
+            pipelineName = domain.pipelineName,
+            status = domain.status.name,
+            steps = domain.steps.map(::stepToDto),
+            startedAt = domain.startedAt,
+            finishedAt = domain.finishedAt,
+            triggerInfo = domain.triggerInfo,
+        )
+    }
+
+    fun toDto(domains: List<PipelineRun>): List<PipelineRunDto> = domains.map(::toDto)
+
+    private fun stepToDomain(dto: PipelineStepDto): PipelineStep {
         return PipelineStep(
             name = dto.name,
             status = parseStepStatus(dto.status),
             detail = dto.detail,
             elapsedMs = dto.elapsedMs,
+        )
+    }
+
+    private fun stepToDto(domain: PipelineStep): PipelineStepDto {
+        return PipelineStepDto(
+            name = domain.name,
+            status = domain.status.name,
+            detail = domain.detail,
+            elapsedMs = domain.elapsedMs,
         )
     }
 

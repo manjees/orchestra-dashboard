@@ -168,4 +168,77 @@ class AgentMapperTest {
         val agent = mapper.toDomain(dto)
         assertFalse(agent.isHealthy)
     }
+
+    @Test
+    fun `toDto maps domain Agent to DTO correctly`() {
+        val agent =
+            Agent(
+                id = "a1",
+                name = "Bot",
+                type = Agent.AgentType.ORCHESTRATOR,
+                status = Agent.AgentStatus.RUNNING,
+                lastHeartbeat = 100L,
+                metadata = mapOf("k" to "v"),
+            )
+
+        val result = mapper.toDto(agent)
+
+        assertEquals("a1", result.id)
+        assertEquals("Bot", result.name)
+        assertEquals("ORCHESTRATOR", result.type)
+        assertEquals("RUNNING", result.status)
+        assertEquals(100L, result.lastHeartbeat)
+        assertEquals(mapOf("k" to "v"), result.metadata)
+    }
+
+    @Test
+    fun `toDto maps empty metadata`() {
+        val agent =
+            Agent(
+                id = "a2",
+                name = "Empty",
+                type = Agent.AgentType.WORKER,
+                status = Agent.AgentStatus.IDLE,
+                lastHeartbeat = 0L,
+                metadata = emptyMap(),
+            )
+
+        val result = mapper.toDto(agent)
+
+        assertTrue(result.metadata.isEmpty())
+    }
+
+    @Test
+    fun `toDto list variant maps all elements`() {
+        val agents =
+            listOf(
+                Agent("1", "A", Agent.AgentType.WORKER, Agent.AgentStatus.RUNNING, 100L),
+                Agent("2", "B", Agent.AgentType.PLANNER, Agent.AgentStatus.IDLE, 200L),
+                Agent("3", "C", Agent.AgentType.REVIEWER, Agent.AgentStatus.ERROR, 300L),
+            )
+
+        val results = mapper.toDto(agents)
+
+        assertEquals(3, results.size)
+        assertEquals("1", results[0].id)
+        assertEquals("2", results[1].id)
+        assertEquals("3", results[2].id)
+    }
+
+    @Test
+    fun `toDomain then toDto round-trips correctly`() {
+        val originalDto =
+            AgentDto(
+                id = "rt",
+                name = "Round Trip",
+                type = "ORCHESTRATOR",
+                status = "RUNNING",
+                lastHeartbeat = 999L,
+                metadata = mapOf("env" to "prod"),
+            )
+
+        val roundTripped = mapper.toDto(mapper.toDomain(originalDto))
+
+        assertEquals(originalDto, roundTripped)
+    }
 }
