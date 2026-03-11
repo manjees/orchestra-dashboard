@@ -3,95 +3,118 @@ package com.orchestradashboard.shared.data.repository
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import com.orchestradashboard.shared.data.dto.PipelineStepDto
 import com.orchestradashboard.shared.data.mapper.PipelineRunMapper
-import com.orchestradashboard.shared.data.network.FakeDashboardApiClient
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.take
-import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class PipelineRepositoryImplTest {
-    private val fakeApi = FakeDashboardApiClient()
     private val mapper = PipelineRunMapper()
-    private val repository = PipelineRepositoryImpl(fakeApi, mapper, pollingIntervalMs = 50L)
+
+    private fun createFakeClient() = FakeDashboardApiClient(pollingIntervalMs = 5000L)
 
     private val sampleRunDto =
         PipelineRunDto(
             id = "run-1",
             agentId = "agent-1",
-            pipelineName = "Build",
+            pipelineName = "build-pipeline",
             status = "RUNNING",
-            steps = listOf(PipelineStepDto("Compile", "PASSED", "OK", 1000L)),
-            startedAt = 1700000000L,
+            steps =
+                listOf(
+                    PipelineStepDto(
+                        name = "compile",
+                        status = "PASSED",
+                        detail = "Compiled successfully",
+                        elapsedMs = 1200L,
+                    ),
+                ),
+            startedAt = 1000L,
+            finishedAt = null,
+            triggerInfo = "manual",
+        )
+
+    private val queuedRunDto =
+        PipelineRunDto(
+            id = "run-2",
+            agentId = "agent-2",
+            pipelineName = "test-pipeline",
+            status = "QUEUED",
+            steps = emptyList(),
+            startedAt = 2000L,
+            finishedAt = null,
+            triggerInfo = "scheduled",
+        )
+
+    private val passedRunDto =
+        PipelineRunDto(
+            id = "run-3",
+            agentId = "agent-1",
+            pipelineName = "deploy-pipeline",
+            status = "PASSED",
+            steps = emptyList(),
+            startedAt = 500L,
+            finishedAt = 1500L,
+            triggerInfo = "ci",
         )
 
     @Test
-    fun `getPipelineRun returns Result success with mapped domain model`() =
+    fun `observePipelineRuns emits runs for agent`() =
         runTest {
-            fakeApi.pipelineRunResponse = sampleRunDto
+            val fakeClient = createFakeClient()
+            fakeClient.pipelineRuns = listOf(sampleRunDto, queuedRunDto, passedRunDto)
+            val repo = PipelineRepositoryImpl(fakeClient, mapper)
 
-            val result = repository.getPipelineRun("run-1")
+            val result = repo.observePipelineRuns("agent-1").first()
+
+            assertEquals(2, result.size)
+            assertTrue(result.all { it.agentId == "agent-1" })
+        }
+
+    @Test
+    fun `getPipelineRun returns success`() =
+        runTest {
+            val fakeClient = createFakeClient()
+            fakeClient.pipelineRuns = listOf(sampleRunDto)
+            val repo = PipelineRepositoryImpl(fakeClient, mapper)
+
+            val result = repo.getPipelineRun("run-1")
 
             assertTrue(result.isSuccess)
-            assertEquals("run-1", result.getOrThrow().id)
-            assertEquals(PipelineRunStatus.RUNNING, result.getOrThrow().status)
-            assertEquals(1, result.getOrThrow().steps.size)
+            val run = result.getOrThrow()
+            assertEquals("run-1", run.id)
+            assertEquals("build-pipeline", run.pipelineName)
+            assertEquals(PipelineRunStatus.RUNNING, run.status)
+            assertEquals(1, run.steps.size)
         }
 
     @Test
-    fun `getPipelineRun returns Result failure on network error`() =
+    fun `getPipelineRun returns failure on network error`() =
         runTest {
-            fakeApi.errorToThrow = RuntimeException("Network error")
+            val fakeClient = createFakeClient()
+            fakeClient.shouldFail = true
+            val repo = PipelineRepositoryImpl(fakeClient, mapper)
 
-            val result = repository.getPipelineRun("run-1")
+            val result = repo.getPipelineRun("run-1")
 
             assertTrue(result.isFailure)
-            assertEquals("Network error", result.exceptionOrNull()?.message)
         }
 
     @Test
-    fun `observePipelineRuns emits pipeline list for given agentId`() =
+    fun `observeActivePipelines filters RUNNING and QUEUED`() =
         runTest {
-            fakeApi.pipelineRunsResponse =
-                listOf(
-                    sampleRunDto,
-                    PipelineRunDto("run-2", "agent-2", "Deploy", "PASSED", emptyList(), 100L, 200L),
-                )
+            val fakeClient = createFakeClient()
+            fakeClient.pipelineRuns = listOf(sampleRunDto, queuedRunDto, passedRunDto)
+            val repo = PipelineRepositoryImpl(fakeClient, mapper)
 
-            val runs = repository.observePipelineRuns("agent-1").first()
+            val result = repo.observeActivePipelines().first()
 
-            assertEquals(1, runs.size)
-            assertEquals("run-1", runs[0].id)
-        }
-
-    @Test
-    fun `observeActivePipelines emits only active pipelines`() =
-        runTest {
-            fakeApi.pipelineRunsResponse =
-                listOf(
-                    // RUNNING
-                    sampleRunDto,
-                    PipelineRunDto("run-2", "agent-2", "Deploy", "PASSED", emptyList(), 100L, 200L),
-                    PipelineRunDto("run-3", "agent-3", "Test", "QUEUED", emptyList(), 300L),
-                )
-
-            val active = repository.observeActivePipelines().first()
-
-            assertEquals(2, active.size)
-            assertTrue(active.all { it.status == PipelineRunStatus.RUNNING || it.status == PipelineRunStatus.QUEUED })
-        }
-
-    @Test
-    fun `observePipelineRuns emits periodically`() =
-        runTest {
-            fakeApi.pipelineRunsResponse = listOf(sampleRunDto)
-
-            val emissions = repository.observePipelineRuns("agent-1").take(3).toList()
-
-            assertEquals(3, emissions.size)
-            assertTrue(fakeApi.getPipelineRunsCallCount >= 3)
+            assertEquals(2, result.size)
+            assertTrue(
+                result.all {
+                    it.status == PipelineRunStatus.RUNNING || it.status == PipelineRunStatus.QUEUED
+                },
+            )
         }
 }

@@ -3,6 +3,9 @@ package com.orchestradashboard.shared.data.network
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 class FakeDashboardApiClient : DashboardApi {
     var agentsResponse: List<AgentDto> = emptyList()
@@ -28,6 +31,15 @@ class FakeDashboardApiClient : DashboardApi {
     private fun maybeThrow() {
         errorToThrow?.let { throw it }
     }
+
+    override fun observeAgents(): Flow<List<AgentDto>> =
+        flow {
+            while (true) {
+                maybeThrow()
+                emit(getAgents())
+                delay(50L)
+            }
+        }
 
     override suspend fun getAgents(): List<AgentDto> {
         getAgentsCallCount++
@@ -71,6 +83,24 @@ class FakeDashboardApiClient : DashboardApi {
             }
         return filtered.take(limit)
     }
+
+    override fun observePipelineRuns(agentId: String?): Flow<List<PipelineRunDto>> =
+        flow {
+            while (true) {
+                maybeThrow()
+                emit(getPipelineRuns(agentId))
+                delay(50L)
+            }
+        }
+
+    override fun observeEvents(agentId: String): Flow<List<AgentEventDto>> =
+        flow {
+            while (true) {
+                maybeThrow()
+                emit(getRecentEvents(agentId = agentId))
+                delay(50L)
+            }
+        }
 
     override suspend fun registerAgent(agent: AgentDto): AgentDto {
         maybeThrow()

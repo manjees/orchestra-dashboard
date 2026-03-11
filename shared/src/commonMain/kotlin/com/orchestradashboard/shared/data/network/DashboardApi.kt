@@ -3,8 +3,14 @@ package com.orchestradashboard.shared.data.network
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
+import kotlinx.coroutines.flow.Flow
 
+/**
+ * Contract for the Dashboard API surface consumed by repository implementations.
+ */
 interface DashboardApi {
+    fun observeAgents(): Flow<List<AgentDto>>
+
     suspend fun getAgents(): List<AgentDto>
 
     suspend fun getAgent(agentId: String): AgentDto
@@ -17,6 +23,10 @@ interface DashboardApi {
         agentId: String? = null,
         limit: Int = 50,
     ): List<AgentEventDto>
+
+    fun observePipelineRuns(agentId: String? = null): Flow<List<PipelineRunDto>>
+
+    fun observeEvents(agentId: String): Flow<List<AgentEventDto>>
 
     suspend fun registerAgent(agent: AgentDto): AgentDto
 

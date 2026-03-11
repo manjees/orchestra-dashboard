@@ -26,4 +26,5 @@ data class PipelineRunDto(
 @Serializable
 data class PipelineRunPageDto(
     val content: List<PipelineRunDto>,
+    val totalElements: Int = 0,
 )
