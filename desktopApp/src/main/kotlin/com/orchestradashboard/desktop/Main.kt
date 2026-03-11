@@ -1,12 +1,12 @@
 package com.orchestradashboard.desktop
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.orchestradashboard.desktop.di.AppContainer
 import com.orchestradashboard.desktop.ui.screen.DashboardScreen
+import com.orchestradashboard.desktop.ui.theme.DashboardTheme
 
 fun main() =
     application {
@@ -20,7 +20,7 @@ fun main() =
                 onDispose { viewModel.onCleared() }
             }
 
-            MaterialTheme {
+            DashboardTheme {
                 DashboardScreen(viewModel = viewModel)
             }
         }
