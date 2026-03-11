@@ -4,9 +4,9 @@ import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.MaterialTheme
 import com.orchestradashboard.android.di.AppContainer
 import com.orchestradashboard.android.ui.screen.DashboardScreen
+import com.orchestradashboard.android.ui.theme.DashboardTheme
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 
 class OrchestraApplication : Application()
@@ -22,7 +22,7 @@ class MainActivity : ComponentActivity() {
         viewModel = AppContainer.createDashboardViewModel()
 
         setContent {
-            MaterialTheme {
+            DashboardTheme {
                 DashboardScreen(viewModel = viewModel)
             }
         }

@@ -32,7 +32,7 @@ class DashboardViewModel(
 
     /**
      * Begins real-time observation of the agent fleet.
-     * Safe to call multiple times; subsequent calls are no-ops if already running.
+     * Each call launches a new collection coroutine under the SupervisorJob scope.
      */
     fun startObserving() {
         viewModelScope.launch {
@@ -75,6 +75,11 @@ class DashboardViewModel(
                 onFailure = { e -> _uiState.update { it.copy(error = e.message) } },
             )
         }
+    }
+
+    /** Sets the status filter. Pass null to show all agents. */
+    fun setFilter(status: Agent.AgentStatus?) {
+        _uiState.update { it.copy(filter = status) }
     }
 
     /** Clears the current error state */
