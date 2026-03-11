@@ -10,6 +10,8 @@ object TestAgentFactory {
         type: Agent.AgentType = Agent.AgentType.WORKER,
         status: Agent.AgentStatus = Agent.AgentStatus.RUNNING,
         lastHeartbeat: Long = Clock.System.now().toEpochMilliseconds(),
+        createdAt: Long = Clock.System.now().toEpochMilliseconds(),
+        metadata: Map<String, String> = emptyMap(),
     ): Agent =
         Agent(
             id = id,
@@ -17,6 +19,8 @@ object TestAgentFactory {
             type = type,
             status = status,
             lastHeartbeat = lastHeartbeat,
+            createdAt = createdAt,
+            metadata = metadata,
         )
 
     fun createList(): List<Agent> =

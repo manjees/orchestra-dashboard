@@ -14,6 +14,7 @@ data class AgentDto(
     val type: String,
     val status: String,
     @SerialName("last_heartbeat") val lastHeartbeat: Long,
+    @SerialName("created_at") val createdAt: Long = 0L,
     val metadata: Map<String, String> = emptyMap(),
 )
 

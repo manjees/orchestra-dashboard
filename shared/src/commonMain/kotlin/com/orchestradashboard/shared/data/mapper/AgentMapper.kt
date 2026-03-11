@@ -11,6 +11,7 @@ class AgentMapper {
             type = parseAgentType(dto.type),
             status = parseAgentStatus(dto.status),
             lastHeartbeat = dto.lastHeartbeat,
+            createdAt = dto.createdAt,
             metadata = dto.metadata,
         )
     }
@@ -24,6 +25,7 @@ class AgentMapper {
             type = domain.type.name,
             status = domain.status.name,
             lastHeartbeat = domain.lastHeartbeat,
+            createdAt = domain.createdAt,
             metadata = domain.metadata,
         )
     }

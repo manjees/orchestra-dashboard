@@ -8,6 +8,7 @@ package com.orchestradashboard.shared.domain.model
  * @param type The role the agent plays in the pipeline
  * @param status Current operational status of the agent
  * @param lastHeartbeat Unix epoch milliseconds of the last heartbeat received
+ * @param createdAt Unix epoch milliseconds when the agent was first registered
  * @param metadata Arbitrary key-value pairs for agent-specific data
  */
 data class Agent(
@@ -16,6 +17,7 @@ data class Agent(
     val type: AgentType,
     val status: AgentStatus,
     val lastHeartbeat: Long,
+    val createdAt: Long = 0L,
     val metadata: Map<String, String> = emptyMap(),
 ) {
     /** Functional role of the agent within the orchestration pipeline */

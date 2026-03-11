@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.orchestradashboard.shared.domain.model.Agent
-import kotlinx.datetime.Clock
+import com.orchestradashboard.shared.ui.util.formatRelativeTime
 
 @Composable
 fun AgentCard(
@@ -66,17 +66,5 @@ fun AgentCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-internal fun formatRelativeTime(epochMs: Long): String {
-    val now = Clock.System.now().toEpochMilliseconds()
-    val diffSeconds = (now - epochMs) / 1000
-    return when {
-        diffSeconds < 0 -> "just now"
-        diffSeconds < 60 -> "${diffSeconds}s ago"
-        diffSeconds < 3600 -> "${diffSeconds / 60}m ago"
-        diffSeconds < 86400 -> "${diffSeconds / 3600}h ago"
-        else -> "${diffSeconds / 86400}d ago"
     }
 }
