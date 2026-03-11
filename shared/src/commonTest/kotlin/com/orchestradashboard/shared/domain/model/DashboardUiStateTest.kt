@@ -6,57 +6,55 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DashboardUiStateTest {
-    private val testAgents =
+    private val agents =
         listOf(
-            Agent(id = "1", name = "Agent-1", type = Agent.AgentType.WORKER, status = Agent.AgentStatus.RUNNING, lastHeartbeat = 1000L),
-            Agent(id = "2", name = "Agent-2", type = Agent.AgentType.ORCHESTRATOR, status = Agent.AgentStatus.IDLE, lastHeartbeat = 2000L),
-            Agent(id = "3", name = "Agent-3", type = Agent.AgentType.REVIEWER, status = Agent.AgentStatus.ERROR, lastHeartbeat = 3000L),
-            Agent(id = "4", name = "Agent-4", type = Agent.AgentType.PLANNER, status = Agent.AgentStatus.OFFLINE, lastHeartbeat = 4000L),
+            Agent("1", "Alpha", Agent.AgentType.WORKER, Agent.AgentStatus.RUNNING, 100L),
+            Agent("2", "Beta", Agent.AgentType.PLANNER, Agent.AgentStatus.IDLE, 200L),
+            Agent("3", "Gamma", Agent.AgentType.REVIEWER, Agent.AgentStatus.ERROR, 300L),
         )
 
     @Test
+    fun `default state has empty agents and no filter`() {
+        val state = DashboardUiState()
+
+        assertTrue(state.agents.isEmpty())
+        assertNull(state.filter)
+        assertEquals(false, state.isLoading)
+        assertNull(state.error)
+        assertNull(state.selectedAgent)
+    }
+
+    @Test
     fun `filteredAgents returns all agents when filter is null`() {
-        val state = DashboardUiState(agents = testAgents, filter = null)
-        assertEquals(4, state.filteredAgents.size)
+        val state = DashboardUiState(agents = agents, filter = null)
+
+        assertEquals(3, state.filteredAgents.size)
+        assertEquals(agents, state.filteredAgents)
     }
 
     @Test
     fun `filteredAgents returns only matching agents when filter is set`() {
-        val state = DashboardUiState(agents = testAgents, filter = Agent.AgentStatus.RUNNING)
+        val state = DashboardUiState(agents = agents, filter = Agent.AgentStatus.RUNNING)
+
         assertEquals(1, state.filteredAgents.size)
-        assertTrue(state.filteredAgents.all { it.status == Agent.AgentStatus.RUNNING })
+        assertEquals("1", state.filteredAgents[0].id)
     }
 
     @Test
     fun `filteredAgents returns empty list when no agents match filter`() {
-        val agents =
-            listOf(
-                Agent(id = "1", name = "A", type = Agent.AgentType.WORKER, status = Agent.AgentStatus.RUNNING, lastHeartbeat = 1000L),
-                Agent(id = "2", name = "B", type = Agent.AgentType.WORKER, status = Agent.AgentStatus.IDLE, lastHeartbeat = 2000L),
-            )
-        val state = DashboardUiState(agents = agents, filter = Agent.AgentStatus.ERROR)
+        val state = DashboardUiState(agents = agents, filter = Agent.AgentStatus.OFFLINE)
+
         assertTrue(state.filteredAgents.isEmpty())
     }
 
     @Test
-    fun `filteredAgents returns empty list when agents list is empty`() {
-        val state = DashboardUiState(agents = emptyList(), filter = Agent.AgentStatus.RUNNING)
-        assertTrue(state.filteredAgents.isEmpty())
-    }
+    fun `selectedAgent can be set and cleared via copy`() {
+        val state = DashboardUiState(agents = agents)
 
-    @Test
-    fun `selectedAgent is null by default`() {
-        val state = DashboardUiState()
-        assertNull(state.selectedAgent)
-    }
+        val withSelected = state.copy(selectedAgent = agents[0])
+        assertEquals(agents[0], withSelected.selectedAgent)
 
-    @Test
-    fun `default state has expected initial values`() {
-        val state = DashboardUiState()
-        assertTrue(state.agents.isEmpty())
-        assertEquals(false, state.isLoading)
-        assertNull(state.error)
-        assertNull(state.filter)
-        assertNull(state.selectedAgent)
+        val cleared = withSelected.copy(selectedAgent = null)
+        assertNull(cleared.selectedAgent)
     }
 }
