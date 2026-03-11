@@ -22,6 +22,9 @@ subprojects {
     tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
         config.setFrom(rootProject.files("config/detekt/detekt.yml"))
         buildUponDefaultConfig = true
+        reports {
+            sarif.required.set(true)
+        }
     }
 
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
