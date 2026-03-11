@@ -29,15 +29,17 @@ class AgentDetailViewModelTest {
 
     private val testAgent = Agent("agent-1", "Alpha", Agent.AgentType.WORKER, Agent.AgentStatus.RUNNING, 100L)
 
-    private val testPipelineRuns = listOf(
-        PipelineRun("run-1", "agent-1", "build", PipelineRunStatus.PASSED, emptyList(), 1000L, 2000L, "manual"),
-        PipelineRun("run-2", "agent-1", "deploy", PipelineRunStatus.RUNNING, emptyList(), 3000L, null, "auto"),
-    )
+    private val testPipelineRuns =
+        listOf(
+            PipelineRun("run-1", "agent-1", "build", PipelineRunStatus.PASSED, emptyList(), 1000L, 2000L, "manual"),
+            PipelineRun("run-2", "agent-1", "deploy", PipelineRunStatus.RUNNING, emptyList(), 3000L, null, "auto"),
+        )
 
-    private val testEvents = listOf(
-        AgentEvent("evt-1", "agent-1", EventType.STATUS_CHANGE, "{}", 1000L),
-        AgentEvent("evt-2", "agent-1", EventType.HEARTBEAT, "{}", 2000L),
-    )
+    private val testEvents =
+        listOf(
+            AgentEvent("evt-1", "agent-1", EventType.STATUS_CHANGE, "{}", 1000L),
+            AgentEvent("evt-2", "agent-1", EventType.HEARTBEAT, "{}", 2000L),
+        )
 
     private lateinit var agentRepository: FakeAgentRepository
     private lateinit var pipelineRepository: FakePipelineRepository
@@ -67,171 +69,183 @@ class AgentDetailViewModelTest {
     // --- Group 1: Initial State ---
 
     @Test
-    fun `initial state has correct defaults`() = runTest {
-        val viewModel = createViewModel()
+    fun `initial state has correct defaults`() =
+        runTest {
+            val viewModel = createViewModel()
 
-        val state = viewModel.uiState.value
-        assertNull(state.agent)
-        assertTrue(state.pipelineRuns.isEmpty())
-        assertTrue(state.events.isEmpty())
-        assertEquals(false, state.isLoading)
-        assertNull(state.error)
-        assertEquals(DetailTab.OVERVIEW, state.selectedTab)
-    }
+            val state = viewModel.uiState.value
+            assertNull(state.agent)
+            assertTrue(state.pipelineRuns.isEmpty())
+            assertTrue(state.events.isEmpty())
+            assertEquals(false, state.isLoading)
+            assertNull(state.error)
+            assertEquals(DetailTab.OVERVIEW, state.selectedTab)
+        }
 
     // --- Group 2: Agent Loading ---
 
     @Test
-    fun `loadAgent populates agent and clears isLoading`() = runTest {
-        agentRepository.getAgentResult = Result.success(testAgent)
-        val viewModel = createViewModel()
+    fun `loadAgent populates agent and clears isLoading`() =
+        runTest {
+            agentRepository.getAgentResult = Result.success(testAgent)
+            val viewModel = createViewModel()
 
-        viewModel.loadAgent()
-        advanceUntilIdle()
+            viewModel.loadAgent()
+            advanceUntilIdle()
 
-        assertEquals(testAgent, viewModel.uiState.value.agent)
-        assertEquals(false, viewModel.uiState.value.isLoading)
-    }
-
-    @Test
-    fun `loadAgent sets error when agent not found`() = runTest {
-        agentRepository.getAgentResult = Result.failure(NoSuchElementException("Agent not found"))
-        val viewModel = createViewModel()
-
-        viewModel.loadAgent()
-        advanceUntilIdle()
-
-        assertEquals("Agent not found", viewModel.uiState.value.error)
-        assertNull(viewModel.uiState.value.agent)
-        assertEquals(false, viewModel.uiState.value.isLoading)
-    }
+            assertEquals(testAgent, viewModel.uiState.value.agent)
+            assertEquals(false, viewModel.uiState.value.isLoading)
+        }
 
     @Test
-    fun `loadAgent starts observing pipeline runs for agent`() = runTest {
-        agentRepository.getAgentResult = Result.success(testAgent)
-        val viewModel = createViewModel()
+    fun `loadAgent sets error when agent not found`() =
+        runTest {
+            agentRepository.getAgentResult = Result.failure(NoSuchElementException("Agent not found"))
+            val viewModel = createViewModel()
 
-        viewModel.loadAgent()
-        advanceUntilIdle()
+            viewModel.loadAgent()
+            advanceUntilIdle()
 
-        pipelineRepository.pipelineRunsFlow.emit(testPipelineRuns)
-        advanceUntilIdle()
-
-        assertEquals(testPipelineRuns, viewModel.uiState.value.pipelineRuns)
-    }
+            assertEquals("Agent not found", viewModel.uiState.value.error)
+            assertNull(viewModel.uiState.value.agent)
+            assertEquals(false, viewModel.uiState.value.isLoading)
+        }
 
     @Test
-    fun `loadAgent starts observing events for agent`() = runTest {
-        agentRepository.getAgentResult = Result.success(testAgent)
-        val viewModel = createViewModel()
+    fun `loadAgent starts observing pipeline runs for agent`() =
+        runTest {
+            agentRepository.getAgentResult = Result.success(testAgent)
+            val viewModel = createViewModel()
 
-        viewModel.loadAgent()
-        advanceUntilIdle()
+            viewModel.loadAgent()
+            advanceUntilIdle()
 
-        eventRepository.eventsFlow.emit(testEvents)
-        advanceUntilIdle()
+            pipelineRepository.pipelineRunsFlow.emit(testPipelineRuns)
+            advanceUntilIdle()
 
-        assertEquals(testEvents, viewModel.uiState.value.events)
-    }
+            assertEquals(testPipelineRuns, viewModel.uiState.value.pipelineRuns)
+        }
+
+    @Test
+    fun `loadAgent starts observing events for agent`() =
+        runTest {
+            agentRepository.getAgentResult = Result.success(testAgent)
+            val viewModel = createViewModel()
+
+            viewModel.loadAgent()
+            advanceUntilIdle()
+
+            eventRepository.eventsFlow.emit(testEvents)
+            advanceUntilIdle()
+
+            assertEquals(testEvents, viewModel.uiState.value.events)
+        }
 
     // --- Group 3: Tab Switching ---
 
     @Test
-    fun `selectTab updates selectedTab in state`() = runTest {
-        val viewModel = createViewModel()
+    fun `selectTab updates selectedTab in state`() =
+        runTest {
+            val viewModel = createViewModel()
 
-        viewModel.selectTab(DetailTab.PIPELINES)
-        assertEquals(DetailTab.PIPELINES, viewModel.uiState.value.selectedTab)
+            viewModel.selectTab(DetailTab.PIPELINES)
+            assertEquals(DetailTab.PIPELINES, viewModel.uiState.value.selectedTab)
 
-        viewModel.selectTab(DetailTab.EVENTS)
-        assertEquals(DetailTab.EVENTS, viewModel.uiState.value.selectedTab)
-    }
+            viewModel.selectTab(DetailTab.EVENTS)
+            assertEquals(DetailTab.EVENTS, viewModel.uiState.value.selectedTab)
+        }
 
     @Test
-    fun `selectTab to same tab is idempotent`() = runTest {
-        val viewModel = createViewModel()
+    fun `selectTab to same tab is idempotent`() =
+        runTest {
+            val viewModel = createViewModel()
 
-        viewModel.selectTab(DetailTab.OVERVIEW)
-        assertEquals(DetailTab.OVERVIEW, viewModel.uiState.value.selectedTab)
+            viewModel.selectTab(DetailTab.OVERVIEW)
+            assertEquals(DetailTab.OVERVIEW, viewModel.uiState.value.selectedTab)
 
-        viewModel.selectTab(DetailTab.OVERVIEW)
-        assertEquals(DetailTab.OVERVIEW, viewModel.uiState.value.selectedTab)
-    }
+            viewModel.selectTab(DetailTab.OVERVIEW)
+            assertEquals(DetailTab.OVERVIEW, viewModel.uiState.value.selectedTab)
+        }
 
     // --- Group 4: Error Handling ---
 
     @Test
-    fun `clearError resets error to null`() = runTest {
-        agentRepository.getAgentResult = Result.failure(NoSuchElementException("Agent not found"))
-        val viewModel = createViewModel()
+    fun `clearError resets error to null`() =
+        runTest {
+            agentRepository.getAgentResult = Result.failure(NoSuchElementException("Agent not found"))
+            val viewModel = createViewModel()
 
-        viewModel.loadAgent()
-        advanceUntilIdle()
-        assertNotNull(viewModel.uiState.value.error)
+            viewModel.loadAgent()
+            advanceUntilIdle()
+            assertNotNull(viewModel.uiState.value.error)
 
-        viewModel.clearError()
-        assertNull(viewModel.uiState.value.error)
-    }
-
-    @Test
-    fun `pipeline observation error sets error state`() = runTest {
-        agentRepository.getAgentResult = Result.success(testAgent)
-        pipelineRepository.shouldFailObserve = true
-        pipelineRepository.observeError = RuntimeException("Pipeline stream failed")
-        val viewModel = createViewModel()
-
-        viewModel.loadAgent()
-        advanceUntilIdle()
-
-        assertNotNull(viewModel.uiState.value.error)
-        assertTrue(viewModel.uiState.value.error!!.contains("Pipeline stream failed"))
-    }
+            viewModel.clearError()
+            assertNull(viewModel.uiState.value.error)
+        }
 
     @Test
-    fun `event observation error sets error state`() = runTest {
-        agentRepository.getAgentResult = Result.success(testAgent)
-        eventRepository.shouldFailObserve = true
-        eventRepository.observeError = RuntimeException("Event stream failed")
-        val viewModel = createViewModel()
+    fun `pipeline observation error sets error state`() =
+        runTest {
+            agentRepository.getAgentResult = Result.success(testAgent)
+            pipelineRepository.shouldFailObserve = true
+            pipelineRepository.observeError = RuntimeException("Pipeline stream failed")
+            val viewModel = createViewModel()
 
-        viewModel.loadAgent()
-        advanceUntilIdle()
+            viewModel.loadAgent()
+            advanceUntilIdle()
 
-        assertNotNull(viewModel.uiState.value.error)
-        assertTrue(viewModel.uiState.value.error!!.contains("Event stream failed"))
-    }
+            assertNotNull(viewModel.uiState.value.error)
+            assertTrue(viewModel.uiState.value.error!!.contains("Pipeline stream failed"))
+        }
 
     @Test
-    fun `blank agentId sets error without loading`() = runTest {
-        val viewModel = createViewModel(agentId = "  ")
+    fun `event observation error sets error state`() =
+        runTest {
+            agentRepository.getAgentResult = Result.success(testAgent)
+            eventRepository.shouldFailObserve = true
+            eventRepository.observeError = RuntimeException("Event stream failed")
+            val viewModel = createViewModel()
 
-        viewModel.loadAgent()
-        advanceUntilIdle()
+            viewModel.loadAgent()
+            advanceUntilIdle()
 
-        assertEquals("Invalid agent ID", viewModel.uiState.value.error)
-        assertEquals(false, viewModel.uiState.value.isLoading)
-        assertNull(viewModel.uiState.value.agent)
-    }
+            assertNotNull(viewModel.uiState.value.error)
+            assertTrue(viewModel.uiState.value.error!!.contains("Event stream failed"))
+        }
+
+    @Test
+    fun `blank agentId sets error without loading`() =
+        runTest {
+            val viewModel = createViewModel(agentId = "  ")
+
+            viewModel.loadAgent()
+            advanceUntilIdle()
+
+            assertEquals("Invalid agent ID", viewModel.uiState.value.error)
+            assertEquals(false, viewModel.uiState.value.isLoading)
+            assertNull(viewModel.uiState.value.agent)
+        }
 
     // --- Group 5: Lifecycle ---
 
     @Test
-    fun `onCleared cancels all coroutines`() = runTest {
-        agentRepository.getAgentResult = Result.success(testAgent)
-        val viewModel = createViewModel()
+    fun `onCleared cancels all coroutines`() =
+        runTest {
+            agentRepository.getAgentResult = Result.success(testAgent)
+            val viewModel = createViewModel()
 
-        viewModel.loadAgent()
-        advanceUntilIdle()
+            viewModel.loadAgent()
+            advanceUntilIdle()
 
-        pipelineRepository.pipelineRunsFlow.emit(testPipelineRuns)
-        advanceUntilIdle()
-        assertEquals(testPipelineRuns, viewModel.uiState.value.pipelineRuns)
+            pipelineRepository.pipelineRunsFlow.emit(testPipelineRuns)
+            advanceUntilIdle()
+            assertEquals(testPipelineRuns, viewModel.uiState.value.pipelineRuns)
 
-        viewModel.onCleared()
+            viewModel.onCleared()
 
-        pipelineRepository.pipelineRunsFlow.emit(emptyList())
-        advanceUntilIdle()
+            pipelineRepository.pipelineRunsFlow.emit(emptyList())
+            advanceUntilIdle()
 
-        assertEquals(testPipelineRuns, viewModel.uiState.value.pipelineRuns)
-    }
+            assertEquals(testPipelineRuns, viewModel.uiState.value.pipelineRuns)
+        }
 }
