@@ -14,6 +14,10 @@ plugins {
     alias(libs.plugins.ktlint) apply false
 }
 
+val detektReportMergeSarif by tasks.registering(io.gitlab.arturbosch.detekt.report.ReportMergeTask::class) {
+    output.set(rootProject.layout.buildDirectory.file("reports/detekt/merged.sarif"))
+}
+
 // Apply code quality tools to all subprojects
 subprojects {
     apply(plugin = "io.gitlab.arturbosch.detekt")
@@ -25,6 +29,11 @@ subprojects {
         reports {
             sarif.required.set(true)
         }
+        finalizedBy(detektReportMergeSarif)
+    }
+
+    detektReportMergeSarif {
+        input.from(tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().map { it.sarifReportFile })
     }
 
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
