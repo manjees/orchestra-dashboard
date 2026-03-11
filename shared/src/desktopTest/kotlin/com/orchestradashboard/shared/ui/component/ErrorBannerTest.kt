@@ -12,45 +12,47 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalTestApi::class)
 class ErrorBannerTest {
+    @Test
+    fun `should display error message`() =
+        runComposeUiTest {
+            setContent {
+                DashboardTheme {
+                    ErrorBanner(
+                        message = "Connection failed",
+                        onDismiss = {},
+                    )
+                }
+            }
+            onNodeWithText("Connection failed").assertIsDisplayed()
+        }
 
     @Test
-    fun `should display error message`() = runComposeUiTest {
-        setContent {
-            DashboardTheme {
-                ErrorBanner(
-                    message = "Connection failed",
-                    onDismiss = {},
-                )
+    fun `should display dismiss button`() =
+        runComposeUiTest {
+            setContent {
+                DashboardTheme {
+                    ErrorBanner(
+                        message = "Error occurred",
+                        onDismiss = {},
+                    )
+                }
             }
+            onNodeWithContentDescription("Dismiss").assertIsDisplayed()
         }
-        onNodeWithText("Connection failed").assertIsDisplayed()
-    }
 
     @Test
-    fun `should display dismiss button`() = runComposeUiTest {
-        setContent {
-            DashboardTheme {
-                ErrorBanner(
-                    message = "Error occurred",
-                    onDismiss = {},
-                )
+    fun `should invoke onDismiss when dismiss button is clicked`() =
+        runComposeUiTest {
+            var dismissed = false
+            setContent {
+                DashboardTheme {
+                    ErrorBanner(
+                        message = "Error occurred",
+                        onDismiss = { dismissed = true },
+                    )
+                }
             }
+            onNodeWithContentDescription("Dismiss").performClick()
+            assertTrue(dismissed)
         }
-        onNodeWithContentDescription("Dismiss").assertIsDisplayed()
-    }
-
-    @Test
-    fun `should invoke onDismiss when dismiss button is clicked`() = runComposeUiTest {
-        var dismissed = false
-        setContent {
-            DashboardTheme {
-                ErrorBanner(
-                    message = "Error occurred",
-                    onDismiss = { dismissed = true },
-                )
-            }
-        }
-        onNodeWithContentDescription("Dismiss").performClick()
-        assertTrue(dismissed)
-    }
 }

@@ -19,12 +19,16 @@ class FakeAgentRepository(
     private val agents: List<Agent> = emptyList(),
 ) : AgentRepository {
     override fun observeAgents(): Flow<List<Agent>> = flowOf(agents)
+
     override suspend fun getAgent(agentId: String): Result<Agent> =
         agents.find { it.id == agentId }?.let { Result.success(it) }
             ?: Result.failure(NoSuchElementException())
+
     override suspend fun getAgentsByStatus(status: Agent.AgentStatus): Result<List<Agent>> =
         Result.success(agents.filter { it.status == status })
+
     override suspend fun registerAgent(agent: Agent): Result<Agent> = Result.success(agent)
+
     override suspend fun deregisterAgent(agentId: String): Result<Unit> = Result.success(Unit)
 }
 
@@ -38,53 +42,56 @@ private fun createViewModel(agents: List<Agent> = emptyList()): DashboardViewMod
 
 @OptIn(ExperimentalTestApi::class)
 class DashboardScreenTest {
+    @Test
+    fun `should display toolbar title`() =
+        runComposeUiTest {
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    DashboardScreen(viewModel = viewModel)
+                }
+            }
+            onNodeWithText("Orchestra Dashboard").assertIsDisplayed()
+        }
 
     @Test
-    fun `should display toolbar title`() = runComposeUiTest {
-        val viewModel = createViewModel()
-        setContent {
-            DashboardTheme {
-                DashboardScreen(viewModel = viewModel)
+    fun `should display empty state when no agents exist`() =
+        runComposeUiTest {
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    DashboardScreen(viewModel = viewModel)
+                }
             }
+            waitForIdle()
+            onNodeWithText("No agents found.").assertIsDisplayed()
         }
-        onNodeWithText("Orchestra Dashboard").assertIsDisplayed()
-    }
 
     @Test
-    fun `should display empty state when no agents exist`() = runComposeUiTest {
-        val viewModel = createViewModel()
-        setContent {
-            DashboardTheme {
-                DashboardScreen(viewModel = viewModel)
+    fun `should display agent cards when agents exist`() =
+        runComposeUiTest {
+            val agents = TestAgentFactory.createList()
+            val viewModel = createViewModel(agents)
+            setContent {
+                DashboardTheme {
+                    DashboardScreen(viewModel = viewModel)
+                }
             }
+            waitForIdle()
+            onNodeWithText("orchestrator-1").assertIsDisplayed()
+            onNodeWithText("worker-1").assertIsDisplayed()
         }
-        waitForIdle()
-        onNodeWithText("No agents found.").assertIsDisplayed()
-    }
 
     @Test
-    fun `should display agent cards when agents exist`() = runComposeUiTest {
-        val agents = TestAgentFactory.createList()
-        val viewModel = createViewModel(agents)
-        setContent {
-            DashboardTheme {
-                DashboardScreen(viewModel = viewModel)
+    fun `should show status filter bar`() =
+        runComposeUiTest {
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    DashboardScreen(viewModel = viewModel)
+                }
             }
+            onNodeWithText("All").assertIsDisplayed()
+            onNodeWithText("Running").assertIsDisplayed()
         }
-        waitForIdle()
-        onNodeWithText("orchestrator-1").assertIsDisplayed()
-        onNodeWithText("worker-1").assertIsDisplayed()
-    }
-
-    @Test
-    fun `should show status filter bar`() = runComposeUiTest {
-        val viewModel = createViewModel()
-        setContent {
-            DashboardTheme {
-                DashboardScreen(viewModel = viewModel)
-            }
-        }
-        onNodeWithText("All").assertIsDisplayed()
-        onNodeWithText("Running").assertIsDisplayed()
-    }
 }

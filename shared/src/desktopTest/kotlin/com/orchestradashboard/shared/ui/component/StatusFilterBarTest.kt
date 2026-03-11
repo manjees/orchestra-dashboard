@@ -13,69 +13,72 @@ import kotlin.test.assertEquals
 
 @OptIn(ExperimentalTestApi::class)
 class StatusFilterBarTest {
+    @Test
+    fun `should display All chip and all status chips`() =
+        runComposeUiTest {
+            setContent {
+                DashboardTheme {
+                    StatusFilterBar(
+                        selectedStatus = null,
+                        onStatusSelected = {},
+                    )
+                }
+            }
+            onNodeWithText("All").assertIsDisplayed()
+            onNodeWithText("Running").assertIsDisplayed()
+            onNodeWithText("Idle").assertIsDisplayed()
+            onNodeWithText("Error").assertIsDisplayed()
+            onNodeWithText("Offline").assertIsDisplayed()
+        }
 
     @Test
-    fun `should display All chip and all status chips`() = runComposeUiTest {
-        setContent {
-            DashboardTheme {
-                StatusFilterBar(
-                    selectedStatus = null,
-                    onStatusSelected = {},
-                )
+    fun `should mark All chip as selected when no filter is applied`() =
+        runComposeUiTest {
+            setContent {
+                DashboardTheme {
+                    StatusFilterBar(
+                        selectedStatus = null,
+                        onStatusSelected = {},
+                    )
+                }
             }
+            onNodeWithText("All").assertIsSelected()
         }
-        onNodeWithText("All").assertIsDisplayed()
-        onNodeWithText("Running").assertIsDisplayed()
-        onNodeWithText("Idle").assertIsDisplayed()
-        onNodeWithText("Error").assertIsDisplayed()
-        onNodeWithText("Offline").assertIsDisplayed()
-    }
 
     @Test
-    fun `should mark All chip as selected when no filter is applied`() = runComposeUiTest {
-        setContent {
-            DashboardTheme {
-                StatusFilterBar(
-                    selectedStatus = null,
-                    onStatusSelected = {},
-                )
+    fun `should invoke callback with status when chip is clicked`() =
+        runComposeUiTest {
+            var selectedStatus: Agent.AgentStatus? = null
+            setContent {
+                DashboardTheme {
+                    StatusFilterBar(
+                        selectedStatus = null,
+                        onStatusSelected = { selectedStatus = it },
+                    )
+                }
             }
+            onNodeWithText("Running").performClick()
+            assertEquals(Agent.AgentStatus.RUNNING, selectedStatus)
         }
-        onNodeWithText("All").assertIsSelected()
-    }
 
     @Test
-    fun `should invoke callback with status when chip is clicked`() = runComposeUiTest {
-        var selectedStatus: Agent.AgentStatus? = null
-        setContent {
-            DashboardTheme {
-                StatusFilterBar(
-                    selectedStatus = null,
-                    onStatusSelected = { selectedStatus = it },
-                )
+    fun `should invoke callback with null when All chip is clicked`() =
+        runComposeUiTest {
+            var callbackInvoked = false
+            var selectedStatus: Agent.AgentStatus? = Agent.AgentStatus.RUNNING
+            setContent {
+                DashboardTheme {
+                    StatusFilterBar(
+                        selectedStatus = Agent.AgentStatus.RUNNING,
+                        onStatusSelected = {
+                            selectedStatus = it
+                            callbackInvoked = true
+                        },
+                    )
+                }
             }
+            onNodeWithText("All").performClick()
+            assertEquals(true, callbackInvoked)
+            assertEquals(null, selectedStatus)
         }
-        onNodeWithText("Running").performClick()
-        assertEquals(Agent.AgentStatus.RUNNING, selectedStatus)
-    }
-
-    @Test
-    fun `should invoke callback with null when All chip is clicked`() = runComposeUiTest {
-        var callbackInvoked = false
-        var selectedStatus: Agent.AgentStatus? = Agent.AgentStatus.RUNNING
-        setContent {
-            DashboardTheme {
-                StatusFilterBar(
-                    selectedStatus = Agent.AgentStatus.RUNNING,
-                    onStatusSelected = {
-                        selectedStatus = it
-                        callbackInvoked = true
-                    },
-                )
-            }
-        }
-        onNodeWithText("All").performClick()
-        assertEquals(true, callbackInvoked)
-        assertEquals(null, selectedStatus)
-    }
 }
