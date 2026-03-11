@@ -7,6 +7,5 @@ import kotlinx.coroutines.flow.Flow
 class ObservePipelineRunsUseCase(
     private val pipelineRepository: PipelineRepository,
 ) {
-    operator fun invoke(agentId: String): Flow<List<PipelineRun>> =
-        pipelineRepository.observePipelineRuns(agentId)
+    operator fun invoke(agentId: String): Flow<List<PipelineRun>> = pipelineRepository.observePipelineRuns(agentId)
 }

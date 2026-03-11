@@ -49,8 +49,6 @@ style:
   MaxLineLength:
     maxLineLength: 150
     excludeCommentStatements: true
-  SpreadOperator:
-    active: false
   ReturnCount:
     active: true
     max: 4
@@ -58,8 +56,12 @@ style:
   UnusedParameter:
     active: true
     # Spring @ExceptionHandler requires exception parameter in method signature
-    excludeAnnotatedFunction:
-      - "ExceptionHandler"
+    excludes:
+      - "**/controller/**"
+
+performance:
+  SpreadOperator:
+    active: false
 
 complexity:
   CognitiveComplexMethod:

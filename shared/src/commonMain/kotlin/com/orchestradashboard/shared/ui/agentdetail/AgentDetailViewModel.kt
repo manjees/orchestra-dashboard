@@ -34,34 +34,36 @@ class AgentDetailViewModel(
         }
 
         loadJob?.cancel()
-        loadJob = viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-            getAgentUseCase(agentId).fold(
-                onSuccess = { agent ->
-                    _uiState.update { it.copy(agent = agent, isLoading = false) }
-                    startObservingDataStreams()
-                },
-                onFailure = { e ->
-                    _uiState.update { it.copy(error = e.message ?: "Unknown error", isLoading = false) }
-                },
-            )
-        }
+        loadJob =
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+                getAgentUseCase(agentId).fold(
+                    onSuccess = { agent ->
+                        _uiState.update { it.copy(agent = agent, isLoading = false) }
+                        startObservingDataStreams()
+                    },
+                    onFailure = { e ->
+                        _uiState.update { it.copy(error = e.message ?: "Unknown error", isLoading = false) }
+                    },
+                )
+            }
     }
 
     private fun startObservingDataStreams() {
         dataStreamsJob?.cancel()
-        dataStreamsJob = viewModelScope.launch {
-            launch {
-                observePipelineRunsUseCase(agentId)
-                    .catch { e -> _uiState.update { it.copy(error = e.message ?: "Unknown pipeline error") } }
-                    .collect { runs -> _uiState.update { it.copy(pipelineRuns = runs) } }
+        dataStreamsJob =
+            viewModelScope.launch {
+                launch {
+                    observePipelineRunsUseCase(agentId)
+                        .catch { e -> _uiState.update { it.copy(error = e.message ?: "Unknown pipeline error") } }
+                        .collect { runs -> _uiState.update { it.copy(pipelineRuns = runs) } }
+                }
+                launch {
+                    observeEventsUseCase(agentId)
+                        .catch { e -> _uiState.update { it.copy(error = e.message ?: "Unknown event error") } }
+                        .collect { events -> _uiState.update { it.copy(events = events) } }
+                }
             }
-            launch {
-                observeEventsUseCase(agentId)
-                    .catch { e -> _uiState.update { it.copy(error = e.message ?: "Unknown event error") } }
-                    .collect { events -> _uiState.update { it.copy(events = events) } }
-            }
-        }
     }
 
     fun selectTab(tab: DetailTab) {
