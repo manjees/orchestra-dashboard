@@ -44,6 +44,21 @@ class AgentCardTest {
         }
 
     @Test
+    fun `should display Last seen label with relative time`() =
+        runComposeUiTest {
+            setContent {
+                DashboardTheme {
+                    AgentCard(
+                        agent = TestAgentFactory.create(),
+                        isSelected = false,
+                        onClick = {},
+                    )
+                }
+            }
+            onNodeWithText("Last seen", substring = true).assertIsDisplayed()
+        }
+
+    @Test
     fun `should invoke onClick when card is clicked`() =
         runComposeUiTest {
             var clicked = false

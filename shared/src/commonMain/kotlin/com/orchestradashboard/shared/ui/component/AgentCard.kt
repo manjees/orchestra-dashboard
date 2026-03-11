@@ -61,7 +61,7 @@ fun AgentCard(
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                text = formatRelativeTime(agent.lastHeartbeat),
+                text = "Last seen ${formatRelativeTime(agent.lastHeartbeat)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
