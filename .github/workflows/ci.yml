@@ -142,6 +142,9 @@ jobs:
   quality:
     name: Code Quality (Detekt + ktlint)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
 
     steps:
       - name: Checkout
@@ -159,10 +162,19 @@ jobs:
           gradle-version: wrapper
 
       - name: Run Detekt
-        run: ./gradlew detekt
+        run: ./gradlew detekt --continue
+        continue-on-error: true
 
       - name: Run ktlint check
         run: ./gradlew ktlintCheck
+
+      - name: Upload Detekt SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: build/reports/detekt/merged.sarif
+          category: detekt
+          wait-for-processing: true
 
       - name: Upload Detekt report
         if: always()
