@@ -1,0 +1,83 @@
+package com.orchestradashboard.shared.data.network
+
+import com.orchestradashboard.shared.data.dto.AgentDto
+import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.data.dto.PipelineRunDto
+
+class FakeDashboardApiClient : DashboardApi {
+    var agentsResponse: List<AgentDto> = emptyList()
+    var agentResponse: AgentDto? = null
+    var pipelineRunsResponse: List<PipelineRunDto> = emptyList()
+    var pipelineRunResponse: PipelineRunDto? = null
+    var eventsResponse: List<AgentEventDto> = emptyList()
+    var registerResponse: AgentDto? = null
+
+    var errorToThrow: Exception? = null
+
+    var getAgentsCallCount = 0
+        private set
+    var getAgentCallCount = 0
+        private set
+    var getPipelineRunsCallCount = 0
+        private set
+    var getPipelineRunCallCount = 0
+        private set
+    var getRecentEventsCallCount = 0
+        private set
+
+    private fun maybeThrow() {
+        errorToThrow?.let { throw it }
+    }
+
+    override suspend fun getAgents(): List<AgentDto> {
+        getAgentsCallCount++
+        maybeThrow()
+        return agentsResponse
+    }
+
+    override suspend fun getAgent(agentId: String): AgentDto {
+        getAgentCallCount++
+        maybeThrow()
+        return agentResponse ?: throw NoSuchElementException("Agent $agentId not found")
+    }
+
+    override suspend fun getPipelineRuns(agentId: String?): List<PipelineRunDto> {
+        getPipelineRunsCallCount++
+        maybeThrow()
+        return if (agentId != null) {
+            pipelineRunsResponse.filter { it.agentId == agentId }
+        } else {
+            pipelineRunsResponse
+        }
+    }
+
+    override suspend fun getPipelineRun(runId: String): PipelineRunDto {
+        getPipelineRunCallCount++
+        maybeThrow()
+        return pipelineRunResponse ?: throw NoSuchElementException("Run $runId not found")
+    }
+
+    override suspend fun getRecentEvents(
+        agentId: String?,
+        limit: Int,
+    ): List<AgentEventDto> {
+        getRecentEventsCallCount++
+        maybeThrow()
+        val filtered =
+            if (agentId != null) {
+                eventsResponse.filter { it.agentId == agentId }
+            } else {
+                eventsResponse
+            }
+        return filtered.take(limit)
+    }
+
+    override suspend fun registerAgent(agent: AgentDto): AgentDto {
+        maybeThrow()
+        return registerResponse ?: agent
+    }
+
+    override suspend fun deregisterAgent(agentId: String) {
+        maybeThrow()
+    }
+}
