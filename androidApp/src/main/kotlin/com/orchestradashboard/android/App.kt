@@ -5,8 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.orchestradashboard.android.di.AppContainer
-import com.orchestradashboard.android.ui.screen.DashboardScreen
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
+import com.orchestradashboard.shared.ui.screen.AppNavigation
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 
 class OrchestraApplication : Application()
@@ -20,7 +20,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DashboardTheme {
-                DashboardScreen(viewModel = viewModel)
+                AppNavigation(
+                    dashboardViewModel = viewModel,
+                    agentDetailViewModelFactory = { agentId ->
+                        AppContainer.createAgentDetailViewModel(agentId)
+                    },
+                )
             }
         }
     }
