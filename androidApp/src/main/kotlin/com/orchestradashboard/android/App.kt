@@ -6,14 +6,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.orchestradashboard.android.di.AppContainer
 import com.orchestradashboard.android.ui.screen.DashboardScreen
-import com.orchestradashboard.android.ui.theme.DashboardTheme
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
+import com.orchestradashboard.shared.ui.theme.DashboardTheme
 
 class OrchestraApplication : Application()
 
-/**
- * Main entry point for the Android app.
- */
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: DashboardViewModel
 
