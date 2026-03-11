@@ -6,7 +6,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.orchestradashboard.desktop.di.AppContainer
 import com.orchestradashboard.desktop.ui.screen.DashboardScreen
-import com.orchestradashboard.desktop.ui.theme.DashboardTheme
+import com.orchestradashboard.shared.ui.theme.DashboardTheme
 
 fun main() =
     application {

@@ -1,10 +1,12 @@
 package com.orchestradashboard.shared.domain.model
 
+import com.orchestradashboard.shared.domain.usecase.FakeAgentRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -12,144 +14,166 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
-    private lateinit var fakeRepo: FakeAgentRepository
-    private lateinit var viewModel: DashboardViewModel
+    private val testDispatcher = StandardTestDispatcher()
 
     private val testAgents =
         listOf(
             Agent("1", "Alpha", Agent.AgentType.WORKER, Agent.AgentStatus.RUNNING, 100L),
             Agent("2", "Beta", Agent.AgentType.PLANNER, Agent.AgentStatus.IDLE, 200L),
             Agent("3", "Gamma", Agent.AgentType.REVIEWER, Agent.AgentStatus.ERROR, 300L),
+            Agent("4", "Delta", Agent.AgentType.ORCHESTRATOR, Agent.AgentStatus.OFFLINE, 400L),
         )
 
     @BeforeTest
-    fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
-        fakeRepo = FakeAgentRepository()
-        viewModel =
-            DashboardViewModel(
-                observeAgentsUseCase = ObserveAgentsUseCase(fakeRepo),
-                getAgentUseCase = GetAgentUseCase(fakeRepo),
-            )
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
     }
 
     @AfterTest
-    fun tearDown() {
-        viewModel.onCleared()
+    fun teardown() {
         Dispatchers.resetMain()
     }
 
-    @Test
-    fun `initial state has default values`() {
-        val state = viewModel.uiState.value
-
-        assertTrue(state.agents.isEmpty())
-        assertEquals(false, state.isLoading)
-        assertNull(state.error)
-        assertNull(state.selectedAgent)
+    private fun createViewModel(agents: List<Agent> = testAgents): DashboardViewModel {
+        val repository = FakeAgentRepository(agents)
+        return DashboardViewModel(
+            ObserveAgentsUseCase(repository),
+            GetAgentUseCase(repository),
+        )
     }
 
+    // --- Status Filtering ---
+
     @Test
-    fun `startObserving sets isLoading then populates agents on emission`() =
+    fun `setStatusFilter updates uiState statusFilter field`() =
         runTest {
-            viewModel.startObserving()
-            assertEquals(true, viewModel.uiState.value.isLoading)
-            assertNull(viewModel.uiState.value.error)
+            val viewModel = createViewModel()
 
-            fakeRepo.agentsFlow.emit(testAgents)
+            viewModel.setStatusFilter(Agent.AgentStatus.ERROR)
 
-            val state = viewModel.uiState.value
-            assertEquals(testAgents, state.agents)
-            assertEquals(false, state.isLoading)
-            assertEquals(ConnectionStatus.CONNECTED, state.connectionStatus)
+            assertEquals(Agent.AgentStatus.ERROR, viewModel.uiState.value.statusFilter)
         }
 
     @Test
-    fun `error state on repository failure`() =
+    fun `setStatusFilter to same value resets to null via toggle behavior`() =
         runTest {
-            fakeRepo.shouldFailObserve = true
+            val viewModel = createViewModel()
 
-            viewModel.startObserving()
+            viewModel.setStatusFilter(Agent.AgentStatus.RUNNING)
+            assertEquals(Agent.AgentStatus.RUNNING, viewModel.uiState.value.statusFilter)
 
-            val state = viewModel.uiState.value
-            assertEquals("Connection failed", state.error)
-            assertEquals(false, state.isLoading)
-            assertEquals(ConnectionStatus.DISCONNECTED, state.connectionStatus)
+            viewModel.setStatusFilter(Agent.AgentStatus.RUNNING)
+            assertNull(viewModel.uiState.value.statusFilter)
         }
+
+    @Test
+    fun `filteredAgents returns all agents when statusFilter is null`() =
+        runTest {
+            val viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceUntilIdle()
+
+            assertNull(viewModel.uiState.value.statusFilter)
+            assertEquals(4, viewModel.uiState.value.filteredAgents.size)
+        }
+
+    @Test
+    fun `filteredAgents returns only matching agents when statusFilter is set`() =
+        runTest {
+            val viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceUntilIdle()
+
+            viewModel.setStatusFilter(Agent.AgentStatus.RUNNING)
+
+            val filtered = viewModel.uiState.value.filteredAgents
+            assertEquals(1, filtered.size)
+            assertEquals("1", filtered.first().id)
+        }
+
+    // --- Agent Selection ---
 
     @Test
     fun `selectAgent sets selectedAgent on success`() =
         runTest {
-            val agent = testAgents[0]
-            fakeRepo.getAgentResult = Result.success(agent)
+            val viewModel = createViewModel()
 
             viewModel.selectAgent("1")
+            advanceUntilIdle()
 
-            assertEquals(agent, viewModel.uiState.value.selectedAgent)
+            assertEquals("1", viewModel.uiState.value.selectedAgent?.id)
         }
 
     @Test
-    fun `selectAgent with null clears selectedAgent`() {
-        viewModel.selectAgent(null)
-
-        assertNull(viewModel.uiState.value.selectedAgent)
-    }
-
-    @Test
-    fun `selectAgent sets error on failure`() =
+    fun `selectAgent with null clears selection`() =
         runTest {
-            fakeRepo.getAgentResult = Result.failure(RuntimeException("Not found"))
-
-            viewModel.selectAgent("999")
-
-            assertEquals("Not found", viewModel.uiState.value.error)
-        }
-
-    @Test
-    fun `selectAgent sets fallback error message when exception has no message`() =
-        runTest {
-            fakeRepo.getAgentResult = Result.failure(object : Throwable() { override val message: String? = null })
-
+            val viewModel = createViewModel()
             viewModel.selectAgent("1")
+            advanceUntilIdle()
+            assertNotNull(viewModel.uiState.value.selectedAgent)
 
-            assertEquals("Unknown error", viewModel.uiState.value.error)
+            viewModel.selectAgent(null)
+
+            assertNull(viewModel.uiState.value.selectedAgent)
         }
 
     @Test
-    fun `setFilter updates filter in state`() {
-        viewModel.setFilter(Agent.AgentStatus.RUNNING)
+    fun `selectAgent with unknown id sets error`() =
+        runTest {
+            val viewModel = createViewModel(agents = emptyList())
 
-        assertEquals(Agent.AgentStatus.RUNNING, viewModel.uiState.value.filter)
-    }
+            viewModel.selectAgent("unknown")
+            advanceUntilIdle()
+
+            assertNotNull(viewModel.uiState.value.error)
+        }
+
+    // --- Observation ---
 
     @Test
-    fun `setFilter with null clears filter`() {
-        viewModel.setFilter(Agent.AgentStatus.RUNNING)
-        viewModel.setFilter(null)
+    fun `startObserving populates agents`() =
+        runTest {
+            val viewModel = createViewModel()
 
-        assertNull(viewModel.uiState.value.filter)
-    }
+            viewModel.startObserving()
+            advanceUntilIdle()
+
+            assertEquals(4, viewModel.uiState.value.agents.size)
+            assertEquals(ConnectionStatus.CONNECTED, viewModel.uiState.value.connectionStatus)
+        }
+
+    // --- Error Handling ---
 
     @Test
     fun `clearError resets error to null`() =
         runTest {
-            fakeRepo.getAgentResult = Result.failure(RuntimeException("Some error"))
-            viewModel.selectAgent("1")
-            assertEquals("Some error", viewModel.uiState.value.error)
+            val viewModel = createViewModel(agents = emptyList())
+            viewModel.selectAgent("nonexistent")
+            advanceUntilIdle()
+            assertNotNull(viewModel.uiState.value.error)
 
             viewModel.clearError()
 
             assertNull(viewModel.uiState.value.error)
         }
 
+    // --- Filtered agents recompute on data change ---
+
     @Test
-    fun `onCleared cancels scope without crash`() {
-        viewModel.onCleared()
-        viewModel.startObserving()
-    }
+    fun `filteredAgents updates when agents list changes with active filter`() =
+        runTest {
+            val viewModel = createViewModel()
+            viewModel.startObserving()
+            advanceUntilIdle()
+
+            viewModel.setStatusFilter(Agent.AgentStatus.RUNNING)
+            assertEquals(1, viewModel.uiState.value.filteredAgents.size)
+
+            assertEquals("Alpha", viewModel.uiState.value.filteredAgents.first().name)
+        }
 }

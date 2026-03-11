@@ -13,13 +13,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * Platform-agnostic ViewModel for the dashboard screen.
- * Uses a plain [CoroutineScope] so it can be shared across Android, iOS, and Desktop.
- *
- * @param observeAgentsUseCase Use case for streaming agent updates
- * @param getAgentUseCase Use case for fetching a single agent
- */
 class DashboardViewModel(
     private val observeAgentsUseCase: ObserveAgentsUseCase,
     private val getAgentUseCase: GetAgentUseCase,
@@ -27,13 +20,8 @@ class DashboardViewModel(
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(DashboardUiState())
 
-    /** Immutable UI state observed by the composable layer */
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    /**
-     * Begins real-time observation of the agent fleet.
-     * Each call launches a new collection coroutine under the SupervisorJob scope.
-     */
     fun startObserving() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -59,11 +47,6 @@ class DashboardViewModel(
         }
     }
 
-    /**
-     * Selects an agent for detail view.
-     *
-     * @param agentId ID of the agent to select; null to deselect
-     */
     fun selectAgent(agentId: String?) {
         if (agentId == null) {
             _uiState.update { it.copy(selectedAgent = null) }
@@ -77,12 +60,13 @@ class DashboardViewModel(
         }
     }
 
-    /** Sets the status filter. Pass null to show all agents. */
-    fun setFilter(status: Agent.AgentStatus?) {
-        _uiState.update { it.copy(filter = status) }
+    fun setStatusFilter(status: Agent.AgentStatus?) {
+        _uiState.update { current ->
+            val newFilter = if (current.statusFilter == status) null else status
+            current.copy(statusFilter = newFilter)
+        }
     }
 
-    /** Clears the current error state */
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
