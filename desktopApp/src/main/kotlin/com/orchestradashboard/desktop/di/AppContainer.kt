@@ -7,13 +7,15 @@ import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
-import com.orchestradashboard.shared.domain.model.AgentDetailViewModel
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
+import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
+import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
+import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -65,11 +67,11 @@ object AppContainer {
         AgentRepositoryImpl(apiClient, agentMapper)
     }
 
-    val pipelineRepository: PipelineRepository by lazy {
+    private val pipelineRepository: PipelineRepository by lazy {
         PipelineRepositoryImpl(apiClient, pipelineRunMapper)
     }
 
-    val eventRepository: EventRepository by lazy {
+    private val eventRepository: EventRepository by lazy {
         EventRepositoryImpl(apiClient, agentEventMapper)
     }
 
@@ -83,10 +85,18 @@ object AppContainer {
         GetAgentUseCase(agentRepository)
     }
 
+    private val observePipelineRunsUseCase: ObservePipelineRunsUseCase by lazy {
+        ObservePipelineRunsUseCase(pipelineRepository)
+    }
+
+    private val observeEventsUseCase: ObserveEventsUseCase by lazy {
+        ObserveEventsUseCase(eventRepository)
+    }
+
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 
     fun createDashboardViewModel(): DashboardViewModel = DashboardViewModel(observeAgentsUseCase, getAgentUseCase)
 
     fun createAgentDetailViewModel(agentId: String): AgentDetailViewModel =
-        AgentDetailViewModel(agentId, agentRepository, pipelineRepository, eventRepository)
+        AgentDetailViewModel(agentId, getAgentUseCase, observePipelineRunsUseCase, observeEventsUseCase)
 }
