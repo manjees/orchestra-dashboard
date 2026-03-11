@@ -4,15 +4,20 @@ import android.app.Application
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.orchestradashboard.android.di.AppContainer
-import com.orchestradashboard.android.ui.screen.DashboardScreen
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
+import com.orchestradashboard.shared.ui.navigation.AppNavigator
+import com.orchestradashboard.shared.ui.navigation.NavigationState
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 
 class OrchestraApplication : Application()
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: DashboardViewModel
+    private var navigationState by mutableStateOf<NavigationState>(NavigationState.Dashboard)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,7 +25,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DashboardTheme {
-                DashboardScreen(viewModel = viewModel)
+                AppNavigator(
+                    navigationState = navigationState,
+                    dashboardViewModel = viewModel,
+                    agentDetailViewModelFactory = { AppContainer.createAgentDetailViewModel(it) },
+                    onNavigate = { navigationState = it },
+                )
             }
         }
     }
