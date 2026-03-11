@@ -72,7 +72,7 @@ class DashboardViewModel(
         viewModelScope.launch {
             getAgentUseCase(agentId).fold(
                 onSuccess = { agent -> _uiState.update { it.copy(selectedAgent = agent) } },
-                onFailure = { e -> _uiState.update { it.copy(error = e.message) } },
+                onFailure = { e -> _uiState.update { it.copy(error = e.message ?: "Unknown error") } },
             )
         }
     }
