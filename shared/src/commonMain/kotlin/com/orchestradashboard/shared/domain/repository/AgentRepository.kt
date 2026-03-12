@@ -17,6 +17,14 @@ interface AgentRepository {
     fun observeAgents(): Flow<List<Agent>>
 
     /**
+     * Observes a specific agent by its unique identifier in real-time.
+     *
+     * @param agentId Unique agent identifier
+     * @return [Flow] emitting the agent on each state change
+     */
+    fun observeAgent(agentId: String): Flow<Agent>
+
+    /**
      * Retrieves a specific agent by its unique identifier.
      *
      * @param agentId Unique agent identifier

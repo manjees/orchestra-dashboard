@@ -1,10 +1,17 @@
 package com.orchestradashboard.desktop.di
 
+import com.orchestradashboard.shared.data.mapper.AgentEventMapper
 import com.orchestradashboard.shared.data.mapper.AgentMapper
+import com.orchestradashboard.shared.data.mapper.PipelineRunMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
+import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
+import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
+import com.orchestradashboard.shared.domain.model.AgentDetailViewModel
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
+import com.orchestradashboard.shared.domain.repository.EventRepository
+import com.orchestradashboard.shared.domain.repository.PipelineRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import io.ktor.client.HttpClient
@@ -49,11 +56,21 @@ object AppContainer {
     // ─── Mappers ────────────────────────────────────────────────
 
     private val agentMapper: AgentMapper by lazy { AgentMapper() }
+    private val pipelineRunMapper: PipelineRunMapper by lazy { PipelineRunMapper() }
+    private val agentEventMapper: AgentEventMapper by lazy { AgentEventMapper() }
 
     // ─── Repositories ───────────────────────────────────────────
 
     val agentRepository: AgentRepository by lazy {
         AgentRepositoryImpl(apiClient, agentMapper)
+    }
+
+    val pipelineRepository: PipelineRepository by lazy {
+        PipelineRepositoryImpl(apiClient, pipelineRunMapper)
+    }
+
+    val eventRepository: EventRepository by lazy {
+        EventRepositoryImpl(apiClient, agentEventMapper)
     }
 
     // ─── UseCases ───────────────────────────────────────────────
@@ -69,4 +86,7 @@ object AppContainer {
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 
     fun createDashboardViewModel(): DashboardViewModel = DashboardViewModel(observeAgentsUseCase, getAgentUseCase)
+
+    fun createAgentDetailViewModel(agentId: String): AgentDetailViewModel =
+        AgentDetailViewModel(agentId, agentRepository, pipelineRepository, eventRepository)
 }

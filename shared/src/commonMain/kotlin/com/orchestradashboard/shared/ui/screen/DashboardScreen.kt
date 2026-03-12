@@ -34,6 +34,7 @@ import com.orchestradashboard.shared.ui.component.StatusFilterBar
 fun DashboardScreen(
     viewModel: DashboardViewModel,
     modifier: Modifier = Modifier,
+    onAgentClick: ((String) -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -61,7 +62,10 @@ fun DashboardScreen(
                     AgentGrid(
                         agents = uiState.filteredAgents,
                         selectedAgentId = uiState.selectedAgent?.id,
-                        onAgentClick = { viewModel.selectAgent(it.id) },
+                        onAgentClick = { agent ->
+                            viewModel.selectAgent(agent.id)
+                            onAgentClick?.invoke(agent.id)
+                        },
                     )
             }
         }

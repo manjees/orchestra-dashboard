@@ -5,7 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.orchestradashboard.desktop.di.AppContainer
-import com.orchestradashboard.desktop.ui.screen.DashboardScreen
+import com.orchestradashboard.shared.ui.screen.AppNavigation
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 
 fun main() =
@@ -21,7 +21,12 @@ fun main() =
             }
 
             DashboardTheme {
-                DashboardScreen(viewModel = viewModel)
+                AppNavigation(
+                    dashboardViewModel = viewModel,
+                    agentDetailViewModelFactory = { agentId ->
+                        AppContainer.createAgentDetailViewModel(agentId)
+                    },
+                )
             }
         }
     }

@@ -12,6 +12,7 @@ import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.ui.TestAgentFactory
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlin.test.Test
 
@@ -19,6 +20,11 @@ class FakeAgentRepository(
     private val agents: List<Agent> = emptyList(),
 ) : AgentRepository {
     override fun observeAgents(): Flow<List<Agent>> = flowOf(agents)
+
+    override fun observeAgent(agentId: String): Flow<Agent> =
+        agents.find { it.id == agentId }
+            ?.let { flowOf(it) }
+            ?: flow { throw NoSuchElementException("Agent $agentId not found") }
 
     override suspend fun getAgent(agentId: String): Result<Agent> =
         agents.find { it.id == agentId }?.let { Result.success(it) }
