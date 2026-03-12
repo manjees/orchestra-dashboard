@@ -81,10 +81,8 @@ class PipelineService(
         id: String,
         request: PatchPipelineRunRequest,
     ): PipelineRunResponse {
-        if (request.status != null && request.status !in VALID_STATUSES) {
-            throw IllegalArgumentException(
-                "Invalid status '${request.status}'. Valid: ${VALID_STATUSES.joinToString()}",
-            )
+        require(request.status == null || request.status in VALID_STATUSES) {
+            "Invalid status '${request.status}'. Valid: ${VALID_STATUSES.joinToString()}"
         }
 
         val existing =

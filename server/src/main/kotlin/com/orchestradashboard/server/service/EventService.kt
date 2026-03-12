@@ -22,6 +22,7 @@ class EventService(
     companion object {
         const val DEFAULT_LIMIT = 20
         const val MAX_LIMIT = 100
+        const val MAX_FUTURE_TIMESTAMP_OFFSET_MS = 3_600_000L
     }
 
     fun getRecentEvents(limit: Int? = null): List<AgentEventResponse> {
@@ -40,10 +41,8 @@ class EventService(
     }
 
     fun createEvent(request: CreateEventRequest): AgentEventResponse {
-        if (!EventType.isValid(request.type)) {
-            throw IllegalArgumentException(
-                "Invalid event type '${request.type}'. Valid: ${EventType.entries.joinToString()}",
-            )
+        require(EventType.isValid(request.type)) {
+            "Invalid event type '${request.type}'. Valid: ${EventType.entries.joinToString()}"
         }
         agentRepository.findById(request.agentId)
             .orElseThrow { NoSuchElementException("Agent with id '${request.agentId}' not found") }
@@ -65,10 +64,8 @@ class EventService(
     private fun resolveTimestamp(clientTimestamp: Long?): Long {
         if (clientTimestamp == null) return System.currentTimeMillis()
         val now = System.currentTimeMillis()
-        if (clientTimestamp < 0 || clientTimestamp > now + 3_600_000) {
-            throw IllegalArgumentException(
-                "Timestamp must be non-negative and not more than 1 hour in the future",
-            )
+        require(clientTimestamp >= 0 && clientTimestamp <= now + MAX_FUTURE_TIMESTAMP_OFFSET_MS) {
+            "Timestamp must be non-negative and not more than 1 hour in the future"
         }
         return clientTimestamp
     }
