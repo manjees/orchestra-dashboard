@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.orchestradashboard.server.model.AgentEntity
 import com.orchestradashboard.server.repository.AgentEventJpaRepository
 import com.orchestradashboard.server.repository.AgentJpaRepository
+import com.orchestradashboard.server.repository.PipelineRunJpaRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -14,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.context.WebApplicationContext
@@ -41,6 +43,9 @@ class WebSocketIntegrationTest {
     private lateinit var eventRepository: AgentEventJpaRepository
 
     @Autowired
+    private lateinit var pipelineRepository: PipelineRunJpaRepository
+
+    @Autowired
     private lateinit var objectMapper: ObjectMapper
 
     private lateinit var mockMvc: MockMvc
@@ -48,6 +53,7 @@ class WebSocketIntegrationTest {
     @BeforeEach
     fun setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(context).build()
+        pipelineRepository.deleteAll()
         eventRepository.deleteAll()
         agentRepository.deleteAll()
         agentRepository.save(
@@ -94,7 +100,6 @@ class WebSocketIntegrationTest {
     fun `should receive event after POST to events API`() {
         val (session, messages) = connectWebSocket()
         try {
-            // Allow connection to fully establish
             Thread.sleep(200)
 
             mockMvc
@@ -132,14 +137,12 @@ class WebSocketIntegrationTest {
         try {
             Thread.sleep(200)
 
-            // Post event for agent-2 (should NOT be received)
             mockMvc
                 .post("/api/v1/events") {
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"agent_id": "agent-2", "type": "HEARTBEAT"}"""
                 }.andExpect { status { isCreated() } }
 
-            // Post event for agent-1 (should be received)
             mockMvc
                 .post("/api/v1/events") {
                     contentType = MediaType.APPLICATION_JSON
@@ -152,7 +155,6 @@ class WebSocketIntegrationTest {
             val message = objectMapper.readTree(received)
             assertEquals("agent-1", message["data"]["agent_id"].asText())
 
-            // Verify no more messages (agent-2 event was filtered)
             val extra = messages.poll(1, TimeUnit.SECONDS)
             assertTrue(extra == null, "Should not have received agent-2 event")
         } finally {
@@ -168,11 +170,75 @@ class WebSocketIntegrationTest {
 
         Thread.sleep(200)
 
-        // Posting an event after disconnect should not cause errors
         mockMvc
             .post("/api/v1/events") {
                 contentType = MediaType.APPLICATION_JSON
                 content = """{"agent_id": "agent-1", "type": "HEARTBEAT"}"""
             }.andExpect { status { isCreated() } }
+    }
+
+    // --- Pipeline WebSocket integration tests ---
+
+    @Test
+    fun `should receive PIPELINE_STARTED event after POST to pipeline-runs API`() {
+        val (session, messages) = connectWebSocket()
+        try {
+            Thread.sleep(200)
+
+            mockMvc
+                .post("/api/v1/pipeline-runs") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = """{"agent_id": "agent-1", "pipeline_name": "build-deploy", "trigger_info": "#42"}"""
+                }.andExpect { status { isCreated() } }
+
+            val received = messages.poll(5, TimeUnit.SECONDS)
+            assertNotNull(received, "Should have received a PIPELINE_STARTED WebSocket message")
+
+            val message = objectMapper.readTree(received)
+            assertEquals("PIPELINE_STARTED", message["type"].asText())
+            assertEquals("agent-1", message["data"]["agent_id"].asText())
+            assertEquals("build-deploy", message["data"]["pipeline_name"].asText())
+        } finally {
+            session.close()
+        }
+    }
+
+    @Test
+    fun `should receive PIPELINE_COMPLETED event after PATCH with terminal status`() {
+        val (session, messages) = connectWebSocket()
+        try {
+            Thread.sleep(200)
+
+            // Create a pipeline first
+            val createResult =
+                mockMvc
+                    .post("/api/v1/pipeline-runs") {
+                        contentType = MediaType.APPLICATION_JSON
+                        content = """{"agent_id": "agent-1", "pipeline_name": "build-deploy"}"""
+                    }.andExpect { status { isCreated() } }
+                    .andReturn()
+
+            // Consume the PIPELINE_STARTED message
+            val startedMsg = messages.poll(5, TimeUnit.SECONDS)
+            assertNotNull(startedMsg, "Should have received PIPELINE_STARTED")
+
+            val pipelineId = objectMapper.readTree(createResult.response.contentAsString)["id"].asText()
+
+            // PATCH to terminal status
+            mockMvc
+                .patch("/api/v1/pipeline-runs/$pipelineId") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = """{"status": "PASSED"}"""
+                }.andExpect { status { isOk() } }
+
+            val received = messages.poll(5, TimeUnit.SECONDS)
+            assertNotNull(received, "Should have received a PIPELINE_COMPLETED WebSocket message")
+
+            val message = objectMapper.readTree(received)
+            assertEquals("PIPELINE_COMPLETED", message["type"].asText())
+            assertEquals("PASSED", message["data"]["status"].asText())
+        } finally {
+            session.close()
+        }
     }
 }

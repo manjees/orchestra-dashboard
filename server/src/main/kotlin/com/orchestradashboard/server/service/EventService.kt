@@ -4,6 +4,7 @@ import com.orchestradashboard.server.model.AgentEventEntity
 import com.orchestradashboard.server.model.AgentEventMapper
 import com.orchestradashboard.server.model.AgentEventResponse
 import com.orchestradashboard.server.model.CreateEventRequest
+import com.orchestradashboard.server.model.EventType
 import com.orchestradashboard.server.repository.AgentEventJpaRepository
 import com.orchestradashboard.server.repository.AgentJpaRepository
 import com.orchestradashboard.server.websocket.AgentEventWebSocketHandler
@@ -21,6 +22,7 @@ class EventService(
     companion object {
         const val DEFAULT_LIMIT = 20
         const val MAX_LIMIT = 100
+        const val MAX_FUTURE_TIMESTAMP_OFFSET_MS = 3_600_000L
     }
 
     fun getRecentEvents(limit: Int? = null): List<AgentEventResponse> {
@@ -39,19 +41,32 @@ class EventService(
     }
 
     fun createEvent(request: CreateEventRequest): AgentEventResponse {
+        require(EventType.isValid(request.type)) {
+            "Invalid event type '${request.type}'. Valid: ${EventType.entries.joinToString()}"
+        }
         agentRepository.findById(request.agentId)
             .orElseThrow { NoSuchElementException("Agent with id '${request.agentId}' not found") }
 
+        val timestamp = resolveTimestamp(request.timestamp)
         val entity =
             AgentEventEntity(
                 id = UUID.randomUUID().toString(),
                 agentId = request.agentId,
                 type = request.type,
                 payload = eventMapper.serializePayload(request.payload),
-                timestamp = System.currentTimeMillis(),
+                timestamp = timestamp,
             )
         val response = eventMapper.toResponse(eventRepository.save(entity))
         webSocketHandler.broadcastEvent(response)
         return response
+    }
+
+    private fun resolveTimestamp(clientTimestamp: Long?): Long {
+        if (clientTimestamp == null) return System.currentTimeMillis()
+        val now = System.currentTimeMillis()
+        require(clientTimestamp >= 0 && clientTimestamp <= now + MAX_FUTURE_TIMESTAMP_OFFSET_MS) {
+            "Timestamp must be non-negative and not more than 1 hour in the future"
+        }
+        return clientTimestamp
     }
 }

@@ -2,6 +2,7 @@ package com.orchestradashboard.server.websocket
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.orchestradashboard.server.model.AgentEventResponse
+import com.orchestradashboard.server.model.PipelineRunResponse
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -55,6 +56,28 @@ class AgentEventWebSocketHandler(
         while (iterator.hasNext()) {
             val (_, entry) = iterator.next()
             if (entry.agentIdFilter != null && entry.agentIdFilter != event.agentId) {
+                continue
+            }
+            try {
+                entry.session.sendMessage(json)
+            } catch (e: IOException) {
+                log.warn("Failed to send to session {}, removing: {}", entry.session.id, e.message)
+                iterator.remove()
+            }
+        }
+    }
+
+    fun broadcastPipelineEvent(
+        pipelineRun: PipelineRunResponse,
+        eventType: String,
+    ) {
+        val message = WebSocketMessage(type = eventType, data = pipelineRun)
+        val json = TextMessage(objectMapper.writeValueAsString(message))
+
+        val iterator = sessions.entries.iterator()
+        while (iterator.hasNext()) {
+            val (_, entry) = iterator.next()
+            if (entry.agentIdFilter != null && entry.agentIdFilter != pipelineRun.agentId) {
                 continue
             }
             try {
