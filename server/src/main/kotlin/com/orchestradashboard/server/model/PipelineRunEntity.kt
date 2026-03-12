@@ -7,6 +7,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 import java.util.UUID
 
 @Entity
@@ -32,4 +33,6 @@ data class PipelineRunEntity(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "agent_id", insertable = false, updatable = false)
     val agent: AgentEntity? = null,
+    @Version
+    val version: Long = 0L,
 )

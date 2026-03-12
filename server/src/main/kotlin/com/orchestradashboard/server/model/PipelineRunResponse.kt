@@ -1,6 +1,7 @@
 package com.orchestradashboard.server.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import jakarta.validation.constraints.NotBlank
 
 data class PipelineStepResponse(
     val name: String,
@@ -22,7 +23,9 @@ data class PipelineRunResponse(
 
 data class CreatePipelineRunRequest(
     val id: String? = null,
+    @field:NotBlank(message = "agent_id must not be blank")
     @JsonProperty("agent_id") val agentId: String,
+    @field:NotBlank(message = "pipeline_name must not be blank")
     @JsonProperty("pipeline_name") val pipelineName: String,
     @JsonProperty("trigger_info") val triggerInfo: String = "",
     val steps: List<PipelineStepRequest> = emptyList(),
@@ -33,6 +36,12 @@ data class PipelineStepRequest(
     val status: String = "PENDING",
     val detail: String = "",
     @JsonProperty("elapsed_ms") val elapsedMs: Long = 0L,
+)
+
+data class PatchPipelineRunRequest(
+    val status: String? = null,
+    @JsonProperty("finished_at") val finishedAt: Long? = null,
+    val steps: List<PipelineStepRequest>? = null,
 )
 
 data class UpdateStatusRequest(
