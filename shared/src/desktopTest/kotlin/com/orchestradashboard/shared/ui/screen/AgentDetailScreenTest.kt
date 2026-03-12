@@ -6,7 +6,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.orchestradashboard.shared.domain.model.Agent
-import com.orchestradashboard.shared.domain.model.AgentDetailViewModel
 import com.orchestradashboard.shared.domain.model.AgentEvent
 import com.orchestradashboard.shared.domain.model.EventType
 import com.orchestradashboard.shared.domain.model.PipelineRun
@@ -16,6 +15,10 @@ import com.orchestradashboard.shared.domain.model.StepStatus
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
+import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
+import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
+import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
+import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -103,14 +106,15 @@ private class EmptyEventRepository : EventRepository {
 }
 
 private fun createViewModel(
+    agentRepository: AgentRepository = StaticAgentRepository(),
     pipelineRepository: PipelineRepository = StaticPipelineRepository(),
     eventRepository: EventRepository = StaticEventRepository(),
 ): AgentDetailViewModel =
     AgentDetailViewModel(
         agentId = "agent-1",
-        agentRepository = StaticAgentRepository(),
-        pipelineRepository = pipelineRepository,
-        eventRepository = eventRepository,
+        getAgentUseCase = GetAgentUseCase(agentRepository),
+        observePipelineRunsUseCase = ObservePipelineRunsUseCase(pipelineRepository),
+        observeEventsUseCase = ObserveEventsUseCase(eventRepository),
     )
 
 @OptIn(ExperimentalTestApi::class)

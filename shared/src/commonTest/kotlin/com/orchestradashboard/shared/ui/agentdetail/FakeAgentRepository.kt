@@ -18,6 +18,8 @@ class FakeAgentRepository : AgentRepository {
         return agentsFlow
     }
 
+    override fun observeAgent(agentId: String): Flow<Agent> = flow { throw NotImplementedError() }
+
     override suspend fun getAgent(agentId: String): Result<Agent> = getAgentResult
 
     override suspend fun getAgentsByStatus(status: Agent.AgentStatus) = Result.failure<List<Agent>>(NotImplementedError())
