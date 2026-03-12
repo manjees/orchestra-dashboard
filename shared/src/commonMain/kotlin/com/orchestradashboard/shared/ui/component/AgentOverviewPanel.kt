@@ -98,11 +98,12 @@ fun AgentOverviewPanel(
 
 @Composable
 private fun HealthBadge(isHealthy: Boolean) {
-    val color = if (isHealthy) {
-        DashboardTheme.statusColors.running
-    } else {
-        DashboardTheme.statusColors.error
-    }
+    val color =
+        if (isHealthy) {
+            DashboardTheme.statusColors.running
+        } else {
+            DashboardTheme.statusColors.error
+        }
     val label = if (isHealthy) "Healthy" else "Unhealthy"
     Surface(
         color = color.copy(alpha = 0.15f),
