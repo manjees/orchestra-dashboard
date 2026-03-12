@@ -7,8 +7,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import com.orchestradashboard.shared.domain.model.AgentDetailViewModel
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
+import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 
 sealed class Screen {
     data object Dashboard : Screen()

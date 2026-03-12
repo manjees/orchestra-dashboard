@@ -21,8 +21,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.orchestradashboard.shared.domain.model.AgentDetailViewModel
-import com.orchestradashboard.shared.domain.model.DetailTab
+import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
+import com.orchestradashboard.shared.ui.agentdetail.DetailTab
 import com.orchestradashboard.shared.ui.component.AgentOverviewPanel
 import com.orchestradashboard.shared.ui.component.ErrorBanner
 import com.orchestradashboard.shared.ui.component.EventFeed
@@ -38,7 +38,7 @@ fun AgentDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.startObserving() }
+    LaunchedEffect(Unit) { viewModel.loadAgent() }
 
     Scaffold(
         modifier = modifier,
