@@ -260,6 +260,141 @@ Receives real-time agent status events as JSON:
 
 ---
 
+## Integration with ai-orchestrator
+
+Orchestra Dashboard is designed to receive real-time data from [ai-orchestrator](https://github.com/manjees/ai-orchestrator), a Python-based multi-agent pipeline runner. The orchestrator sends HTTP requests to the dashboard server, which then pushes updates to connected clients via WebSocket.
+
+### Architecture
+
+```
+ai-orchestrator (Python)
+    │ HTTP POST (fire-and-forget)
+    ▼
+orchestra-dashboard Server (Spring Boot)
+    │ WebSocket push
+    ▼
+Dashboard Apps (Android/iOS/Desktop)
+```
+
+### Configuration
+
+#### ai-orchestrator side
+
+Set the dashboard server URL as an environment variable:
+
+```bash
+export DASHBOARD_API_URL=http://localhost:8080
+```
+
+The orchestrator sends agent registrations, events, and pipeline run records to the dashboard's REST API at this URL.
+
+#### orchestra-dashboard side
+
+| Variable | Purpose | Default |
+|----------|---------|---------|
+| `SERVER_PORT` | Spring Boot server port | `8080` |
+| `ALLOWED_ORIGINS` | Comma-separated CORS origins | `http://localhost:*` |
+
+For production, restrict CORS to your orchestrator's origin:
+
+```bash
+export ALLOWED_ORIGINS=http://orchestrator-host:9000
+```
+
+### API Usage Examples
+
+All examples assume the dashboard server is running at `http://localhost:8080`.
+
+#### Register an Agent
+
+```bash
+curl -X POST http://localhost:8080/api/v1/agents \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "orchestrator",
+    "name": "Orchestrator",
+    "type": "ORCHESTRATOR",
+    "metadata": {"version": "1.0.0"}
+  }'
+```
+
+#### Send an Event
+
+```bash
+curl -X POST http://localhost:8080/api/v1/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "orchestrator",
+    "type": "PIPELINE_STARTED",
+    "payload": {"pipeline": "code-review", "trigger": "push"},
+    "timestamp": 1700000000000
+  }'
+```
+
+#### Create a Pipeline Run
+
+```bash
+curl -X POST http://localhost:8080/api/v1/pipeline-runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_id": "orchestrator",
+    "pipeline_name": "code-review-pipeline",
+    "trigger_info": "PR #42 opened",
+    "steps": [
+      {"name": "research", "status": "PENDING"},
+      {"name": "design", "status": "PENDING"},
+      {"name": "review", "status": "PENDING"},
+      {"name": "implement", "status": "PENDING"}
+    ]
+  }'
+```
+
+#### Update Pipeline Status
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/pipeline-runs/{id}/status \
+  -H "Content-Type: application/json" \
+  -d '{"status": "COMPLETED"}'
+```
+
+#### Send a Heartbeat
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/agents/orchestrator/heartbeat \
+  -H "Content-Type: application/json" \
+  -d '{"status": "RUNNING"}'
+```
+
+### Agent Mapping
+
+When integrating ai-orchestrator with the dashboard, use the following agent IDs and types:
+
+| ai-orchestrator Model | Dashboard Agent ID | Type |
+|---|---|---|
+| Orchestrator | `orchestrator` | ORCHESTRATOR |
+| Haiku (Research) | `haiku-researcher` | WORKER |
+| Opus (Design) | `opus-designer` | PLANNER |
+| Gemini (Critique) | `gemini-reviewer` | REVIEWER |
+| Sonnet (Implement) | `sonnet-worker` | WORKER |
+| DeepSeek R1 (Audit) | `deepseek-auditor` | REVIEWER |
+| Qwen (Hints) | `qwen-worker` | WORKER |
+
+### Quick Verification
+
+After starting both services, verify connectivity with:
+
+```bash
+# Register an agent
+curl -s -X POST http://localhost:8080/api/v1/agents \
+  -H "Content-Type: application/json" \
+  -d '{"id": "orchestrator", "name": "Orchestrator", "type": "ORCHESTRATOR"}' | jq .
+
+# Confirm it's registered
+curl -s http://localhost:8080/api/v1/agents | jq .
+```
+
+---
+
 ## Contributing
 
 We welcome contributions from the community! Here's how to get involved:
