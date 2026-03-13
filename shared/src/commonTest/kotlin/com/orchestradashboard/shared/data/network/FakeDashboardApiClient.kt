@@ -2,6 +2,7 @@ package com.orchestradashboard.shared.data.network
 
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.data.dto.AuthResponseDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -109,5 +110,15 @@ class FakeDashboardApiClient : DashboardApi {
 
     override suspend fun deregisterAgent(agentId: String) {
         maybeThrow()
+    }
+
+    override suspend fun login(apiKey: String): AuthResponseDto {
+        maybeThrow()
+        return AuthResponseDto(accessToken = "fake-access", refreshToken = "fake-refresh", expiresIn = 900)
+    }
+
+    override suspend fun refreshToken(refreshToken: String): AuthResponseDto {
+        maybeThrow()
+        return AuthResponseDto(accessToken = "fake-access", refreshToken = "fake-refresh", expiresIn = 900)
     }
 }

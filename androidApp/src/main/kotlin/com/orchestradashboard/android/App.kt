@@ -9,7 +9,12 @@ import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.ui.screen.AppNavigation
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 
-class OrchestraApplication : Application()
+class OrchestraApplication : Application() {
+    override fun onCreate() {
+        super.onCreate()
+        AppContainer.initialize(this)
+    }
+}
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: DashboardViewModel

@@ -1,6 +1,8 @@
 package com.orchestradashboard.server.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.orchestradashboard.server.config.JwtAuthenticationFilter
+import com.orchestradashboard.server.config.JwtTokenProvider
 import com.orchestradashboard.server.config.SecurityConfig
 import com.orchestradashboard.server.model.AgentRegistrationRequest
 import com.orchestradashboard.server.model.AgentResponse
@@ -12,6 +14,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
@@ -19,7 +22,8 @@ import org.springframework.test.web.servlet.put
 import org.mockito.Mockito.`when` as whenever
 
 @WebMvcTest(AgentController::class)
-@Import(SecurityConfig::class)
+@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@WithMockUser
 class AgentControllerTest {
     @Autowired
     lateinit var mockMvc: MockMvc
@@ -29,6 +33,9 @@ class AgentControllerTest {
 
     @MockBean
     lateinit var agentService: AgentService
+
+    @MockBean
+    lateinit var jwtTokenProvider: JwtTokenProvider
 
     private val sampleResponse =
         AgentResponse(

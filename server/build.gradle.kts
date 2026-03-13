@@ -18,6 +18,9 @@ dependencies {
     implementation(libs.spring.boot.starter.websocket)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.validation)
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.serialization.json)
 
@@ -27,6 +30,7 @@ dependencies {
 
     // Test
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation("org.springframework.security:spring-security-test")
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.kotlin.test.junit5)
     testImplementation(libs.testcontainers.core)
