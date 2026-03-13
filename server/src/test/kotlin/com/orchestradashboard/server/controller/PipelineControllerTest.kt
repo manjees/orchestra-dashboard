@@ -1,6 +1,8 @@
 package com.orchestradashboard.server.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.orchestradashboard.server.config.JwtAuthenticationFilter
+import com.orchestradashboard.server.config.JwtTokenProvider
 import com.orchestradashboard.server.config.SecurityConfig
 import com.orchestradashboard.server.model.PipelineRunResponse
 import com.orchestradashboard.server.model.PipelineStepResponse
@@ -17,6 +19,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.http.MediaType
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
@@ -25,7 +28,8 @@ import org.springframework.test.web.servlet.put
 import org.mockito.Mockito.`when` as whenever
 
 @WebMvcTest(PipelineController::class)
-@Import(SecurityConfig::class)
+@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@WithMockUser
 class PipelineControllerTest {
     @Autowired
     lateinit var mockMvc: MockMvc
@@ -35,6 +39,9 @@ class PipelineControllerTest {
 
     @MockBean
     lateinit var pipelineService: PipelineService
+
+    @MockBean
+    lateinit var jwtTokenProvider: JwtTokenProvider
 
     private val sampleResponse =
         PipelineRunResponse(

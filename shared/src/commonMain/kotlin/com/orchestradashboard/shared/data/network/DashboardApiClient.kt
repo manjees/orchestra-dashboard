@@ -2,8 +2,11 @@ package com.orchestradashboard.shared.data.network
 
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.data.dto.AuthResponseDto
+import com.orchestradashboard.shared.data.dto.LoginRequestDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import com.orchestradashboard.shared.data.dto.PipelineRunPageDto
+import com.orchestradashboard.shared.data.dto.RefreshRequestDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -85,5 +88,19 @@ class DashboardApiClient(
 
     override suspend fun deregisterAgent(agentId: String) {
         httpClient.delete("$baseUrl/api/v1/agents/$agentId")
+    }
+
+    override suspend fun login(apiKey: String): AuthResponseDto {
+        return httpClient.post("$baseUrl/api/v1/auth/login") {
+            contentType(ContentType.Application.Json)
+            setBody(LoginRequestDto(apiKey))
+        }.body()
+    }
+
+    override suspend fun refreshToken(refreshToken: String): AuthResponseDto {
+        return httpClient.post("$baseUrl/api/v1/auth/refresh") {
+            contentType(ContentType.Application.Json)
+            setBody(RefreshRequestDto(refreshToken))
+        }.body()
     }
 }

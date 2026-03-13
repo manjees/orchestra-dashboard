@@ -65,6 +65,7 @@ kotlin {
             dependencies {
                 implementation(libs.coroutines.android)
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.androidx.security.crypto)
             }
         }
 

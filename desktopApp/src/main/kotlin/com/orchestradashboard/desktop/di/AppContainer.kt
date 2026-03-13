@@ -5,12 +5,15 @@ import com.orchestradashboard.shared.data.mapper.AgentMapper
 import com.orchestradashboard.shared.data.mapper.PipelineRunMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
+import com.orchestradashboard.shared.data.repository.DesktopTokenRepository
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
+import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
+import com.orchestradashboard.shared.domain.repository.TokenRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
@@ -53,6 +56,16 @@ object AppContainer {
 
     private val apiClient: DashboardApiClient by lazy {
         DashboardApiClient(httpClient, serverBaseUrl)
+    }
+
+    // ─── Auth ────────────────────────────────────────────────────
+
+    val tokenRepository: TokenRepository by lazy {
+        DesktopTokenRepository()
+    }
+
+    val tokenRefreshHandler: TokenRefreshHandler by lazy {
+        TokenRefreshHandler(httpClient, serverBaseUrl, tokenRepository)
     }
 
     // ─── Mappers ────────────────────────────────────────────────
