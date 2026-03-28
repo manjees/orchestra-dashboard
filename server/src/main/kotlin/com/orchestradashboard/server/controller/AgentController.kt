@@ -3,9 +3,14 @@ package com.orchestradashboard.server.controller
 import com.orchestradashboard.server.model.AgentRegistrationRequest
 import com.orchestradashboard.server.model.AgentResponse
 import com.orchestradashboard.server.model.HeartbeatRequest
+import com.orchestradashboard.server.model.PagedAgentResponse
 import com.orchestradashboard.server.service.AgentService
+import jakarta.validation.ConstraintViolationException
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -16,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/agents")
 class AgentController(
@@ -50,6 +56,16 @@ class AgentController(
         @RequestBody request: HeartbeatRequest,
     ): ResponseEntity<AgentResponse> = ResponseEntity.ok(agentService.updateHeartbeat(id, request.status))
 
+    @GetMapping("/paged")
+    fun getAgentsPaged(
+        @RequestParam(defaultValue = "0") @Min(0) page: Int,
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) pageSize: Int,
+        @RequestParam status: String?,
+    ): ResponseEntity<PagedAgentResponse> = ResponseEntity.ok(agentService.getAgentsPaged(page, pageSize, status))
+
     @ExceptionHandler(NoSuchElementException::class)
     fun handleNotFound(ex: NoSuchElementException): ResponseEntity<Void> = ResponseEntity.notFound().build()
+
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleValidation(ex: ConstraintViolationException): ResponseEntity<Void> = ResponseEntity.badRequest().build()
 }

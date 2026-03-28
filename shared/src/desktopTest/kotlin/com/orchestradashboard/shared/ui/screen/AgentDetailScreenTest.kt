@@ -8,6 +8,7 @@ import androidx.compose.ui.test.runComposeUiTest
 import com.orchestradashboard.shared.domain.model.Agent
 import com.orchestradashboard.shared.domain.model.AgentEvent
 import com.orchestradashboard.shared.domain.model.EventType
+import com.orchestradashboard.shared.domain.model.PagedResult
 import com.orchestradashboard.shared.domain.model.PipelineRun
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import com.orchestradashboard.shared.domain.model.PipelineStep
@@ -75,6 +76,13 @@ private class StaticAgentRepository : AgentRepository {
     override suspend fun registerAgent(agent: Agent) = Result.success(agent)
 
     override suspend fun deregisterAgent(agentId: String) = Result.success(Unit)
+
+    override fun observeAgents(
+        page: Int,
+        pageSize: Int,
+    ): Flow<PagedResult<Agent>> = flowOf(PagedResult(listOf(testAgent), 0, pageSize, 1, 1))
+
+    override suspend fun invalidateCache() {}
 }
 
 private class StaticPipelineRepository : PipelineRepository {

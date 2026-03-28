@@ -4,7 +4,9 @@ import com.orchestradashboard.server.model.AgentEntity
 import com.orchestradashboard.server.model.AgentMapper
 import com.orchestradashboard.server.model.AgentRegistrationRequest
 import com.orchestradashboard.server.model.AgentResponse
+import com.orchestradashboard.server.model.PagedAgentResponse
 import com.orchestradashboard.server.repository.AgentJpaRepository
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import java.util.UUID
 
@@ -23,6 +25,27 @@ class AgentService(
     }
 
     fun getAgentsByStatus(status: String): List<AgentResponse> = agentMapper.toResponseList(agentRepository.findByStatus(status))
+
+    fun getAgentsPaged(
+        page: Int,
+        pageSize: Int,
+        status: String?,
+    ): PagedAgentResponse {
+        val pageable = PageRequest.of(page, pageSize)
+        val result =
+            if (status != null) {
+                agentRepository.findByStatus(status, pageable)
+            } else {
+                agentRepository.findAll(pageable)
+            }
+        return PagedAgentResponse(
+            content = agentMapper.toResponseList(result.content),
+            page = result.number,
+            pageSize = result.size,
+            totalElements = result.totalElements,
+            totalPages = result.totalPages,
+        )
+    }
 
     fun registerAgent(request: AgentRegistrationRequest): AgentResponse {
         val id = request.id ?: UUID.randomUUID().toString()

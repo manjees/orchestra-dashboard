@@ -1,6 +1,7 @@
 package com.orchestradashboard.shared.domain.usecase
 
 import com.orchestradashboard.shared.domain.model.Agent
+import com.orchestradashboard.shared.domain.model.PagedResult
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -18,4 +19,9 @@ class ObserveAgentsUseCase(
      * @return [Flow] emitting updated agent lists on each state change
      */
     operator fun invoke(): Flow<List<Agent>> = agentRepository.observeAgents()
+
+    operator fun invoke(
+        page: Int,
+        pageSize: Int,
+    ): Flow<PagedResult<Agent>> = agentRepository.observeAgents(page, pageSize)
 }

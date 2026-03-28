@@ -2,6 +2,7 @@ package com.orchestradashboard.shared.domain.repository
 
 import com.orchestradashboard.shared.domain.model.Agent
 import com.orchestradashboard.shared.domain.model.Agent.AgentStatus
+import com.orchestradashboard.shared.domain.model.PagedResult
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -55,4 +56,19 @@ interface AgentRepository {
      * @return [Result] containing Unit on success, or an exception on failure
      */
     suspend fun deregisterAgent(agentId: String): Result<Unit>
+
+    /**
+     * Observes paginated agents with caching support.
+     *
+     * @return [Flow] emitting paginated agent results, re-emits on cache invalidation
+     */
+    fun observeAgents(
+        page: Int,
+        pageSize: Int,
+    ): Flow<PagedResult<Agent>>
+
+    /**
+     * Clears cached data and triggers re-fetch for active observers.
+     */
+    suspend fun invalidateCache()
 }
