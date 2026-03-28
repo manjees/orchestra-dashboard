@@ -4,6 +4,7 @@ import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ class DashboardViewModel(
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(DashboardUiState())
+    private var paginatedJob: Job? = null
 
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
@@ -45,6 +47,46 @@ class DashboardViewModel(
                     }
                 }
         }
+    }
+
+    fun loadPage(page: Int) {
+        paginatedJob?.cancel()
+        paginatedJob =
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+                val currentPageSize = _uiState.value.pageSize
+                observeAgentsUseCase(page, currentPageSize)
+                    .catch { e ->
+                        _uiState.update {
+                            it.copy(
+                                error = e.message ?: "Unknown error",
+                                isLoading = false,
+                            )
+                        }
+                    }
+                    .collect { pagedResult ->
+                        _uiState.update {
+                            it.copy(
+                                agents = pagedResult.agents,
+                                isLoading = false,
+                                currentPage = pagedResult.page,
+                                totalElements = pagedResult.totalElements,
+                                totalPages = pagedResult.totalPages,
+                                connectionStatus = ConnectionStatus.CONNECTED,
+                            )
+                        }
+                    }
+            }
+    }
+
+    fun nextPage() {
+        val state = _uiState.value
+        if (state.hasNextPage) loadPage(state.currentPage + 1)
+    }
+
+    fun previousPage() {
+        val state = _uiState.value
+        if (state.hasPreviousPage) loadPage(state.currentPage - 1)
     }
 
     fun selectAgent(agentId: String?) {

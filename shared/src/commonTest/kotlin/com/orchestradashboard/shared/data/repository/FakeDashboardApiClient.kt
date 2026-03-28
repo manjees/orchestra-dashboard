@@ -2,6 +2,7 @@ package com.orchestradashboard.shared.data.repository
 
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.data.dto.AgentPageDto
 import com.orchestradashboard.shared.data.dto.AuthResponseDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import com.orchestradashboard.shared.data.network.DashboardApi
@@ -13,6 +14,7 @@ class FakeDashboardApiClient(
     private val pollingIntervalMs: Long = 5000L,
 ) : DashboardApi {
     var agents: List<AgentDto> = emptyList()
+    var pagedAgents: AgentPageDto = AgentPageDto(emptyList(), 0, 20, 0, 0)
     var pipelineRuns: List<PipelineRunDto> = emptyList()
     var events: List<AgentEventDto> = emptyList()
     var shouldFail: Boolean = false
@@ -89,6 +91,15 @@ class FakeDashboardApiClient(
 
     override suspend fun deregisterAgent(agentId: String) {
         if (shouldFail) throw RuntimeException("Network error")
+    }
+
+    override suspend fun getAgentsPaged(
+        page: Int,
+        pageSize: Int,
+        status: String?,
+    ): AgentPageDto {
+        if (shouldFail) throw RuntimeException("Network error")
+        return pagedAgents
     }
 
     override suspend fun login(apiKey: String): AuthResponseDto {

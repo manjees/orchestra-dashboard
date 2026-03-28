@@ -2,6 +2,7 @@ package com.orchestradashboard.shared.data.network
 
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.data.dto.AgentPageDto
 import com.orchestradashboard.shared.data.dto.AuthResponseDto
 import com.orchestradashboard.shared.data.dto.LoginRequestDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
@@ -88,6 +89,18 @@ class DashboardApiClient(
 
     override suspend fun deregisterAgent(agentId: String) {
         httpClient.delete("$baseUrl/api/v1/agents/$agentId")
+    }
+
+    override suspend fun getAgentsPaged(
+        page: Int,
+        pageSize: Int,
+        status: String?,
+    ): AgentPageDto {
+        return httpClient.get("$baseUrl/api/v1/agents/paged") {
+            parameter("page", page)
+            parameter("pageSize", pageSize)
+            if (status != null) parameter("status", status)
+        }.body()
     }
 
     override suspend fun login(apiKey: String): AuthResponseDto {

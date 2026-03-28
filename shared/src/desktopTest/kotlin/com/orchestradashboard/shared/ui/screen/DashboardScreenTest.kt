@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.runComposeUiTest
 import com.orchestradashboard.shared.domain.model.Agent
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
+import com.orchestradashboard.shared.domain.model.PagedResult
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
@@ -36,6 +37,13 @@ class FakeAgentRepository(
     override suspend fun registerAgent(agent: Agent): Result<Agent> = Result.success(agent)
 
     override suspend fun deregisterAgent(agentId: String): Result<Unit> = Result.success(Unit)
+
+    override fun observeAgents(
+        page: Int,
+        pageSize: Int,
+    ): Flow<PagedResult<Agent>> = flowOf(PagedResult(agents, 0, pageSize, agents.size.toLong(), 1))
+
+    override suspend fun invalidateCache() {}
 }
 
 private fun createViewModel(agents: List<Agent> = emptyList()): DashboardViewModel {

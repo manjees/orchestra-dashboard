@@ -26,4 +26,13 @@ class FakeAgentRepository : AgentRepository {
     override suspend fun registerAgent(agent: Agent) = Result.failure<Agent>(NotImplementedError())
 
     override suspend fun deregisterAgent(agentId: String) = Result.failure<Unit>(NotImplementedError())
+
+    val pagedAgentsFlow = MutableSharedFlow<PagedResult<Agent>>(replay = 1)
+
+    override fun observeAgents(
+        page: Int,
+        pageSize: Int,
+    ): Flow<PagedResult<Agent>> = pagedAgentsFlow
+
+    override suspend fun invalidateCache() {}
 }

@@ -1,10 +1,12 @@
 package com.orchestradashboard.shared.ui.agentdetail
 
 import com.orchestradashboard.shared.domain.model.Agent
+import com.orchestradashboard.shared.domain.model.PagedResult
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 
 class FakeAgentRepository : AgentRepository {
     val agentsFlow = MutableSharedFlow<List<Agent>>()
@@ -27,4 +29,11 @@ class FakeAgentRepository : AgentRepository {
     override suspend fun registerAgent(agent: Agent) = Result.failure<Agent>(NotImplementedError())
 
     override suspend fun deregisterAgent(agentId: String) = Result.failure<Unit>(NotImplementedError())
+
+    override fun observeAgents(
+        page: Int,
+        pageSize: Int,
+    ): Flow<PagedResult<Agent>> = flowOf(PagedResult(emptyList(), 0, pageSize, 0, 0))
+
+    override suspend fun invalidateCache() {}
 }

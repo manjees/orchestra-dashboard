@@ -2,6 +2,7 @@ package com.orchestradashboard.shared.data.network
 
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.data.dto.AgentPageDto
 import com.orchestradashboard.shared.data.dto.AuthResponseDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +33,12 @@ interface DashboardApi {
     suspend fun registerAgent(agent: AgentDto): AgentDto
 
     suspend fun deregisterAgent(agentId: String)
+
+    suspend fun getAgentsPaged(
+        page: Int,
+        pageSize: Int,
+        status: String? = null,
+    ): AgentPageDto
 
     suspend fun login(apiKey: String): AuthResponseDto
 
