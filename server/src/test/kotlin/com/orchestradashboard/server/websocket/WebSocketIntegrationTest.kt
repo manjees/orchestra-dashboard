@@ -2,6 +2,7 @@ package com.orchestradashboard.server.websocket
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.orchestradashboard.server.model.AgentEntity
+import com.orchestradashboard.server.repository.AgentCommandJpaRepository
 import com.orchestradashboard.server.repository.AgentEventJpaRepository
 import com.orchestradashboard.server.repository.AgentJpaRepository
 import com.orchestradashboard.server.repository.PipelineRunJpaRepository
@@ -14,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.MediaType
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
@@ -43,6 +46,9 @@ class WebSocketIntegrationTest {
     private lateinit var eventRepository: AgentEventJpaRepository
 
     @Autowired
+    private lateinit var commandRepository: AgentCommandJpaRepository
+
+    @Autowired
     private lateinit var pipelineRepository: PipelineRunJpaRepository
 
     @Autowired
@@ -52,7 +58,10 @@ class WebSocketIntegrationTest {
 
     @BeforeEach
     fun setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(context).build()
+        val builder = MockMvcBuilders.webAppContextSetup(context)
+        builder.apply<Nothing>(SecurityMockMvcConfigurers.springSecurity())
+        mockMvc = builder.build()
+        commandRepository.deleteAll()
         pipelineRepository.deleteAll()
         eventRepository.deleteAll()
         agentRepository.deleteAll()
@@ -107,6 +116,7 @@ class WebSocketIntegrationTest {
                     contentType = MediaType.APPLICATION_JSON
                     content =
                         """{"agent_id": "agent-1", "type": "STATUS_CHANGE", "payload": {"from": "IDLE"}}"""
+                    with(user("dashboard-client"))
                 }.andExpect { status { isCreated() } }
 
             val received = messages.poll(5, TimeUnit.SECONDS)
@@ -141,12 +151,14 @@ class WebSocketIntegrationTest {
                 .post("/api/v1/events") {
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"agent_id": "agent-2", "type": "HEARTBEAT"}"""
+                    with(user("dashboard-client"))
                 }.andExpect { status { isCreated() } }
 
             mockMvc
                 .post("/api/v1/events") {
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"agent_id": "agent-1", "type": "STATUS_CHANGE"}"""
+                    with(user("dashboard-client"))
                 }.andExpect { status { isCreated() } }
 
             val received = messages.poll(5, TimeUnit.SECONDS)
@@ -174,6 +186,7 @@ class WebSocketIntegrationTest {
             .post("/api/v1/events") {
                 contentType = MediaType.APPLICATION_JSON
                 content = """{"agent_id": "agent-1", "type": "HEARTBEAT"}"""
+                with(user("dashboard-client"))
             }.andExpect { status { isCreated() } }
     }
 
@@ -189,6 +202,7 @@ class WebSocketIntegrationTest {
                 .post("/api/v1/pipeline-runs") {
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"agent_id": "agent-1", "pipeline_name": "build-deploy", "trigger_info": "#42"}"""
+                    with(user("dashboard-client"))
                 }.andExpect { status { isCreated() } }
 
             val received = messages.poll(5, TimeUnit.SECONDS)
@@ -198,6 +212,64 @@ class WebSocketIntegrationTest {
             assertEquals("PIPELINE_STARTED", message["type"].asText())
             assertEquals("agent-1", message["data"]["agent_id"].asText())
             assertEquals("build-deploy", message["data"]["pipeline_name"].asText())
+        } finally {
+            session.close()
+        }
+    }
+
+    // --- Command WebSocket integration tests ---
+
+    @Test
+    fun `should broadcast command update via WebSocket to connected clients`() {
+        val (session, messages) = connectWebSocket()
+        try {
+            Thread.sleep(200)
+
+            mockMvc
+                .post("/api/v1/commands") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = """{"agent_id": "agent-1", "command_type": "STOP"}"""
+                    with(user("dashboard-client"))
+                }.andExpect { status { isCreated() } }
+
+            val received = messages.poll(5, TimeUnit.SECONDS)
+            assertNotNull(received, "Should have received a WebSocket message")
+
+            val message = objectMapper.readTree(received)
+            assertEquals("AGENT_COMMAND", message["type"].asText())
+            assertEquals("agent-1", message["data"]["agent_id"].asText())
+            assertEquals("STOP", message["data"]["command_type"].asText())
+            assertEquals("PENDING", message["data"]["status"].asText())
+        } finally {
+            session.close()
+        }
+    }
+
+    @Test
+    fun `should filter command broadcasts by agentId`() {
+        agentRepository.save(
+            AgentEntity(
+                id = "agent-2",
+                name = "OtherAgent",
+                type = "WORKER",
+                status = "RUNNING",
+                lastHeartbeat = System.currentTimeMillis(),
+            ),
+        )
+
+        val (session, messages) = connectWebSocket("/ws/events?agentId=agent-1")
+        try {
+            Thread.sleep(200)
+
+            mockMvc
+                .post("/api/v1/commands") {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = """{"agent_id": "agent-2", "command_type": "STOP"}"""
+                    with(user("dashboard-client"))
+                }.andExpect { status { isCreated() } }
+
+            val received = messages.poll(1, TimeUnit.SECONDS)
+            assertTrue(received == null, "Should not have received agent-2 command")
         } finally {
             session.close()
         }
@@ -215,6 +287,7 @@ class WebSocketIntegrationTest {
                     .post("/api/v1/pipeline-runs") {
                         contentType = MediaType.APPLICATION_JSON
                         content = """{"agent_id": "agent-1", "pipeline_name": "build-deploy"}"""
+                        with(user("dashboard-client"))
                     }.andExpect { status { isCreated() } }
                     .andReturn()
 
@@ -229,6 +302,7 @@ class WebSocketIntegrationTest {
                 .patch("/api/v1/pipeline-runs/$pipelineId") {
                     contentType = MediaType.APPLICATION_JSON
                     content = """{"status": "PASSED"}"""
+                    with(user("dashboard-client"))
                 }.andExpect { status { isOk() } }
 
             val received = messages.poll(5, TimeUnit.SECONDS)

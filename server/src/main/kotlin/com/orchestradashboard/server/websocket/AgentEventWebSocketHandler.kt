@@ -1,6 +1,7 @@
 package com.orchestradashboard.server.websocket
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.orchestradashboard.server.model.AgentCommandResponse
 import com.orchestradashboard.server.model.AgentEventResponse
 import com.orchestradashboard.server.model.PipelineRunResponse
 import jakarta.annotation.PreDestroy
@@ -78,6 +79,25 @@ class AgentEventWebSocketHandler(
         while (iterator.hasNext()) {
             val (_, entry) = iterator.next()
             if (entry.agentIdFilter != null && entry.agentIdFilter != pipelineRun.agentId) {
+                continue
+            }
+            try {
+                entry.session.sendMessage(json)
+            } catch (e: IOException) {
+                log.warn("Failed to send to session {}, removing: {}", entry.session.id, e.message)
+                iterator.remove()
+            }
+        }
+    }
+
+    fun broadcastCommand(command: AgentCommandResponse) {
+        val message = WebSocketMessage(type = "AGENT_COMMAND", data = command)
+        val json = TextMessage(objectMapper.writeValueAsString(message))
+
+        val iterator = sessions.entries.iterator()
+        while (iterator.hasNext()) {
+            val (_, entry) = iterator.next()
+            if (entry.agentIdFilter != null && entry.agentIdFilter != command.agentId) {
                 continue
             }
             try {
