@@ -1,16 +1,20 @@
 package com.orchestradashboard.android.di
 
+import android.content.Context
 import com.orchestradashboard.shared.data.mapper.AgentEventMapper
 import com.orchestradashboard.shared.data.mapper.AgentMapper
 import com.orchestradashboard.shared.data.mapper.PipelineRunMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
+import com.orchestradashboard.shared.data.repository.AndroidTokenRepository
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
+import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
+import com.orchestradashboard.shared.domain.repository.TokenRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
@@ -29,6 +33,12 @@ import kotlinx.serialization.json.Json
  * All dependencies are lazily initialized and singletons unless noted.
  */
 object AppContainer {
+    private lateinit var applicationContext: Context
+
+    fun initialize(context: Context) {
+        applicationContext = context.applicationContext
+    }
+
     // ─── Configuration ──────────────────────────────────────────
 
     private val serverBaseUrl: String
@@ -54,6 +64,16 @@ object AppContainer {
 
     private val apiClient: DashboardApiClient by lazy {
         DashboardApiClient(httpClient, serverBaseUrl)
+    }
+
+    // ─── Auth ────────────────────────────────────────────────────
+
+    val tokenRepository: TokenRepository by lazy {
+        AndroidTokenRepository(applicationContext)
+    }
+
+    val tokenRefreshHandler: TokenRefreshHandler by lazy {
+        TokenRefreshHandler(httpClient, serverBaseUrl, tokenRepository)
     }
 
     // ─── Mappers ────────────────────────────────────────────────

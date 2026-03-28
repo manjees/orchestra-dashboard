@@ -1,19 +1,27 @@
 package com.orchestradashboard.server.controller
 
+import com.orchestradashboard.server.config.JwtAuthenticationFilter
+import com.orchestradashboard.server.config.JwtTokenProvider
 import com.orchestradashboard.server.config.SecurityConfig
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 
 @WebMvcTest(PipelineRunRedirectController::class)
-@Import(SecurityConfig::class)
+@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@WithMockUser
 class PipelineRunRedirectControllerTest {
     @Autowired
     lateinit var mockMvc: MockMvc
+
+    @MockBean
+    lateinit var jwtTokenProvider: JwtTokenProvider
 
     @Test
     fun `GET api-v1-pipelines redirects 308 to pipeline-runs`() {

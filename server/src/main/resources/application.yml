@@ -40,6 +40,14 @@ logging:
     org.springframework.web: WARN
     org.hibernate: WARN
 
+jwt:
+  secret: ${JWT_SECRET:default-dev-secret-that-is-at-least-32-bytes-long!!}
+  access-expiration-ms: 900000
+  refresh-expiration-ms: 604800000
+
+auth:
+  api-key: ${AUTH_API_KEY:dev-api-key}
+
 dashboard:
   orchestrator:
     api-url: ${ORCHESTRATOR_API_URL:http://localhost:9000}

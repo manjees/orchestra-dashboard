@@ -2,6 +2,7 @@ package com.orchestradashboard.shared.data.repository
 
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.data.dto.AuthResponseDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import com.orchestradashboard.shared.data.network.DashboardApi
 import kotlinx.coroutines.delay
@@ -88,5 +89,15 @@ class FakeDashboardApiClient(
 
     override suspend fun deregisterAgent(agentId: String) {
         if (shouldFail) throw RuntimeException("Network error")
+    }
+
+    override suspend fun login(apiKey: String): AuthResponseDto {
+        if (shouldFail) throw RuntimeException("Network error")
+        return AuthResponseDto(accessToken = "fake-access", refreshToken = "fake-refresh", expiresIn = 900)
+    }
+
+    override suspend fun refreshToken(refreshToken: String): AuthResponseDto {
+        if (shouldFail) throw RuntimeException("Network error")
+        return AuthResponseDto(accessToken = "fake-access", refreshToken = "fake-refresh", expiresIn = 900)
     }
 }

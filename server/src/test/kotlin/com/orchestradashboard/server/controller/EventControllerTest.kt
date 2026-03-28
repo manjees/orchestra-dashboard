@@ -1,6 +1,8 @@
 package com.orchestradashboard.server.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.orchestradashboard.server.config.JwtAuthenticationFilter
+import com.orchestradashboard.server.config.JwtTokenProvider
 import com.orchestradashboard.server.config.SecurityConfig
 import com.orchestradashboard.server.model.AgentEventResponse
 import com.orchestradashboard.server.model.CreateEventRequest
@@ -12,13 +14,15 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.mockito.Mockito.`when` as whenever
 
 @WebMvcTest(EventController::class)
-@Import(SecurityConfig::class)
+@Import(SecurityConfig::class, JwtAuthenticationFilter::class)
+@WithMockUser
 class EventControllerTest {
     @Autowired
     lateinit var mockMvc: MockMvc
@@ -28,6 +32,9 @@ class EventControllerTest {
 
     @MockBean
     lateinit var eventService: EventService
+
+    @MockBean
+    lateinit var jwtTokenProvider: JwtTokenProvider
 
     private val sampleResponse =
         AgentEventResponse(
