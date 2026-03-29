@@ -1,7 +1,5 @@
 package com.orchestradashboard.shared.ui.agentdetail
 
-import com.orchestradashboard.shared.domain.model.CommandType
-import com.orchestradashboard.shared.domain.repository.AgentCommandRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
@@ -22,7 +20,6 @@ class AgentDetailViewModel(
     private val getAgentUseCase: GetAgentUseCase,
     private val observePipelineRunsUseCase: ObservePipelineRunsUseCase,
     private val observeEventsUseCase: ObserveEventsUseCase,
-    private val agentCommandRepository: AgentCommandRepository? = null,
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(AgentDetailUiState())
@@ -67,35 +64,6 @@ class AgentDetailViewModel(
                         .collect { events -> _uiState.update { it.copy(events = events) } }
                 }
             }
-    }
-
-    fun sendCommand(commandType: CommandType) {
-        val repository = agentCommandRepository ?: return
-        viewModelScope.launch {
-            _uiState.update { it.copy(commandInProgress = true, commandResult = null) }
-            repository.sendCommand(agentId, commandType).fold(
-                onSuccess = {
-                    _uiState.update {
-                        it.copy(
-                            commandInProgress = false,
-                            commandResult = CommandResult.Success("${commandType.name} command sent"),
-                        )
-                    }
-                },
-                onFailure = { e ->
-                    _uiState.update {
-                        it.copy(
-                            commandInProgress = false,
-                            commandResult = CommandResult.Failure(e.message ?: "Command failed"),
-                        )
-                    }
-                },
-            )
-        }
-    }
-
-    fun clearCommandResult() {
-        _uiState.update { it.copy(commandResult = null) }
     }
 
     fun selectTab(tab: DetailTab) {

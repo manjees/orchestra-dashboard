@@ -2,7 +2,6 @@ package com.orchestradashboard.shared.ui.agentdetail
 
 import com.orchestradashboard.shared.domain.model.Agent
 import com.orchestradashboard.shared.domain.model.AgentEvent
-import com.orchestradashboard.shared.domain.model.CommandType
 import com.orchestradashboard.shared.domain.model.EventType
 import com.orchestradashboard.shared.domain.model.PipelineRun
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
@@ -45,7 +44,6 @@ class AgentDetailViewModelTest {
     private lateinit var agentRepository: FakeAgentRepository
     private lateinit var pipelineRepository: FakePipelineRepository
     private lateinit var eventRepository: FakeEventRepository
-    private lateinit var commandRepository: FakeAgentCommandRepository
 
     @BeforeTest
     fun setup() {
@@ -53,7 +51,6 @@ class AgentDetailViewModelTest {
         agentRepository = FakeAgentRepository()
         pipelineRepository = FakePipelineRepository()
         eventRepository = FakeEventRepository()
-        commandRepository = FakeAgentCommandRepository()
     }
 
     @AfterTest
@@ -67,7 +64,6 @@ class AgentDetailViewModelTest {
             getAgentUseCase = GetAgentUseCase(agentRepository),
             observePipelineRunsUseCase = ObservePipelineRunsUseCase(pipelineRepository),
             observeEventsUseCase = ObserveEventsUseCase(eventRepository),
-            agentCommandRepository = commandRepository,
         )
 
     // --- Group 1: Initial State ---
@@ -230,63 +226,7 @@ class AgentDetailViewModelTest {
             assertNull(viewModel.uiState.value.agent)
         }
 
-    // --- Group 5: Command Dispatch ---
-
-    @Test
-    fun `sendCommand sets commandInProgress then clears on success`() =
-        runTest {
-            agentRepository.getAgentResult = Result.success(testAgent)
-            val viewModel = createViewModel()
-
-            viewModel.loadAgent()
-            advanceUntilIdle()
-
-            viewModel.sendCommand(CommandType.STOP)
-            advanceUntilIdle()
-
-            assertEquals(false, viewModel.uiState.value.commandInProgress)
-            assertTrue(viewModel.uiState.value.commandResult is CommandResult.Success)
-        }
-
-    @Test
-    fun `sendCommand sets failure result on error`() =
-        runTest {
-            agentRepository.getAgentResult = Result.success(testAgent)
-            commandRepository.sendCommandResult = Result.failure(RuntimeException("Connection failed"))
-            val viewModel = createViewModel()
-
-            viewModel.loadAgent()
-            advanceUntilIdle()
-
-            viewModel.sendCommand(CommandType.STOP)
-            advanceUntilIdle()
-
-            assertEquals(false, viewModel.uiState.value.commandInProgress)
-            assertTrue(viewModel.uiState.value.commandResult is CommandResult.Failure)
-            assertEquals(
-                "Connection failed",
-                (viewModel.uiState.value.commandResult as CommandResult.Failure).message,
-            )
-        }
-
-    @Test
-    fun `clearCommandResult resets commandResult to null`() =
-        runTest {
-            agentRepository.getAgentResult = Result.success(testAgent)
-            val viewModel = createViewModel()
-
-            viewModel.loadAgent()
-            advanceUntilIdle()
-
-            viewModel.sendCommand(CommandType.STOP)
-            advanceUntilIdle()
-            assertNotNull(viewModel.uiState.value.commandResult)
-
-            viewModel.clearCommandResult()
-            assertNull(viewModel.uiState.value.commandResult)
-        }
-
-    // --- Group 6: Lifecycle ---
+    // --- Group 5: Lifecycle ---
 
     @Test
     fun `onCleared cancels all coroutines`() =

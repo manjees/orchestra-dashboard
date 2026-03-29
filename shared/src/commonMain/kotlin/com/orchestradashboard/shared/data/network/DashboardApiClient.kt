@@ -1,11 +1,9 @@
 package com.orchestradashboard.shared.data.network
 
-import com.orchestradashboard.shared.data.dto.AgentCommandDto
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
 import com.orchestradashboard.shared.data.dto.AgentPageDto
 import com.orchestradashboard.shared.data.dto.AuthResponseDto
-import com.orchestradashboard.shared.data.dto.CreateCommandDto
 import com.orchestradashboard.shared.data.dto.LoginRequestDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import com.orchestradashboard.shared.data.dto.PipelineRunPageDto
@@ -116,26 +114,6 @@ class DashboardApiClient(
         return httpClient.post("$baseUrl/api/v1/auth/refresh") {
             contentType(ContentType.Application.Json)
             setBody(RefreshRequestDto(refreshToken))
-        }.body()
-    }
-
-    override suspend fun sendCommand(
-        agentId: String,
-        commandType: String,
-    ): AgentCommandDto {
-        return httpClient.post("$baseUrl/api/v1/commands") {
-            contentType(ContentType.Application.Json)
-            setBody(CreateCommandDto(agentId = agentId, commandType = commandType))
-        }.body()
-    }
-
-    override suspend fun getCommands(
-        agentId: String,
-        limit: Int,
-    ): List<AgentCommandDto> {
-        return httpClient.get("$baseUrl/api/v1/commands") {
-            parameter("agentId", agentId)
-            parameter("limit", limit)
         }.body()
     }
 }

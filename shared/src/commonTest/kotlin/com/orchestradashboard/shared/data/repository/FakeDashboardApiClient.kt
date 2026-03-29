@@ -1,6 +1,5 @@
 package com.orchestradashboard.shared.data.repository
 
-import com.orchestradashboard.shared.data.dto.AgentCommandDto
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
 import com.orchestradashboard.shared.data.dto.AgentPageDto
@@ -111,28 +110,5 @@ class FakeDashboardApiClient(
     override suspend fun refreshToken(refreshToken: String): AuthResponseDto {
         if (shouldFail) throw RuntimeException("Network error")
         return AuthResponseDto(accessToken = "fake-access", refreshToken = "fake-refresh", expiresIn = 900)
-    }
-
-    override suspend fun sendCommand(
-        agentId: String,
-        commandType: String,
-    ): AgentCommandDto {
-        if (shouldFail) throw RuntimeException("Network error")
-        return AgentCommandDto(
-            id = "cmd-1",
-            agentId = agentId,
-            commandType = commandType,
-            status = "PENDING",
-            requestedAt = 1000L,
-            requestedBy = "test-user",
-        )
-    }
-
-    override suspend fun getCommands(
-        agentId: String,
-        limit: Int,
-    ): List<AgentCommandDto> {
-        if (shouldFail) throw RuntimeException("Network error")
-        return emptyList()
     }
 }
