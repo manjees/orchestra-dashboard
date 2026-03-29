@@ -6,13 +6,17 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import com.orchestradashboard.shared.domain.model.Agent
+import com.orchestradashboard.shared.domain.model.AgentCommand
 import com.orchestradashboard.shared.domain.model.AgentEvent
+import com.orchestradashboard.shared.domain.model.CommandStatus
+import com.orchestradashboard.shared.domain.model.CommandType
 import com.orchestradashboard.shared.domain.model.EventType
 import com.orchestradashboard.shared.domain.model.PagedResult
 import com.orchestradashboard.shared.domain.model.PipelineRun
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import com.orchestradashboard.shared.domain.model.PipelineStep
 import com.orchestradashboard.shared.domain.model.StepStatus
+import com.orchestradashboard.shared.domain.repository.AgentCommandRepository
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
@@ -113,16 +117,40 @@ private class EmptyEventRepository : EventRepository {
     override suspend fun getRecentEvents(limit: Int) = Result.success(emptyList<AgentEvent>())
 }
 
+private class StaticCommandRepository : AgentCommandRepository {
+    override suspend fun sendCommand(
+        agentId: String,
+        commandType: CommandType,
+    ): Result<AgentCommand> =
+        Result.success(
+            AgentCommand(
+                id = "cmd-1",
+                agentId = agentId,
+                commandType = commandType,
+                status = CommandStatus.PENDING,
+                requestedAt = 1000L,
+                requestedBy = "test-user",
+            ),
+        )
+
+    override suspend fun getCommands(
+        agentId: String,
+        limit: Int,
+    ): Result<List<AgentCommand>> = Result.success(emptyList())
+}
+
 private fun createViewModel(
     agentRepository: AgentRepository = StaticAgentRepository(),
     pipelineRepository: PipelineRepository = StaticPipelineRepository(),
     eventRepository: EventRepository = StaticEventRepository(),
+    commandRepository: AgentCommandRepository = StaticCommandRepository(),
 ): AgentDetailViewModel =
     AgentDetailViewModel(
         agentId = "agent-1",
         getAgentUseCase = GetAgentUseCase(agentRepository),
         observePipelineRunsUseCase = ObservePipelineRunsUseCase(pipelineRepository),
         observeEventsUseCase = ObserveEventsUseCase(eventRepository),
+        agentCommandRepository = commandRepository,
     )
 
 @OptIn(ExperimentalTestApi::class)
@@ -242,5 +270,40 @@ class AgentDetailScreenTest {
             onNodeWithText("Metadata").assertIsDisplayed()
             onNodeWithText("version").assertIsDisplayed()
             onNodeWithText("2.0").assertIsDisplayed()
+        }
+
+    // --- Command Control Tests ---
+
+    @Test
+    fun `should display command control buttons on overview tab`() =
+        runComposeUiTest {
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    AgentDetailScreen(viewModel = viewModel, onBackClick = {})
+                }
+            }
+            waitForIdle()
+            onNodeWithText("Controls").assertIsDisplayed()
+            onNodeWithText("Start").assertIsDisplayed()
+            onNodeWithText("Stop").assertIsDisplayed()
+            onNodeWithText("Restart").assertIsDisplayed()
+        }
+
+    @Test
+    fun `should show confirmation dialog when command button clicked`() =
+        runComposeUiTest {
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    AgentDetailScreen(viewModel = viewModel, onBackClick = {})
+                }
+            }
+            waitForIdle()
+            onNodeWithText("Stop").performClick()
+            waitForIdle()
+            onNodeWithText("Confirm STOP").assertIsDisplayed()
+            onNodeWithText("Confirm").assertIsDisplayed()
+            onNodeWithText("Cancel").assertIsDisplayed()
         }
 }

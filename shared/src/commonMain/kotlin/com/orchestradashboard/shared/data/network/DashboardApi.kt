@@ -1,5 +1,6 @@
 package com.orchestradashboard.shared.data.network
 
+import com.orchestradashboard.shared.data.dto.AgentCommandDto
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
 import com.orchestradashboard.shared.data.dto.AgentPageDto
@@ -43,4 +44,14 @@ interface DashboardApi {
     suspend fun login(apiKey: String): AuthResponseDto
 
     suspend fun refreshToken(refreshToken: String): AuthResponseDto
+
+    suspend fun sendCommand(
+        agentId: String,
+        commandType: String,
+    ): AgentCommandDto
+
+    suspend fun getCommands(
+        agentId: String,
+        limit: Int = 20,
+    ): List<AgentCommandDto>
 }
