@@ -16,10 +16,10 @@ data class MetricEntity(
     val agentId: String = "",
     @Column(nullable = false, length = 100)
     val name: String = "",
-    @Column(nullable = false)
+    @Column(name = "\"value\"", nullable = false)
     val value: Double = 0.0,
     @Column(nullable = false, length = 50)
     val unit: String = "",
-    @Column(nullable = false)
+    @Column(name = "\"timestamp\"", nullable = false)
     val timestamp: Long = 0L,
 )
