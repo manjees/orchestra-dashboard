@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -27,6 +28,7 @@ import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.ui.component.AgentCard
 import com.orchestradashboard.shared.ui.component.ErrorBanner
 import com.orchestradashboard.shared.ui.component.LoadingOverlay
+import com.orchestradashboard.shared.ui.component.MetricsChart
 import com.orchestradashboard.shared.ui.component.StatusFilterBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,18 +57,29 @@ fun DashboardScreen(
                 modifier = Modifier.padding(vertical = 8.dp),
             )
 
-            when {
-                uiState.isLoading -> LoadingOverlay()
-                uiState.filteredAgents.isEmpty() -> EmptyState()
-                else ->
-                    AgentGrid(
-                        agents = uiState.filteredAgents,
-                        selectedAgentId = uiState.selectedAgent?.id,
-                        onAgentClick = { agent ->
-                            viewModel.selectAgent(agent.id)
-                            onAgentClick?.invoke(agent.id)
-                        },
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                when {
+                    uiState.isLoading -> LoadingOverlay()
+                    uiState.filteredAgents.isEmpty() -> EmptyState()
+                    else ->
+                        AgentGrid(
+                            agents = uiState.filteredAgents,
+                            selectedAgentId = uiState.selectedAgent?.id,
+                            onAgentClick = { agent ->
+                                viewModel.selectAgent(agent.id)
+                                onAgentClick?.invoke(agent.id)
+                            },
+                        )
+                }
+            }
+
+            if (uiState.timeSeriesData.isNotEmpty()) {
+                uiState.timeSeriesData.forEach { data ->
+                    MetricsChart(
+                        timeSeriesData = data,
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
+                }
             }
         }
     }
