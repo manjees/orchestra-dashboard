@@ -1,5 +1,6 @@
 package com.orchestradashboard.desktop.di
 
+import com.orchestradashboard.shared.data.api.OrchestratorApiClient
 import com.orchestradashboard.shared.data.mapper.AgentEventMapper
 import com.orchestradashboard.shared.data.mapper.AgentMapper
 import com.orchestradashboard.shared.data.mapper.PipelineRunMapper
@@ -25,8 +26,11 @@ import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.request.header
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -59,6 +63,38 @@ object AppContainer {
 
     private val apiClient: DashboardApiClient by lazy {
         DashboardApiClient(httpClient, serverBaseUrl)
+    }
+
+    // ─── Orchestrator Network ───────────────────────────────────
+
+    private val orchestratorBaseUrl: String
+        get() = System.getenv("ORCHESTRATOR_URL") ?: "http://localhost:9000"
+
+    private val orchestratorApiKey: String
+        get() = System.getenv("ORCHESTRATOR_API_KEY") ?: ""
+
+    private val orchestratorHttpClient: HttpClient by lazy {
+        HttpClient(CIO) {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        coerceInputValues = true
+                    },
+                )
+            }
+            install(Logging) {
+                level = LogLevel.INFO
+            }
+            install(WebSockets)
+            defaultRequest {
+                header("X-API-Key", orchestratorApiKey)
+            }
+        }
+    }
+
+    val orchestratorApiClient: OrchestratorApiClient by lazy {
+        OrchestratorApiClient(orchestratorHttpClient, orchestratorBaseUrl, orchestratorApiKey)
     }
 
     // ─── Auth ────────────────────────────────────────────────────
