@@ -2,9 +2,9 @@ CREATE TABLE IF NOT EXISTS metrics (
     id VARCHAR(36) PRIMARY KEY,
     agent_id VARCHAR(36) NOT NULL,
     name VARCHAR(100) NOT NULL,
-    value DOUBLE PRECISION NOT NULL,
+    "value" DOUBLE PRECISION NOT NULL,
     unit VARCHAR(50) NOT NULL DEFAULT '',
-    timestamp BIGINT NOT NULL
+    "timestamp" BIGINT NOT NULL
 );
 
 CREATE INDEX idx_metrics_agent_timestamp ON metrics (agent_id, timestamp);

@@ -15,4 +15,11 @@ interface AgentEventJpaRepository : JpaRepository<AgentEventEntity, String> {
     fun findAllByOrderByTimestampDesc(pageable: Pageable): List<AgentEventEntity>
 
     fun findTop50ByOrderByTimestampDesc(): List<AgentEventEntity>
+
+    fun findByAgentIdAndTypeAndTimestampBetween(
+        agentId: String,
+        type: String,
+        startTime: Long,
+        endTime: Long,
+    ): List<AgentEventEntity>
 }
