@@ -6,6 +6,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
+import kotlin.test.assertTrue
 import com.orchestradashboard.shared.domain.model.Agent
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.model.Metric
@@ -131,6 +132,32 @@ class DashboardScreenTest {
             }
             onNodeWithText("All").assertIsDisplayed()
             onNodeWithText("Running").assertIsDisplayed()
+        }
+
+    @Test
+    fun `should display View Projects button when callback provided`() =
+        runComposeUiTest {
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    DashboardScreen(viewModel = viewModel, onViewProjectsClick = {})
+                }
+            }
+            onNodeWithText("View Projects").assertIsDisplayed()
+        }
+
+    @Test
+    fun `View Projects button fires callback on click`() =
+        runComposeUiTest {
+            var clicked = false
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    DashboardScreen(viewModel = viewModel, onViewProjectsClick = { clicked = true })
+                }
+            }
+            onNodeWithText("View Projects").performClick()
+            assertTrue(clicked)
         }
 
     @Test

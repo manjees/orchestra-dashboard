@@ -30,6 +30,9 @@ class MainActivity : ComponentActivity() {
                     agentDetailViewModelFactory = { agentId ->
                         AppContainer.createAgentDetailViewModel(agentId)
                     },
+                    projectExplorerViewModelFactory = {
+                        AppContainer.createProjectExplorerViewModel()
+                    },
                 )
             }
         }

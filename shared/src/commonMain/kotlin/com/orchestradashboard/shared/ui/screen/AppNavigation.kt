@@ -9,17 +9,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
+import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 
 sealed class Screen {
     data object Dashboard : Screen()
 
     data class AgentDetail(val agentId: String) : Screen()
+
+    data object ProjectExplorer : Screen()
 }
 
 @Composable
 fun AppNavigation(
     dashboardViewModel: DashboardViewModel,
     agentDetailViewModelFactory: (String) -> AgentDetailViewModel,
+    projectExplorerViewModelFactory: () -> ProjectExplorerViewModel,
     modifier: Modifier = Modifier,
 ) {
     var currentScreen: Screen by remember { mutableStateOf(Screen.Dashboard) }
@@ -29,6 +33,7 @@ fun AppNavigation(
             DashboardScreen(
                 viewModel = dashboardViewModel,
                 onAgentClick = { agentId -> currentScreen = Screen.AgentDetail(agentId) },
+                onViewProjectsClick = { currentScreen = Screen.ProjectExplorer },
                 modifier = modifier,
             )
         is Screen.AgentDetail -> {
@@ -37,6 +42,17 @@ fun AppNavigation(
                 onDispose { vm.onCleared() }
             }
             AgentDetailScreen(
+                viewModel = vm,
+                onBackClick = { currentScreen = Screen.Dashboard },
+                modifier = modifier,
+            )
+        }
+        is Screen.ProjectExplorer -> {
+            val vm = remember { projectExplorerViewModelFactory() }
+            DisposableEffect(Unit) {
+                onDispose { vm.onCleared() }
+            }
+            ProjectExplorerScreen(
                 viewModel = vm,
                 onBackClick = { currentScreen = Screen.Dashboard },
                 modifier = modifier,
