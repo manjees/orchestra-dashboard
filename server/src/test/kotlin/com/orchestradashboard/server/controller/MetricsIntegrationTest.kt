@@ -55,13 +55,14 @@ class MetricsIntegrationTest {
     @Test
     fun `full aggregation lifecycle - seed metrics then query aggregate`() {
         val now = System.currentTimeMillis()
-        val metrics = listOf(
-            MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 40.0, unit = "percent", timestamp = now - 1000),
-            MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 60.0, unit = "percent", timestamp = now - 2000),
-            MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 80.0, unit = "percent", timestamp = now - 3000),
-            MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 20.0, unit = "percent", timestamp = now - 4000),
-            MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 50.0, unit = "percent", timestamp = now - 5000),
-        )
+        val metrics =
+            listOf(
+                MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 40.0, unit = "percent", timestamp = now - 1000),
+                MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 60.0, unit = "percent", timestamp = now - 2000),
+                MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 80.0, unit = "percent", timestamp = now - 3000),
+                MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 20.0, unit = "percent", timestamp = now - 4000),
+                MetricEntity(agentId = "agent-1", name = "cpu_usage", value = 50.0, unit = "percent", timestamp = now - 5000),
+            )
         metricRepository.saveAll(metrics)
 
         mockMvc.get("/api/v1/metrics/agent-1/aggregate") {
