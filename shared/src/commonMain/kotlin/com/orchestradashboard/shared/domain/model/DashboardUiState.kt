@@ -13,6 +13,7 @@ data class DashboardUiState(
     val totalElements: Long = 0,
     val totalPages: Int = 0,
     val timeSeriesData: List<TimeSeriesData> = emptyList(),
+    val metricsChart: MetricsChartState = MetricsChartState(),
 ) {
     val filteredAgents: List<Agent>
         get() = if (statusFilter == null) agents else agents.filter { it.status == statusFilter }
