@@ -208,6 +208,25 @@ open iosApp/iosApp.xcworkspace
 ./gradlew :server:integrationTest
 ```
 
+### Code Coverage
+
+Generate coverage reports locally:
+
+```bash
+# Server module
+./gradlew :server:test :server:jacocoTestReport
+open server/build/reports/jacoco/test/html/index.html
+
+# Shared module (JVM target)
+./gradlew :shared:desktopTest :shared:jacocoTestReport
+open shared/build/reports/jacoco/jacocoTestReport/html/index.html
+
+# Verify server meets 80% threshold
+./gradlew :server:jacocoTestCoverageVerification
+```
+
+CI enforces a minimum **80% line coverage** on the server module. Coverage reports are uploaded as build artifacts on every CI run.
+
 ### Code Quality
 
 ```bash

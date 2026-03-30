@@ -23,6 +23,28 @@ subprojects {
     apply(plugin = "io.gitlab.arturbosch.detekt")
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
+    // Apply JaCoCo to modules with JVM tests
+    pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+        apply(plugin = "jacoco")
+
+        configure<JacocoPluginExtension> {
+            toolVersion = "0.8.12"
+        }
+
+        tasks.withType<Test> {
+            finalizedBy(tasks.named("jacocoTestReport"))
+        }
+
+        tasks.withType<JacocoReport> {
+            dependsOn(tasks.withType<Test>())
+            reports {
+                xml.required.set(true)
+                html.required.set(true)
+                csv.required.set(false)
+            }
+        }
+    }
+
     tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
         config.setFrom(rootProject.files("config/detekt/detekt.yml"))
         buildUponDefaultConfig = true

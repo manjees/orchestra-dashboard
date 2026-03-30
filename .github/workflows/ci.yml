@@ -41,6 +41,15 @@ jobs:
           name: shared-test-results
           path: shared/build/reports/tests/
 
+      - name: Upload shared coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shared-coverage-report
+          path: |
+            shared/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+            shared/build/reports/jacoco/jacocoTestReport/html/
+
   # ─── Spring Boot Server ─────────────────────────────────────
   server:
     name: Server (Spring Boot) Build & Test
@@ -62,10 +71,16 @@ jobs:
           gradle-version: wrapper
 
       - name: Build server
-        run: ./gradlew :server:build --parallel
+        run: ./gradlew :server:assemble --parallel
 
       - name: Run server tests
         run: ./gradlew :server:test
+
+      - name: Generate coverage report
+        run: ./gradlew :server:jacocoTestReport
+
+      - name: Verify coverage threshold (80%)
+        run: ./gradlew :server:jacocoTestCoverageVerification
 
       - name: Upload server test results
         if: always()
@@ -73,6 +88,13 @@ jobs:
         with:
           name: server-test-results
           path: server/build/reports/tests/
+
+      - name: Upload server coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage-report
+          path: server/build/reports/jacoco/
 
       - name: Build bootJar (production artifact)
         run: ./gradlew :server:bootJar

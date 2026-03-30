@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.plugin.serialization)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.compose.compiler)
+    jacoco
 }
 
 kotlin {
@@ -109,5 +110,27 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
+    }
+}
+
+// JaCoCo coverage for JVM (desktop) target
+jacoco {
+    toolVersion = "0.8.12"
+}
+
+tasks.named<Test>("desktopTest") {
+    finalizedBy("jacocoTestReport")
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("desktopTest")
+    onlyIf { executionData.files.any { it.exists() } }
+    classDirectories.setFrom(files(layout.buildDirectory.dir("classes/kotlin/desktop/main")))
+    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/desktopMain/kotlin"))
+    executionData.setFrom(files(layout.buildDirectory.file("jacoco/desktopTest.exec")))
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
     }
 }

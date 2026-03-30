@@ -41,3 +41,39 @@ dependencies {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// JaCoCo coverage configuration
+tasks.named<JacocoReport>("jacocoTestReport") {
+    classDirectories.setFrom(
+        files(
+            classDirectories.files.map {
+                fileTree(it) {
+                    exclude(
+                        "**/model/*Entity*",
+                        "**/model/*Response*",
+                        "**/model/*Request*",
+                        "**/model/EventType*",
+                        "**/config/*",
+                        "**/*Application*",
+                    )
+                }
+            },
+        ),
+    )
+}
+
+tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    dependsOn("jacocoTestReport")
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.80".toBigDecimal()
+            }
+        }
+    }
+    classDirectories.setFrom(provider { tasks.named<JacocoReport>("jacocoTestReport").get().classDirectories })
+}
+
+tasks.named("check") {
+    dependsOn("jacocoTestCoverageVerification")
+}
