@@ -13,9 +13,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.orchestradashboard.shared.domain.model.TimeSeriesData
+import com.orchestradashboard.shared.domain.model.TimeSeriesPoint
 
 @Composable
 fun MetricsChart(
@@ -63,7 +68,7 @@ fun MetricsChart(
                 Spacer(modifier = Modifier.height(8.dp))
                 LineChart(
                     dataPoints = timeSeriesData.dataPoints,
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    modifier = Modifier.fillMaxWidth().height(120.dp).testTag("metrics_chart"),
                 )
             }
         }
@@ -110,5 +115,32 @@ private fun LineChart(
                 cap = StrokeCap.Round,
             )
         }
+    }
+}
+
+@Composable
+fun MetricsPointsChart(
+    points: List<TimeSeriesPoint>,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(
+        modifier = modifier.testTag("metrics_chart"),
+    ) {
+        if (points.size < 2) return@Canvas
+        val sorted = points.sortedBy { it.timestamp }
+        val minTime = sorted.first().timestamp.toFloat()
+        val maxTime = sorted.last().timestamp.toFloat()
+        val minVal = sorted.minOf { it.value }.toFloat()
+        val maxVal = sorted.maxOf { it.value }.toFloat()
+        val timeSpan = (maxTime - minTime).coerceAtLeast(1f)
+        val valSpan = (maxVal - minVal).coerceAtLeast(1f)
+
+        val path = Path()
+        sorted.forEachIndexed { i, pt ->
+            val x = ((pt.timestamp - minTime) / timeSpan) * size.width
+            val y = size.height - ((pt.value.toFloat() - minVal) / valSpan) * size.height
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        drawPath(path, color = Color(0xFF6200EE), style = Stroke(width = 2.dp.toPx()))
     }
 }

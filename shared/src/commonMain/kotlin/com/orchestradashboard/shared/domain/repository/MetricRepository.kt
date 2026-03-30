@@ -1,6 +1,7 @@
 package com.orchestradashboard.shared.domain.repository
 
 import com.orchestradashboard.shared.domain.model.Metric
+import com.orchestradashboard.shared.domain.model.TimeRange
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -21,4 +22,16 @@ interface MetricRepository {
      * @return [Result] containing fleet-wide metrics on success
      */
     suspend fun getFleetMetrics(): Result<List<Metric>>
+
+    /**
+     * Retrieves aggregated historical metrics for a specific agent within a time range.
+     *
+     * @param agentId The agent whose metrics to retrieve
+     * @param timeRange The time range to query
+     * @return [Result] containing the list of metrics on success
+     */
+    suspend fun getAggregatedMetrics(
+        agentId: String,
+        timeRange: TimeRange,
+    ): Result<List<Metric>>
 }

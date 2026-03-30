@@ -7,10 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -29,7 +31,9 @@ import com.orchestradashboard.shared.ui.component.AgentCard
 import com.orchestradashboard.shared.ui.component.ErrorBanner
 import com.orchestradashboard.shared.ui.component.LoadingOverlay
 import com.orchestradashboard.shared.ui.component.MetricsChart
+import com.orchestradashboard.shared.ui.component.MetricsPointsChart
 import com.orchestradashboard.shared.ui.component.StatusFilterBar
+import com.orchestradashboard.shared.ui.component.TimeRangeSelector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +61,39 @@ fun DashboardScreen(
                 modifier = Modifier.padding(vertical = 8.dp),
             )
 
+            if (uiState.selectedAgent != null) {
+                val chartState = uiState.metricsChart
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    chartState.selectedMetricName?.let { name ->
+                        Text(name, style = MaterialTheme.typography.titleSmall)
+                    }
+                    TimeRangeSelector(
+                        selected = chartState.selectedTimeRange,
+                        onSelected = { viewModel.selectTimeRange(it) },
+                    )
+                    if (chartState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        )
+                    } else if (uiState.timeSeriesData.isNotEmpty()) {
+                        uiState.timeSeriesData.forEach { data ->
+                            MetricsChart(
+                                timeSeriesData = data,
+                                modifier = Modifier.padding(vertical = 4.dp),
+                            )
+                        }
+                    } else if (chartState.points.isNotEmpty()) {
+                        MetricsPointsChart(
+                            points = chartState.points,
+                            modifier = Modifier.fillMaxWidth().height(200.dp),
+                        )
+                    }
+                    chartState.error?.let { errorMsg ->
+                        ErrorBanner(message = errorMsg, onDismiss = { viewModel.clearMetricsError() })
+                    }
+                }
+            }
+
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when {
                     uiState.isLoading -> LoadingOverlay()
@@ -70,15 +107,6 @@ fun DashboardScreen(
                                 onAgentClick?.invoke(agent.id)
                             },
                         )
-                }
-            }
-
-            if (uiState.timeSeriesData.isNotEmpty()) {
-                uiState.timeSeriesData.forEach { data ->
-                    MetricsChart(
-                        timeSeriesData = data,
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                    )
                 }
             }
         }

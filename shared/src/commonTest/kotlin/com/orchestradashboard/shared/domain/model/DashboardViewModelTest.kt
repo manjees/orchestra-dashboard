@@ -1,10 +1,14 @@
 package com.orchestradashboard.shared.domain.model
 
+import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.usecase.FakeAgentRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
+import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -39,11 +43,24 @@ class DashboardViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val emptyMetricRepo =
+        object : MetricRepository {
+            override fun observeMetrics(agentId: String): Flow<List<Metric>> = flowOf(emptyList())
+
+            override suspend fun getFleetMetrics(): Result<List<Metric>> = Result.success(emptyList())
+
+            override suspend fun getAggregatedMetrics(
+                agentId: String,
+                timeRange: TimeRange,
+            ): Result<List<Metric>> = Result.success(emptyList())
+        }
+
     private fun createViewModel(agents: List<Agent> = testAgents): DashboardViewModel {
         val repository = FakeAgentRepository(agents)
         return DashboardViewModel(
             ObserveAgentsUseCase(repository),
             GetAgentUseCase(repository),
+            GetAggregatedMetricsUseCase(emptyMetricRepo),
         )
     }
 

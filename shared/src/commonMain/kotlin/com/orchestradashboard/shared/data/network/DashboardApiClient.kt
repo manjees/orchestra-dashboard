@@ -4,6 +4,7 @@ import com.orchestradashboard.shared.data.dto.AgentCommandDto
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
 import com.orchestradashboard.shared.data.dto.AgentPageDto
+import com.orchestradashboard.shared.data.dto.AggregatedMetricDto
 import com.orchestradashboard.shared.data.dto.AuthResponseDto
 import com.orchestradashboard.shared.data.dto.CreateCommandDto
 import com.orchestradashboard.shared.data.dto.LoginRequestDto
@@ -136,6 +137,17 @@ class DashboardApiClient(
         return httpClient.get("$baseUrl/api/v1/commands") {
             parameter("agentId", agentId)
             parameter("limit", limit)
+        }.body()
+    }
+
+    override suspend fun getAggregatedMetrics(
+        agentId: String,
+        startTime: Long,
+        endTime: Long,
+    ): List<AggregatedMetricDto> {
+        return httpClient.get("$baseUrl/api/v1/metrics/$agentId/aggregate") {
+            parameter("startTime", startTime)
+            parameter("endTime", endTime)
         }.body()
     }
 }

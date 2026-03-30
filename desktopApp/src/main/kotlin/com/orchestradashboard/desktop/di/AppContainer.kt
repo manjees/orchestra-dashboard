@@ -7,14 +7,17 @@ import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
 import com.orchestradashboard.shared.data.repository.DesktopTokenRepository
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
+import com.orchestradashboard.shared.data.repository.MetricRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
 import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
+import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
 import com.orchestradashboard.shared.domain.repository.TokenRepository
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
+import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
@@ -88,6 +91,10 @@ object AppContainer {
         EventRepositoryImpl(apiClient, agentEventMapper)
     }
 
+    private val metricRepository: MetricRepository by lazy {
+        MetricRepositoryImpl(apiClient)
+    }
+
     // ─── UseCases ───────────────────────────────────────────────
 
     private val observeAgentsUseCase: ObserveAgentsUseCase by lazy {
@@ -106,9 +113,14 @@ object AppContainer {
         ObserveEventsUseCase(eventRepository)
     }
 
+    private val getAggregatedMetricsUseCase: GetAggregatedMetricsUseCase by lazy {
+        GetAggregatedMetricsUseCase(metricRepository)
+    }
+
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 
-    fun createDashboardViewModel(): DashboardViewModel = DashboardViewModel(observeAgentsUseCase, getAgentUseCase)
+    fun createDashboardViewModel(): DashboardViewModel =
+        DashboardViewModel(observeAgentsUseCase, getAgentUseCase, getAggregatedMetricsUseCase)
 
     fun createAgentDetailViewModel(agentId: String): AgentDetailViewModel =
         AgentDetailViewModel(agentId, getAgentUseCase, observePipelineRunsUseCase, observeEventsUseCase)

@@ -1,6 +1,7 @@
 package com.orchestradashboard.shared.domain.model
 
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
+import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 class DashboardViewModel(
     private val observeAgentsUseCase: ObserveAgentsUseCase,
     private val getAgentUseCase: GetAgentUseCase,
+    private val getAggregatedMetricsUseCase: GetAggregatedMetricsUseCase,
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -96,10 +98,69 @@ class DashboardViewModel(
         }
         viewModelScope.launch {
             getAgentUseCase(agentId).fold(
-                onSuccess = { agent -> _uiState.update { it.copy(selectedAgent = agent) } },
+                onSuccess = { agent ->
+                    _uiState.update { it.copy(selectedAgent = agent) }
+                    loadMetrics(agentId)
+                },
                 onFailure = { e -> _uiState.update { it.copy(error = e.message ?: "Unknown error") } },
             )
         }
+    }
+
+    fun loadMetrics(agentId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(metricsChart = it.metricsChart.copy(isLoading = true, error = null)) }
+            val timeRange = _uiState.value.metricsChart.selectedTimeRange
+            getAggregatedMetricsUseCase(agentId, timeRange).fold(
+                onSuccess = { metrics ->
+                    val byName = metrics.groupBy { it.name }
+                    val names = byName.keys.toList().sorted()
+                    val selected =
+                        _uiState.value.metricsChart.selectedMetricName
+                            ?.takeIf { it in names } ?: names.firstOrNull()
+                    val points =
+                        selected?.let { name ->
+                            byName[name]
+                                ?.sortedBy { it.timestamp }
+                                ?.map { TimeSeriesPoint(it.timestamp, it.value) }
+                        } ?: emptyList()
+
+                    _uiState.update {
+                        it.copy(
+                            metricsChart =
+                                MetricsChartState(
+                                    points = points,
+                                    selectedTimeRange = timeRange,
+                                    availableMetricNames = names,
+                                    selectedMetricName = selected,
+                                    isLoading = false,
+                                ),
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _uiState.update {
+                        it.copy(
+                            metricsChart =
+                                it.metricsChart.copy(
+                                    isLoading = false,
+                                    error = e.message ?: "Failed to load metrics",
+                                ),
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun selectTimeRange(timeRange: TimeRange) {
+        _uiState.update { it.copy(metricsChart = it.metricsChart.copy(selectedTimeRange = timeRange)) }
+        _uiState.value.selectedAgent?.id?.let { loadMetrics(it) }
+    }
+
+    fun selectMetricName(name: String) {
+        _uiState.update { it.copy(metricsChart = it.metricsChart.copy(selectedMetricName = name)) }
+        _uiState.value.selectedAgent?.id?.let { loadMetrics(it) }
     }
 
     fun setStatusFilter(status: Agent.AgentStatus?) {
@@ -107,6 +168,10 @@ class DashboardViewModel(
             val newFilter = if (current.statusFilter == status) null else status
             current.copy(statusFilter = newFilter)
         }
+    }
+
+    fun clearMetricsError() {
+        _uiState.update { it.copy(metricsChart = it.metricsChart.copy(error = null)) }
     }
 
     fun clearError() {

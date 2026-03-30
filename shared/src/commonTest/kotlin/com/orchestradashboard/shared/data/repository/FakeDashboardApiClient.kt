@@ -4,6 +4,7 @@ import com.orchestradashboard.shared.data.dto.AgentCommandDto
 import com.orchestradashboard.shared.data.dto.AgentDto
 import com.orchestradashboard.shared.data.dto.AgentEventDto
 import com.orchestradashboard.shared.data.dto.AgentPageDto
+import com.orchestradashboard.shared.data.dto.AggregatedMetricDto
 import com.orchestradashboard.shared.data.dto.AuthResponseDto
 import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import com.orchestradashboard.shared.data.network.DashboardApi
@@ -132,6 +133,15 @@ class FakeDashboardApiClient(
         agentId: String,
         limit: Int,
     ): List<AgentCommandDto> {
+        if (shouldFail) throw RuntimeException("Network error")
+        return emptyList()
+    }
+
+    override suspend fun getAggregatedMetrics(
+        agentId: String,
+        startTime: Long,
+        endTime: Long,
+    ): List<AggregatedMetricDto> {
         if (shouldFail) throw RuntimeException("Network error")
         return emptyList()
     }
