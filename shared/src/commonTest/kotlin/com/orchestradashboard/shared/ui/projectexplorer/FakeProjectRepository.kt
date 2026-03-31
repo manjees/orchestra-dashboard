@@ -1,6 +1,5 @@
 package com.orchestradashboard.shared.ui.projectexplorer
 
-import com.orchestradashboard.shared.domain.model.Checkpoint
 import com.orchestradashboard.shared.domain.model.Issue
 import com.orchestradashboard.shared.domain.model.Project
 import com.orchestradashboard.shared.domain.repository.ProjectRepository
@@ -8,13 +7,10 @@ import com.orchestradashboard.shared.domain.repository.ProjectRepository
 class FakeProjectRepository : ProjectRepository {
     var projectsResult: Result<List<Project>> = Result.success(emptyList())
     var issuesResult: Result<List<Issue>> = Result.success(emptyList())
-    var checkpointsResult: Result<List<Checkpoint>> = Result.success(emptyList())
 
     var getProjectsCallCount = 0
         private set
     var getProjectIssuesCallCount = 0
-        private set
-    var getCheckpointsCallCount = 0
         private set
     var lastRequestedProjectName: String? = null
         private set
@@ -24,18 +20,9 @@ class FakeProjectRepository : ProjectRepository {
         return projectsResult
     }
 
-    override suspend fun getProjectIssues(
-        name: String,
-        page: Int,
-        pageSize: Int,
-    ): Result<List<Issue>> {
+    override suspend fun getProjectIssues(projectName: String): Result<List<Issue>> {
         getProjectIssuesCallCount++
-        lastRequestedProjectName = name
+        lastRequestedProjectName = projectName
         return issuesResult
-    }
-
-    override suspend fun getCheckpoints(): Result<List<Checkpoint>> {
-        getCheckpointsCallCount++
-        return checkpointsResult
     }
 }
