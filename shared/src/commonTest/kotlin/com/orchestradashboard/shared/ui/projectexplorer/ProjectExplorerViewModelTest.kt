@@ -43,10 +43,11 @@ class ProjectExplorerViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         fakeRepository = FakeProjectRepository()
-        viewModel = ProjectExplorerViewModel(
-            GetProjectsUseCase(fakeRepository),
-            GetProjectIssuesUseCase(fakeRepository),
-        )
+        viewModel =
+            ProjectExplorerViewModel(
+                GetProjectsUseCase(fakeRepository),
+                GetProjectIssuesUseCase(fakeRepository),
+            )
     }
 
     @AfterTest
