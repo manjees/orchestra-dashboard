@@ -128,18 +128,6 @@ object AppContainer {
         MetricRepositoryImpl(apiClient)
     }
 
-    // ─── Orchestrator Network ───────────────────────────────────
-
-    private val orchestratorBaseUrl: String
-        get() = System.getenv("ORCHESTRATOR_URL") ?: "http://localhost:9000"
-
-    private val orchestratorApiKey: String
-        get() = System.getenv("ORCHESTRATOR_API_KEY") ?: ""
-
-    private val orchestratorApiClient: OrchestratorApiClient by lazy {
-        OrchestratorApiClient(httpClient, orchestratorBaseUrl, orchestratorApiKey)
-    }
-
     private val projectRepository: ProjectRepository by lazy {
         ProjectRepositoryImpl(orchestratorApiClient, projectMapper, issueMapper, checkpointMapper)
     }
