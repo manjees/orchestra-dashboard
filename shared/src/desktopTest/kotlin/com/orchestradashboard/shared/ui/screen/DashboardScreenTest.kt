@@ -18,11 +18,11 @@ import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.ui.TestAgentFactory
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
-import kotlin.test.Test
-import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class FakeAgentRepository(
     private val agents: List<Agent> = emptyList(),
