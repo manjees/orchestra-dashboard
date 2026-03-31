@@ -24,7 +24,11 @@ class FakeProjectRepository : ProjectRepository {
         return projectsResult
     }
 
-    override suspend fun getProjectIssues(name: String, page: Int, pageSize: Int): Result<List<Issue>> {
+    override suspend fun getProjectIssues(
+        name: String,
+        page: Int,
+        pageSize: Int,
+    ): Result<List<Issue>> {
         getProjectIssuesCallCount++
         lastRequestedProjectName = name
         return issuesResult
