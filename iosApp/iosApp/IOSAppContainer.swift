@@ -13,4 +13,8 @@ final class IOSAppContainer {
         // Full implementation requires setting up the KMP framework binary
         fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
     }
+
+    func createProjectExplorerViewModel() -> ProjectExplorerViewModel {
+        fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
+    }
 }

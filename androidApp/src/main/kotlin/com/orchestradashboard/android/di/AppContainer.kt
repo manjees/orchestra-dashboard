@@ -79,6 +79,18 @@ object AppContainer {
         DashboardApiClient(httpClient, serverBaseUrl)
     }
 
+    // ─── Orchestrator Network ───────────────────────────────────
+
+    private val orchestratorBaseUrl: String
+        get() = System.getenv("ORCHESTRATOR_URL") ?: "http://localhost:9000"
+
+    private val orchestratorApiKey: String
+        get() = System.getenv("ORCHESTRATOR_API_KEY") ?: ""
+
+    val orchestratorApiClient: OrchestratorApiClient by lazy {
+        OrchestratorApiClient(httpClient, orchestratorBaseUrl, orchestratorApiKey)
+    }
+
     // ─── Auth ────────────────────────────────────────────────────
 
     val tokenRepository: TokenRepository by lazy {
@@ -114,18 +126,6 @@ object AppContainer {
 
     private val metricRepository: MetricRepository by lazy {
         MetricRepositoryImpl(apiClient)
-    }
-
-    // ─── Orchestrator Network ───────────────────────────────────
-
-    private val orchestratorBaseUrl: String
-        get() = System.getenv("ORCHESTRATOR_URL") ?: "http://localhost:9000"
-
-    private val orchestratorApiKey: String
-        get() = System.getenv("ORCHESTRATOR_API_KEY") ?: ""
-
-    private val orchestratorApiClient: OrchestratorApiClient by lazy {
-        OrchestratorApiClient(httpClient, orchestratorBaseUrl, orchestratorApiKey)
     }
 
     private val projectRepository: ProjectRepository by lazy {
