@@ -2,12 +2,15 @@ package com.orchestradashboard.android.di
 
 import android.content.Context
 import com.orchestradashboard.shared.data.api.OrchestratorApiClient
+import com.orchestradashboard.shared.data.mapper.ActivePipelineMapper
 import com.orchestradashboard.shared.data.mapper.AgentEventMapper
 import com.orchestradashboard.shared.data.mapper.AgentMapper
 import com.orchestradashboard.shared.data.mapper.CheckpointMapper
 import com.orchestradashboard.shared.data.mapper.IssueMapper
+import com.orchestradashboard.shared.data.mapper.PipelineHistoryMapper
 import com.orchestradashboard.shared.data.mapper.PipelineRunMapper
 import com.orchestradashboard.shared.data.mapper.ProjectMapper
+import com.orchestradashboard.shared.data.mapper.SystemStatusMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
 import com.orchestradashboard.shared.data.repository.AndroidTokenRepository
@@ -16,6 +19,7 @@ import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.MetricRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
 import com.orchestradashboard.shared.data.repository.ProjectRepositoryImpl
+import com.orchestradashboard.shared.data.repository.SystemRepositoryImpl
 import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
@@ -24,17 +28,23 @@ import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
 import com.orchestradashboard.shared.domain.repository.ProjectRepository
+import com.orchestradashboard.shared.domain.repository.SystemRepository
 import com.orchestradashboard.shared.domain.repository.TokenRepository
+import com.orchestradashboard.shared.domain.usecase.GetActivePipelinesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetPipelineHistoryUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetSystemStatusUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
+import com.orchestradashboard.shared.domain.usecase.ObserveSystemEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
+import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -112,6 +122,9 @@ object AppContainer {
     private val projectMapper: ProjectMapper by lazy { ProjectMapper() }
     private val issueMapper: IssueMapper by lazy { IssueMapper() }
     private val checkpointMapper: CheckpointMapper by lazy { CheckpointMapper() }
+    private val systemStatusMapper: SystemStatusMapper by lazy { SystemStatusMapper() }
+    private val activePipelineMapper: ActivePipelineMapper by lazy { ActivePipelineMapper() }
+    private val pipelineHistoryMapper: PipelineHistoryMapper by lazy { PipelineHistoryMapper() }
 
     // ─── Repositories ───────────────────────────────────────────
 
@@ -137,6 +150,15 @@ object AppContainer {
 
     private val checkpointRepository: CheckpointRepository by lazy {
         CheckpointRepositoryImpl(orchestratorApiClient, checkpointMapper)
+    }
+
+    private val systemRepository: SystemRepository by lazy {
+        SystemRepositoryImpl(
+            orchestratorApiClient,
+            systemStatusMapper,
+            activePipelineMapper,
+            pipelineHistoryMapper,
+        )
     }
 
     // ─── UseCases ───────────────────────────────────────────────
@@ -177,6 +199,22 @@ object AppContainer {
         RetryCheckpointUseCase(checkpointRepository)
     }
 
+    private val getSystemStatusUseCase: GetSystemStatusUseCase by lazy {
+        GetSystemStatusUseCase(systemRepository)
+    }
+
+    private val getActivePipelinesUseCase: GetActivePipelinesUseCase by lazy {
+        GetActivePipelinesUseCase(systemRepository)
+    }
+
+    private val getPipelineHistoryUseCase: GetPipelineHistoryUseCase by lazy {
+        GetPipelineHistoryUseCase(systemRepository)
+    }
+
+    private val observeSystemEventsUseCase: ObserveSystemEventsUseCase by lazy {
+        ObserveSystemEventsUseCase(systemRepository)
+    }
+
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 
     fun createDashboardViewModel(): DashboardViewModel =
@@ -187,4 +225,12 @@ object AppContainer {
 
     fun createProjectExplorerViewModel(): ProjectExplorerViewModel =
         ProjectExplorerViewModel(getProjectsUseCase, getProjectIssuesUseCase, getCheckpointsUseCase, retryCheckpointUseCase)
+
+    fun createDashboardHomeViewModel(): DashboardHomeViewModel =
+        DashboardHomeViewModel(
+            getSystemStatusUseCase,
+            getActivePipelinesUseCase,
+            getPipelineHistoryUseCase,
+            observeSystemEventsUseCase,
+        )
 }
