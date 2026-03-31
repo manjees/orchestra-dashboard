@@ -26,6 +26,9 @@ fun main() =
                     agentDetailViewModelFactory = { agentId ->
                         AppContainer.createAgentDetailViewModel(agentId)
                     },
+                    projectExplorerViewModelFactory = {
+                        AppContainer.createProjectExplorerViewModel()
+                    },
                 )
             }
         }

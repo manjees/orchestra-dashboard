@@ -18,6 +18,13 @@ struct ContentView: View {
                 }
             }
             .navigationTitle("Orchestra Dashboard")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink("Projects") {
+                        ProjectExplorerView()
+                    }
+                }
+            }
         }
         .onAppear { viewModel.startObserving() }
         .onDisappear { viewModel.onCleared() }

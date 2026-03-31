@@ -1,0 +1,117 @@
+package com.orchestradashboard.shared.ui.projectexplorer
+
+import com.orchestradashboard.shared.domain.model.Project
+import com.orchestradashboard.shared.domain.model.ProjectExplorerUiState
+import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
+import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+class ProjectExplorerViewModel(
+    private val getProjectsUseCase: GetProjectsUseCase,
+    private val getProjectIssuesUseCase: GetProjectIssuesUseCase,
+    private val getCheckpointsUseCase: GetCheckpointsUseCase,
+) {
+    private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val _uiState = MutableStateFlow(ProjectExplorerUiState())
+    private var issuesJob: Job? = null
+
+    val uiState: StateFlow<ProjectExplorerUiState> = _uiState.asStateFlow()
+
+    fun loadInitialData() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            val projectsDeferred = async { getProjectsUseCase() }
+            val checkpointsDeferred = async { getCheckpointsUseCase() }
+
+            val projectsResult = projectsDeferred.await()
+            val checkpointsResult = checkpointsDeferred.await()
+
+            _uiState.update { state ->
+                state.copy(
+                    projects = projectsResult.getOrDefault(emptyList()),
+                    checkpoints = checkpointsResult.getOrDefault(emptyList()),
+                    isLoading = false,
+                    error =
+                        projectsResult.exceptionOrNull()?.message
+                            ?: checkpointsResult.exceptionOrNull()?.message,
+                )
+            }
+        }
+    }
+
+    fun selectProject(project: Project) {
+        issuesJob?.cancel()
+        _uiState.update {
+            it.copy(
+                selectedProject = project,
+                issues = emptyList(),
+                issuesPage = 0,
+                hasMoreIssues = false,
+                isLoadingIssues = true,
+            )
+        }
+        loadIssuesPage(0)
+    }
+
+    fun loadMoreIssues() {
+        val state = _uiState.value
+        if (!state.hasMoreIssues || state.isLoadingIssues) return
+        loadIssuesPage(state.issuesPage + 1)
+    }
+
+    private fun loadIssuesPage(page: Int) {
+        val project = _uiState.value.selectedProject ?: return
+        val pageSize = _uiState.value.issuesPageSize
+        issuesJob?.cancel()
+        issuesJob =
+            viewModelScope.launch {
+                _uiState.update { it.copy(isLoadingIssues = true) }
+                getProjectIssuesUseCase(project.name, page, pageSize).fold(
+                    onSuccess = { newIssues ->
+                        _uiState.update { state ->
+                            val allIssues = if (page == 0) newIssues else state.issues + newIssues
+                            state.copy(
+                                issues = allIssues,
+                                issuesPage = page,
+                                hasMoreIssues = newIssues.size == pageSize,
+                                isLoadingIssues = false,
+                            )
+                        }
+                    },
+                    onFailure = { e ->
+                        _uiState.update {
+                            it.copy(
+                                error = e.message ?: "Failed to load issues",
+                                isLoadingIssues = false,
+                            )
+                        }
+                    },
+                )
+            }
+    }
+
+    fun refresh() {
+        _uiState.update { ProjectExplorerUiState() }
+        loadInitialData()
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
+    fun onCleared() {
+        viewModelScope.cancel()
+    }
+}

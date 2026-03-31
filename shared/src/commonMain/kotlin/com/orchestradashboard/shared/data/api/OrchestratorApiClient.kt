@@ -37,7 +37,11 @@ class OrchestratorApiClient(
 
     override suspend fun getProject(name: String): ProjectDetailDto = request("/api/projects/$name")
 
-    override suspend fun getProjectIssues(name: String): List<OrchestratorIssueDto> = request("/api/projects/$name/issues")
+    override suspend fun getProjectIssues(
+        name: String,
+        page: Int,
+        pageSize: Int,
+    ): List<OrchestratorIssueDto> = request("/api/projects/$name/issues?page=$page&page_size=$pageSize")
 
     override suspend fun getPipelines(): List<OrchestratorPipelineDto> = request("/api/pipelines")
 

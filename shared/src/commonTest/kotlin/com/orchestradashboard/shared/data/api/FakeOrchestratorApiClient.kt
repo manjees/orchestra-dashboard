@@ -65,7 +65,11 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         return projectDetailResult ?: throw OrchestratorNotFoundException("Project $name not found")
     }
 
-    override suspend fun getProjectIssues(name: String): List<OrchestratorIssueDto> {
+    override suspend fun getProjectIssues(
+        name: String,
+        page: Int,
+        pageSize: Int,
+    ): List<OrchestratorIssueDto> {
         getProjectIssuesCallCount++
         maybeThrow()
         return projectIssuesResult

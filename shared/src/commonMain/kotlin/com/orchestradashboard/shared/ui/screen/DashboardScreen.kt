@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +42,7 @@ fun DashboardScreen(
     viewModel: DashboardViewModel,
     modifier: Modifier = Modifier,
     onAgentClick: ((String) -> Unit)? = null,
+    onViewProjectsClick: (() -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -48,7 +50,18 @@ fun DashboardScreen(
 
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Orchestra Dashboard") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Orchestra Dashboard") },
+                actions = {
+                    onViewProjectsClick?.let { onClick ->
+                        TextButton(onClick = onClick) {
+                            Text("View Projects")
+                        }
+                    }
+                },
+            )
+        },
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             uiState.error?.let { error ->

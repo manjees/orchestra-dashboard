@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class FakeAgentRepository(
     private val agents: List<Agent> = emptyList(),
@@ -131,6 +132,32 @@ class DashboardScreenTest {
             }
             onNodeWithText("All").assertIsDisplayed()
             onNodeWithText("Running").assertIsDisplayed()
+        }
+
+    @Test
+    fun `should display View Projects button when callback provided`() =
+        runComposeUiTest {
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    DashboardScreen(viewModel = viewModel, onViewProjectsClick = {})
+                }
+            }
+            onNodeWithText("View Projects").assertIsDisplayed()
+        }
+
+    @Test
+    fun `View Projects button fires callback on click`() =
+        runComposeUiTest {
+            var clicked = false
+            val viewModel = createViewModel()
+            setContent {
+                DashboardTheme {
+                    DashboardScreen(viewModel = viewModel, onViewProjectsClick = { clicked = true })
+                }
+            }
+            onNodeWithText("View Projects").performClick()
+            assertTrue(clicked)
         }
 
     @Test

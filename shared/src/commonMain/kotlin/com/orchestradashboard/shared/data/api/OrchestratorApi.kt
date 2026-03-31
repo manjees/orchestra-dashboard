@@ -17,7 +17,11 @@ interface OrchestratorApi {
 
     suspend fun getProject(name: String): ProjectDetailDto
 
-    suspend fun getProjectIssues(name: String): List<OrchestratorIssueDto>
+    suspend fun getProjectIssues(
+        name: String,
+        page: Int = 0,
+        pageSize: Int = 20,
+    ): List<OrchestratorIssueDto>
 
     suspend fun getPipelines(): List<OrchestratorPipelineDto>
 
