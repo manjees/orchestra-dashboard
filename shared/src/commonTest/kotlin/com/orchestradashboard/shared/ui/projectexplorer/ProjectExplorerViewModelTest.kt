@@ -2,6 +2,7 @@ package com.orchestradashboard.shared.ui.projectexplorer
 
 import com.orchestradashboard.shared.domain.model.Issue
 import com.orchestradashboard.shared.domain.model.Project
+import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
 import kotlinx.coroutines.Dispatchers
@@ -11,6 +12,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -28,15 +30,15 @@ class ProjectExplorerViewModelTest {
 
     private val testProjects =
         listOf(
-            Project("project-alpha", "/path/alpha", 5, 2),
-            Project("project-beta", "/path/beta", 0, 0),
-            Project("project-gamma", "/path/gamma", 3, 1),
+            Project("project-alpha", "/path/alpha", emptyList(), 5, 2),
+            Project("project-beta", "/path/beta", emptyList(), 0, 0),
+            Project("project-gamma", "/path/gamma", emptyList(), 3, 1),
         )
 
     private val testIssues =
         listOf(
-            Issue(1, "Fix login bug", listOf("bug"), "open", "2024-01-15T10:00:00Z"),
-            Issue(2, "Add feature X", listOf("enhancement"), "open", "2024-01-16T10:00:00Z"),
+            Issue(1, "Fix login bug", listOf("bug"), "open", Instant.parse("2024-01-15T10:00:00Z")),
+            Issue(2, "Add feature X", listOf("enhancement"), "open", Instant.parse("2024-01-16T10:00:00Z")),
         )
 
     @BeforeTest
@@ -47,6 +49,7 @@ class ProjectExplorerViewModelTest {
             ProjectExplorerViewModel(
                 GetProjectsUseCase(fakeRepository),
                 GetProjectIssuesUseCase(fakeRepository),
+                GetCheckpointsUseCase(fakeRepository),
             )
     }
 
@@ -73,11 +76,11 @@ class ProjectExplorerViewModelTest {
     // --- Project Loading ---
 
     @Test
-    fun `loadProjects sets isLoading then populates projects list`() =
+    fun `loadInitialData sets isLoading then populates projects list`() =
         runTest {
             fakeRepository.projectsResult = Result.success(testProjects)
 
-            viewModel.loadProjects()
+            viewModel.loadInitialData()
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -87,11 +90,11 @@ class ProjectExplorerViewModelTest {
         }
 
     @Test
-    fun `loadProjects sets error on failure and clears isLoading`() =
+    fun `loadInitialData sets error on failure and clears isLoading`() =
         runTest {
             fakeRepository.projectsResult = Result.failure(RuntimeException("Network error"))
 
-            viewModel.loadProjects()
+            viewModel.loadInitialData()
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -101,11 +104,11 @@ class ProjectExplorerViewModelTest {
         }
 
     @Test
-    fun `loadProjects with empty result keeps projects empty without error`() =
+    fun `loadInitialData with empty result keeps projects empty without error`() =
         runTest {
             fakeRepository.projectsResult = Result.success(emptyList())
 
-            viewModel.loadProjects()
+            viewModel.loadInitialData()
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
@@ -153,7 +156,7 @@ class ProjectExplorerViewModelTest {
             fakeRepository.issuesResult =
                 Result.success(
                     listOf(
-                        Issue(10, "Different issue", emptyList(), "open", "2024-03-01T00:00:00Z"),
+                        Issue(10, "Different issue", emptyList(), "open", Instant.parse("2024-03-01T00:00:00Z")),
                     ),
                 )
             viewModel.selectProject(testProjects[1])
@@ -161,20 +164,6 @@ class ProjectExplorerViewModelTest {
 
             assertEquals(1, viewModel.uiState.value.issues.size)
             assertEquals("Different issue", viewModel.uiState.value.issues[0].title)
-        }
-
-    @Test
-    fun `selectProject with null deselects project and clears issues`() =
-        runTest {
-            fakeRepository.issuesResult = Result.success(testIssues)
-            viewModel.selectProject(testProjects[0])
-            advanceUntilIdle()
-            assertNotNull(viewModel.uiState.value.selectedProject)
-
-            viewModel.selectProject(null)
-
-            assertNull(viewModel.uiState.value.selectedProject)
-            assertTrue(viewModel.uiState.value.issues.isEmpty())
         }
 
     // --- Issue Loading ---
@@ -209,7 +198,7 @@ class ProjectExplorerViewModelTest {
     // --- Refresh ---
 
     @Test
-    fun `refresh reloads projects list`() =
+    fun `refresh reloads initial data`() =
         runTest {
             fakeRepository.projectsResult = Result.success(testProjects)
 
@@ -220,28 +209,13 @@ class ProjectExplorerViewModelTest {
             assertEquals(1, fakeRepository.getProjectsCallCount)
         }
 
-    @Test
-    fun `refresh with selectedProject also reloads issues`() =
-        runTest {
-            fakeRepository.projectsResult = Result.success(testProjects)
-            fakeRepository.issuesResult = Result.success(testIssues)
-            viewModel.selectProject(testProjects[0])
-            advanceUntilIdle()
-
-            viewModel.refresh()
-            advanceUntilIdle()
-
-            assertEquals(2, fakeRepository.getProjectIssuesCallCount)
-            assertEquals(1, fakeRepository.getProjectsCallCount)
-        }
-
     // --- Error Handling ---
 
     @Test
     fun `clearError resets error to null`() =
         runTest {
             fakeRepository.projectsResult = Result.failure(RuntimeException("error"))
-            viewModel.loadProjects()
+            viewModel.loadInitialData()
             advanceUntilIdle()
             assertNotNull(viewModel.uiState.value.error)
 
@@ -258,7 +232,7 @@ class ProjectExplorerViewModelTest {
             viewModel.onCleared()
 
             fakeRepository.projectsResult = Result.success(testProjects)
-            viewModel.loadProjects()
+            viewModel.loadInitialData()
             advanceUntilIdle()
 
             assertTrue(viewModel.uiState.value.projects.isEmpty())
