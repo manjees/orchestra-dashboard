@@ -34,4 +34,6 @@ interface OrchestratorApi {
     suspend fun getPipelineHistory(): List<PipelineHistoryDto>
 
     fun connectEvents(): Flow<PipelineEventDto>
+
+    fun connectEvents(pipelineId: String): Flow<PipelineEventDto>
 }

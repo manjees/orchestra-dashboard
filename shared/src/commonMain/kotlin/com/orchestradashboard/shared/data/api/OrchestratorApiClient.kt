@@ -70,6 +70,23 @@ class OrchestratorApiClient(
             }
         }
 
+    override fun connectEvents(pipelineId: String): Flow<PipelineEventDto> =
+        flow {
+            httpClient.webSocket(
+                request = {
+                    url("$baseUrl/ws/events/$pipelineId")
+                    header("X-API-Key", apiKey)
+                },
+            ) {
+                for (frame in incoming) {
+                    if (frame is Frame.Text) {
+                        val event = json.decodeFromString<PipelineEventDto>(frame.readText())
+                        emit(event)
+                    }
+                }
+            }
+        }
+
     @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified T> request(path: String): T {
         try {

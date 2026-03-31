@@ -32,6 +32,9 @@ fun main() =
                     projectExplorerViewModelFactory = {
                         AppContainer.createProjectExplorerViewModel()
                     },
+                    pipelineMonitorViewModelFactory = { pipelineId ->
+                        AppContainer.createPipelineMonitorViewModel(pipelineId)
+                    },
                 )
             }
         }

@@ -116,4 +116,10 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         maybeThrow()
         return eventsResult.asFlow()
     }
+
+    override fun connectEvents(pipelineId: String): Flow<PipelineEventDto> {
+        connectEventsCallCount++
+        maybeThrow()
+        return eventsResult.filter { it.pipelineId == pipelineId }.asFlow()
+    }
 }
