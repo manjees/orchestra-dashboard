@@ -21,6 +21,7 @@ class CheckpointMapper {
         when (s.lowercase()) {
             "passed" -> CheckpointStatus.PASSED
             "failed" -> CheckpointStatus.FAILED
+            "running" -> CheckpointStatus.RUNNING
             "pending" -> CheckpointStatus.PENDING
             else -> CheckpointStatus.UNKNOWN
         }

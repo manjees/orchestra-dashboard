@@ -6,6 +6,5 @@ import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 class RetryCheckpointUseCase(
     private val repository: CheckpointRepository,
 ) {
-    suspend operator fun invoke(checkpointId: String): Result<Checkpoint> =
-        repository.retryCheckpoint(checkpointId)
+    suspend operator fun invoke(checkpointId: String): Result<Checkpoint> = repository.retryCheckpoint(checkpointId)
 }

@@ -11,6 +11,7 @@ import com.orchestradashboard.shared.data.mapper.ProjectMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
 import com.orchestradashboard.shared.data.repository.AndroidTokenRepository
+import com.orchestradashboard.shared.data.repository.CheckpointRepositoryImpl
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.MetricRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
@@ -18,6 +19,7 @@ import com.orchestradashboard.shared.data.repository.ProjectRepositoryImpl
 import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
+import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
@@ -31,6 +33,7 @@ import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
+import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 import io.ktor.client.HttpClient
@@ -132,6 +135,10 @@ object AppContainer {
         ProjectRepositoryImpl(orchestratorApiClient, projectMapper, issueMapper, checkpointMapper)
     }
 
+    private val checkpointRepository: CheckpointRepository by lazy {
+        CheckpointRepositoryImpl(orchestratorApiClient, checkpointMapper)
+    }
+
     // ─── UseCases ───────────────────────────────────────────────
 
     private val observeAgentsUseCase: ObserveAgentsUseCase by lazy {
@@ -163,7 +170,11 @@ object AppContainer {
     }
 
     private val getCheckpointsUseCase: GetCheckpointsUseCase by lazy {
-        GetCheckpointsUseCase(projectRepository)
+        GetCheckpointsUseCase(checkpointRepository)
+    }
+
+    private val retryCheckpointUseCase: RetryCheckpointUseCase by lazy {
+        RetryCheckpointUseCase(checkpointRepository)
     }
 
     // ─── ViewModels (new instance per screen lifecycle) ─────────
@@ -175,5 +186,5 @@ object AppContainer {
         AgentDetailViewModel(agentId, getAgentUseCase, observePipelineRunsUseCase, observeEventsUseCase)
 
     fun createProjectExplorerViewModel(): ProjectExplorerViewModel =
-        ProjectExplorerViewModel(getProjectsUseCase, getProjectIssuesUseCase, getCheckpointsUseCase)
+        ProjectExplorerViewModel(getProjectsUseCase, getProjectIssuesUseCase, getCheckpointsUseCase, retryCheckpointUseCase)
 }

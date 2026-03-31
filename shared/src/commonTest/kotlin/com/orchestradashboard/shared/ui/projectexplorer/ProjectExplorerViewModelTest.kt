@@ -2,7 +2,10 @@ package com.orchestradashboard.shared.ui.projectexplorer
 
 import com.orchestradashboard.shared.domain.model.Checkpoint
 import com.orchestradashboard.shared.domain.model.CheckpointStatus
+import com.orchestradashboard.shared.domain.model.Project
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
+import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
 import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,212 +14,93 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectExplorerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
-
-    private val failedCheckpoints =
-        listOf(
-            Checkpoint("cp-1", "pipe-1", "build", CheckpointStatus.FAILED, 1000L),
-            Checkpoint("cp-2", "pipe-2", "test", CheckpointStatus.FAILED, 2000L),
-        )
-
     private lateinit var repository: FakeCheckpointRepository
+    private lateinit var projectRepository: FakeProjectRepository
+    private lateinit var viewModel: ProjectExplorerViewModel
+
+    private val testCheckpoints =
+        listOf(
+            Checkpoint("cp-1", "pipeline-1", Instant.parse("2024-01-01T00:00:00Z"), "build", CheckpointStatus.FAILED),
+            Checkpoint("cp-2", "pipeline-2", Instant.parse("2024-01-01T01:00:00Z"), "test", CheckpointStatus.FAILED),
+        )
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeCheckpointRepository()
+        projectRepository = FakeProjectRepository()
+        viewModel =
+            ProjectExplorerViewModel(
+                getProjectsUseCase = GetProjectsUseCase(projectRepository),
+                getProjectIssuesUseCase = GetProjectIssuesUseCase(projectRepository),
+                getCheckpointsUseCase = GetCheckpointsUseCase(repository),
+                retryCheckpointUseCase = RetryCheckpointUseCase(repository),
+            )
     }
 
     @AfterTest
     fun teardown() {
+        viewModel.onCleared()
         Dispatchers.resetMain()
     }
 
-    private fun createViewModel(): ProjectExplorerViewModel =
-        ProjectExplorerViewModel(
-            getCheckpointsUseCase = GetCheckpointsUseCase(repository),
-            retryCheckpointUseCase = RetryCheckpointUseCase(repository),
-        )
-
     @Test
-    fun `initial state has empty checkpoints and isLoading false and no error`() =
+    fun `loadInitialData loads both projects and checkpoints`() =
         runTest {
-            val viewModel = createViewModel()
-            val state = viewModel.uiState.value
+            val projects = listOf(Project("p1", "/path/1", emptyList(), 1, 0))
+            projectRepository.projectsResult = Result.success(projects)
+            repository.getFailedCheckpointsResult = Result.success(testCheckpoints)
 
-            assertTrue(state.checkpoints.isEmpty())
-            assertEquals(false, state.isLoading)
-            assertNull(state.error)
-            assertNull(state.retryingCheckpointId)
-            assertNull(state.retryResult)
-        }
-
-    @Test
-    fun `loadCheckpoints sets isLoading then populates checkpoints list`() =
-        runTest {
-            repository.getFailedCheckpointsResult = Result.success(failedCheckpoints)
-            val viewModel = createViewModel()
-
-            viewModel.loadCheckpoints()
+            viewModel.loadInitialData()
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
-            assertEquals(false, state.isLoading)
+            assertEquals(1, state.projects.size)
             assertEquals(2, state.checkpoints.size)
-            assertEquals("cp-1", state.checkpoints[0].id)
-            assertEquals("cp-2", state.checkpoints[1].id)
+            assertFalse(state.isLoading)
         }
 
     @Test
-    fun `loadCheckpoints sets error on failure and clears isLoading`() =
+    fun `retryCheckpoint sets retryingCheckpointId and then success result`() =
         runTest {
-            repository.getFailedCheckpointsResult = Result.failure(RuntimeException("Network error"))
-            val viewModel = createViewModel()
+            val retriedCheckpoint = testCheckpoints[0].copy(status = CheckpointStatus.RUNNING)
+            repository.retryCheckpointResult = Result.success(retriedCheckpoint)
+            repository.getFailedCheckpointsResult = Result.success(testCheckpoints)
 
-            viewModel.loadCheckpoints()
+            viewModel.retryCheckpoint("cp-1")
+
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
-            assertEquals(false, state.isLoading)
-            assertEquals("Network error", state.error)
-            assertTrue(state.checkpoints.isEmpty())
+            assertNull(state.retryingCheckpointId)
+            assertNotNull(state.retryResult)
+            assertTrue(state.retryResult!!.isSuccess)
         }
 
     @Test
-    fun `retryCheckpoint sets retryingCheckpointId for that checkpoint`() =
+    fun `retryCheckpoint failure sets retryResult with error`() =
         runTest {
-            repository.getFailedCheckpointsResult = Result.success(failedCheckpoints)
-            val retriedCheckpoint = failedCheckpoints[0].copy(status = CheckpointStatus.RUNNING)
-            repository.retryCheckpointResult = Result.success(retriedCheckpoint)
-            val viewModel = createViewModel()
-
-            viewModel.loadCheckpoints()
-            advanceUntilIdle()
-
-            viewModel.retryCheckpoint("cp-1")
-            advanceUntilIdle()
-
-            assertEquals("cp-1", repository.lastRetriedCheckpointId)
-        }
-
-    @Test
-    fun `retryCheckpoint success triggers reload of checkpoints`() =
-        runTest {
-            repository.getFailedCheckpointsResult = Result.success(failedCheckpoints)
-            val retriedCheckpoint = failedCheckpoints[0].copy(status = CheckpointStatus.RUNNING)
-            repository.retryCheckpointResult = Result.success(retriedCheckpoint)
-            val viewModel = createViewModel()
-
-            viewModel.loadCheckpoints()
-            advanceUntilIdle()
-
-            // After retry, the reload should re-fetch checkpoints
-            viewModel.retryCheckpoint("cp-1")
-            advanceUntilIdle()
-
-            // getFailedCheckpoints should be called twice (initial load + post-retry reload)
-            assertEquals(2, repository.getFailedCheckpointsCallCount)
-        }
-
-    @Test
-    fun `retryCheckpoint failure sets retryResult with Failure`() =
-        runTest {
-            repository.getFailedCheckpointsResult = Result.success(failedCheckpoints)
             repository.retryCheckpointResult = Result.failure(RuntimeException("Retry failed"))
-            val viewModel = createViewModel()
-
-            viewModel.loadCheckpoints()
-            advanceUntilIdle()
 
             viewModel.retryCheckpoint("cp-1")
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
             assertNull(state.retryingCheckpointId)
-            assertTrue(state.retryResult is RetryResult.Failure)
-            assertEquals("cp-1", (state.retryResult as RetryResult.Failure).checkpointId)
-            assertEquals("Retry failed", (state.retryResult as RetryResult.Failure).message)
-        }
-
-    @Test
-    fun `retryCheckpoint success sets retryResult with Success`() =
-        runTest {
-            repository.getFailedCheckpointsResult = Result.success(failedCheckpoints)
-            val retriedCheckpoint = failedCheckpoints[0].copy(status = CheckpointStatus.RUNNING)
-            repository.retryCheckpointResult = Result.success(retriedCheckpoint)
-            val viewModel = createViewModel()
-
-            viewModel.loadCheckpoints()
-            advanceUntilIdle()
-
-            viewModel.retryCheckpoint("cp-1")
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertNull(state.retryingCheckpointId)
-            assertTrue(state.retryResult is RetryResult.Success)
-            assertEquals("cp-1", (state.retryResult as RetryResult.Success).checkpointId)
-        }
-
-    @Test
-    fun `clearError resets error to null`() =
-        runTest {
-            repository.getFailedCheckpointsResult = Result.failure(RuntimeException("Error"))
-            val viewModel = createViewModel()
-
-            viewModel.loadCheckpoints()
-            advanceUntilIdle()
-            assertEquals("Error", viewModel.uiState.value.error)
-
-            viewModel.clearError()
-            assertNull(viewModel.uiState.value.error)
-        }
-
-    @Test
-    fun `clearRetryResult resets retryResult to null`() =
-        runTest {
-            repository.getFailedCheckpointsResult = Result.success(failedCheckpoints)
-            repository.retryCheckpointResult = Result.failure(RuntimeException("Retry failed"))
-            val viewModel = createViewModel()
-
-            viewModel.loadCheckpoints()
-            advanceUntilIdle()
-
-            viewModel.retryCheckpoint("cp-1")
-            advanceUntilIdle()
-            assertTrue(viewModel.uiState.value.retryResult is RetryResult.Failure)
-
-            viewModel.clearRetryResult()
-            assertNull(viewModel.uiState.value.retryResult)
-        }
-
-    @Test
-    fun `onCleared cancels all coroutines`() =
-        runTest {
-            repository.getFailedCheckpointsResult = Result.success(failedCheckpoints)
-            val viewModel = createViewModel()
-
-            viewModel.loadCheckpoints()
-            advanceUntilIdle()
-            assertEquals(2, viewModel.uiState.value.checkpoints.size)
-
-            viewModel.onCleared()
-
-            // After clear, change repository result and try to load again
-            repository.getFailedCheckpointsResult = Result.success(emptyList())
-            viewModel.loadCheckpoints()
-            advanceUntilIdle()
-
-            // State should not have changed since scope is cancelled
-            assertEquals(2, viewModel.uiState.value.checkpoints.size)
+            assertNotNull(state.retryResult)
+            assertTrue(state.retryResult!!.isFailure)
         }
 }

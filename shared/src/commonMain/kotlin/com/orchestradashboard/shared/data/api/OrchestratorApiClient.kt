@@ -49,6 +49,8 @@ class OrchestratorApiClient(
 
     override suspend fun getCheckpoints(): List<CheckpointDto> = request("/api/checkpoints")
 
+    override suspend fun retryCheckpoint(checkpointId: String): CheckpointDto = request("/api/checkpoints/$checkpointId/retry")
+
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> = request("/api/pipelines/history")
 
     override fun connectEvents(): Flow<PipelineEventDto> =

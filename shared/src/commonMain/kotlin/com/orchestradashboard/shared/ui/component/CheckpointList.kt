@@ -26,6 +26,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.orchestradashboard.shared.domain.model.Checkpoint
 import com.orchestradashboard.shared.domain.model.CheckpointStatus
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Composable
 fun CheckpointList(
@@ -115,6 +117,7 @@ private fun CheckpointStatusBadge(
             CheckpointStatus.PASSED -> MaterialTheme.colorScheme.primary
             CheckpointStatus.FAILED -> MaterialTheme.colorScheme.error
             CheckpointStatus.RUNNING -> MaterialTheme.colorScheme.tertiary
+            CheckpointStatus.PENDING -> MaterialTheme.colorScheme.secondary
             CheckpointStatus.UNKNOWN -> MaterialTheme.colorScheme.outline
         }
     Surface(
@@ -128,5 +131,18 @@ private fun CheckpointStatusBadge(
             style = MaterialTheme.typography.labelSmall,
             color = color,
         )
+    }
+}
+
+internal fun formatRelativeTime(instant: Instant): String {
+    val now = Clock.System.now().toEpochMilliseconds()
+    val time = instant.toEpochMilliseconds()
+    val diff = (now - time) / 1000
+
+    return when {
+        diff < 60 -> "Just now"
+        diff < 3600 -> "${diff / 60}m ago"
+        diff < 86400 -> "${diff / 3600}h ago"
+        else -> "${diff / 86400}d ago"
     }
 }
