@@ -10,10 +10,12 @@ import com.orchestradashboard.shared.domain.model.Checkpoint
 import com.orchestradashboard.shared.domain.model.CheckpointStatus
 import com.orchestradashboard.shared.domain.model.Issue
 import com.orchestradashboard.shared.domain.model.Project
+import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 import com.orchestradashboard.shared.domain.repository.ProjectRepository
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
+import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 import kotlinx.datetime.Instant
@@ -24,7 +26,7 @@ class FakeProjectRepository(
     private val projects: List<Project> = emptyList(),
     private val issues: Map<String, List<Issue>> = emptyMap(),
     private val checkpoints: List<Checkpoint> = emptyList(),
-) : ProjectRepository {
+) : ProjectRepository, CheckpointRepository {
     override suspend fun getProjects(): Result<List<Project>> = Result.success(projects)
 
     override suspend fun getProjectIssues(
@@ -34,6 +36,15 @@ class FakeProjectRepository(
     ): Result<List<Issue>> = Result.success(issues[name] ?: emptyList())
 
     override suspend fun getCheckpoints(): Result<List<Checkpoint>> = Result.success(checkpoints)
+
+    override suspend fun getFailedCheckpoints(): Result<List<Checkpoint>> =
+        Result.success(
+            checkpoints.filter {
+                it.status == CheckpointStatus.FAILED
+            },
+        )
+
+    override suspend fun retryCheckpoint(checkpointId: String): Result<Checkpoint> = Result.failure(NotImplementedError())
 }
 
 private fun createViewModel(
@@ -46,6 +57,7 @@ private fun createViewModel(
         getProjectsUseCase = GetProjectsUseCase(repo),
         getProjectIssuesUseCase = GetProjectIssuesUseCase(repo),
         getCheckpointsUseCase = GetCheckpointsUseCase(repo),
+        retryCheckpointUseCase = RetryCheckpointUseCase(repo),
     )
 }
 
@@ -137,7 +149,8 @@ class ProjectExplorerScreenTest {
             }
             waitForIdle()
             onNodeWithText("Checkpoints").assertIsDisplayed()
-            onNodeWithText("lint — failed").assertIsDisplayed()
+            onNodeWithText("lint").assertIsDisplayed()
+            onNodeWithText("FAILED").assertIsDisplayed()
         }
 
     @Test
@@ -163,7 +176,6 @@ class ProjectExplorerScreenTest {
                     ProjectExplorerScreen(viewModel = vm, onBackClick = { backClicked = true })
                 }
             }
-            onNodeWithText("Back").assertDoesNotExist() // It's an icon, use content description
             // Click the back icon button
             onNodeWithContentDescription("Back").performClick()
             assertTrue(backClicked)

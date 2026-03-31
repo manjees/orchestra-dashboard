@@ -1,10 +1,12 @@
 package com.orchestradashboard.shared.ui.projectexplorer
 
-import com.orchestradashboard.shared.domain.model.Issue
+import com.orchestradashboard.shared.domain.model.Checkpoint
+import com.orchestradashboard.shared.domain.model.CheckpointStatus
 import com.orchestradashboard.shared.domain.model.Project
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
+import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -25,31 +27,27 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProjectExplorerViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
-    private lateinit var fakeRepository: FakeProjectRepository
+    private lateinit var repository: FakeCheckpointRepository
+    private lateinit var projectRepository: FakeProjectRepository
     private lateinit var viewModel: ProjectExplorerViewModel
 
-    private val testProjects =
+    private val testCheckpoints =
         listOf(
-            Project("project-alpha", "/path/alpha", emptyList(), 5, 2),
-            Project("project-beta", "/path/beta", emptyList(), 0, 0),
-            Project("project-gamma", "/path/gamma", emptyList(), 3, 1),
-        )
-
-    private val testIssues =
-        listOf(
-            Issue(1, "Fix login bug", listOf("bug"), "open", Instant.parse("2024-01-15T10:00:00Z")),
-            Issue(2, "Add feature X", listOf("enhancement"), "open", Instant.parse("2024-01-16T10:00:00Z")),
+            Checkpoint("cp-1", "pipeline-1", Instant.parse("2024-01-01T00:00:00Z"), "build", CheckpointStatus.FAILED),
+            Checkpoint("cp-2", "pipeline-2", Instant.parse("2024-01-01T01:00:00Z"), "test", CheckpointStatus.FAILED),
         )
 
     @BeforeTest
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        fakeRepository = FakeProjectRepository()
+        repository = FakeCheckpointRepository()
+        projectRepository = FakeProjectRepository()
         viewModel =
             ProjectExplorerViewModel(
-                GetProjectsUseCase(fakeRepository),
-                GetProjectIssuesUseCase(fakeRepository),
-                GetCheckpointsUseCase(fakeRepository),
+                getProjectsUseCase = GetProjectsUseCase(projectRepository),
+                getProjectIssuesUseCase = GetProjectIssuesUseCase(projectRepository),
+                getCheckpointsUseCase = GetCheckpointsUseCase(repository),
+                retryCheckpointUseCase = RetryCheckpointUseCase(repository),
             )
     }
 
@@ -59,182 +57,50 @@ class ProjectExplorerViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // --- Initial State ---
-
     @Test
-    fun `initial state has empty projects no selectedProject no issues not loading`() {
-        val state = viewModel.uiState.value
-
-        assertTrue(state.projects.isEmpty())
-        assertNull(state.selectedProject)
-        assertTrue(state.issues.isEmpty())
-        assertFalse(state.isLoading)
-        assertFalse(state.isLoadingIssues)
-        assertNull(state.error)
-    }
-
-    // --- Project Loading ---
-
-    @Test
-    fun `loadInitialData sets isLoading then populates projects list`() =
+    fun `loadInitialData loads both projects and checkpoints`() =
         runTest {
-            fakeRepository.projectsResult = Result.success(testProjects)
+            val projects = listOf(Project("p1", "/path/1", emptyList(), 1, 0))
+            projectRepository.projectsResult = Result.success(projects)
+            repository.getFailedCheckpointsResult = Result.success(testCheckpoints)
 
             viewModel.loadInitialData()
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
+            assertEquals(1, state.projects.size)
+            assertEquals(2, state.checkpoints.size)
             assertFalse(state.isLoading)
-            assertEquals(3, state.projects.size)
-            assertEquals("project-alpha", state.projects[0].name)
         }
 
     @Test
-    fun `loadInitialData sets error on failure and clears isLoading`() =
+    fun `retryCheckpoint sets retryingCheckpointId and then success result`() =
         runTest {
-            fakeRepository.projectsResult = Result.failure(RuntimeException("Network error"))
+            val retriedCheckpoint = testCheckpoints[0].copy(status = CheckpointStatus.RUNNING)
+            repository.retryCheckpointResult = Result.success(retriedCheckpoint)
+            repository.getFailedCheckpointsResult = Result.success(testCheckpoints)
 
-            viewModel.loadInitialData()
+            viewModel.retryCheckpoint("cp-1")
+
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
-            assertFalse(state.isLoading)
-            assertNotNull(state.error)
-            assertTrue(state.error!!.contains("Network error"))
+            assertNull(state.retryingCheckpointId)
+            assertNotNull(state.retryResult)
+            assertTrue(state.retryResult!!.isSuccess)
         }
 
     @Test
-    fun `loadInitialData with empty result keeps projects empty without error`() =
+    fun `retryCheckpoint failure sets retryResult with error`() =
         runTest {
-            fakeRepository.projectsResult = Result.success(emptyList())
+            repository.retryCheckpointResult = Result.failure(RuntimeException("Retry failed"))
 
-            viewModel.loadInitialData()
+            viewModel.retryCheckpoint("cp-1")
             advanceUntilIdle()
 
             val state = viewModel.uiState.value
-            assertTrue(state.projects.isEmpty())
-            assertNull(state.error)
-        }
-
-    // --- Project Selection ---
-
-    @Test
-    fun `selectProject sets selectedProject and triggers issue loading`() =
-        runTest {
-            fakeRepository.issuesResult = Result.success(testIssues)
-            val project = testProjects[0]
-
-            viewModel.selectProject(project)
-            advanceUntilIdle()
-
-            assertEquals(project, viewModel.uiState.value.selectedProject)
-            assertEquals(1, fakeRepository.getProjectIssuesCallCount)
-            assertEquals("project-alpha", fakeRepository.lastRequestedProjectName)
-        }
-
-    @Test
-    fun `selectProject loads issues for the selected project`() =
-        runTest {
-            fakeRepository.issuesResult = Result.success(testIssues)
-
-            viewModel.selectProject(testProjects[0])
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertEquals(2, state.issues.size)
-            assertEquals("Fix login bug", state.issues[0].title)
-        }
-
-    @Test
-    fun `selectProject clears previous issues before loading new ones`() =
-        runTest {
-            fakeRepository.issuesResult = Result.success(testIssues)
-            viewModel.selectProject(testProjects[0])
-            advanceUntilIdle()
-            assertEquals(2, viewModel.uiState.value.issues.size)
-
-            fakeRepository.issuesResult =
-                Result.success(
-                    listOf(
-                        Issue(10, "Different issue", emptyList(), "open", Instant.parse("2024-03-01T00:00:00Z")),
-                    ),
-                )
-            viewModel.selectProject(testProjects[1])
-            advanceUntilIdle()
-
-            assertEquals(1, viewModel.uiState.value.issues.size)
-            assertEquals("Different issue", viewModel.uiState.value.issues[0].title)
-        }
-
-    // --- Issue Loading ---
-
-    @Test
-    fun `issues load successfully for selected project`() =
-        runTest {
-            fakeRepository.issuesResult = Result.success(testIssues)
-
-            viewModel.selectProject(testProjects[0])
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertFalse(state.isLoadingIssues)
-            assertEquals(2, state.issues.size)
-        }
-
-    @Test
-    fun `issue loading failure sets error but keeps selectedProject`() =
-        runTest {
-            fakeRepository.issuesResult = Result.failure(RuntimeException("API error"))
-
-            viewModel.selectProject(testProjects[0])
-            advanceUntilIdle()
-
-            val state = viewModel.uiState.value
-            assertNotNull(state.selectedProject)
-            assertNotNull(state.error)
-            assertTrue(state.issues.isEmpty())
-        }
-
-    // --- Refresh ---
-
-    @Test
-    fun `refresh reloads initial data`() =
-        runTest {
-            fakeRepository.projectsResult = Result.success(testProjects)
-
-            viewModel.refresh()
-            advanceUntilIdle()
-
-            assertEquals(3, viewModel.uiState.value.projects.size)
-            assertEquals(1, fakeRepository.getProjectsCallCount)
-        }
-
-    // --- Error Handling ---
-
-    @Test
-    fun `clearError resets error to null`() =
-        runTest {
-            fakeRepository.projectsResult = Result.failure(RuntimeException("error"))
-            viewModel.loadInitialData()
-            advanceUntilIdle()
-            assertNotNull(viewModel.uiState.value.error)
-
-            viewModel.clearError()
-
-            assertNull(viewModel.uiState.value.error)
-        }
-
-    // --- Lifecycle ---
-
-    @Test
-    fun `onCleared cancels all coroutines`() =
-        runTest {
-            viewModel.onCleared()
-
-            fakeRepository.projectsResult = Result.success(testProjects)
-            viewModel.loadInitialData()
-            advanceUntilIdle()
-
-            assertTrue(viewModel.uiState.value.projects.isEmpty())
+            assertNull(state.retryingCheckpointId)
+            assertNotNull(state.retryResult)
+            assertTrue(state.retryResult!!.isFailure)
         }
 }

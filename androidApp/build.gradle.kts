@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -9,12 +12,23 @@ android {
     namespace = "com.orchestradashboard.android"
     compileSdk = 35
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.orchestradashboard.android"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
+
+        val localProps = rootProject.file("local.properties")
+        val props = Properties()
+        if (localProps.exists()) props.load(FileInputStream(localProps))
+
+        buildConfigField("String", "ORCHESTRATOR_URL", "\"${props.getProperty("orchestrator.url", "http://localhost:9000")}\"")
+        buildConfigField("String", "ORCHESTRATOR_API_KEY", "\"${props.getProperty("orchestrator.apiKey", "")}\"")
     }
 
     buildTypes {

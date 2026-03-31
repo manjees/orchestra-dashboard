@@ -60,6 +60,8 @@ class FakeOrchestratorApi(
         return checkpoints
     }
 
+    override suspend fun retryCheckpoint(checkpointId: String): CheckpointDto = throw NotImplementedError()
+
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> = throw NotImplementedError()
 
     override fun connectEvents(): Flow<PipelineEventDto> = emptyFlow()

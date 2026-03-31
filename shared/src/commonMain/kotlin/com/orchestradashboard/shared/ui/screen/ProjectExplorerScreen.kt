@@ -39,7 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.orchestradashboard.shared.domain.model.Project
-import com.orchestradashboard.shared.ui.component.CheckpointRow
+import com.orchestradashboard.shared.ui.component.CheckpointList
 import com.orchestradashboard.shared.ui.component.ErrorBanner
 import com.orchestradashboard.shared.ui.component.IssueRow
 import com.orchestradashboard.shared.ui.component.LoadingOverlay
@@ -184,10 +184,14 @@ fun ProjectExplorerScreen(
                                     }
                                 }
                             } else {
-                                items(uiState.checkpoints, key = { it.id }) { checkpoint ->
-                                    CheckpointRow(
-                                        checkpoint = checkpoint,
-                                        onRetryClick = { /* Phase 2 */ },
+                                // Using specialized CheckpointList for rich UI and Retry integration
+                                item {
+                                    // Fix height in Nested LazyColumn
+                                    CheckpointList(
+                                        checkpoints = uiState.checkpoints,
+                                        retryingCheckpointId = uiState.retryingCheckpointId,
+                                        onRetryClick = { viewModel.retryCheckpoint(it) },
+                                        modifier = Modifier.fillMaxWidth().height(400.dp),
                                     )
                                 }
                             }

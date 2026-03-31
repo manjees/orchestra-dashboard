@@ -21,6 +21,7 @@ class FakeOrchestratorApiClient : OrchestratorApi {
     var pipelinesResult: List<OrchestratorPipelineDto> = emptyList()
     var pipelineResult: OrchestratorPipelineDto? = null
     var checkpointsResult: List<CheckpointDto> = emptyList()
+    var retryCheckpointResult: CheckpointDto? = null
     var pipelineHistoryResult: List<PipelineHistoryDto> = emptyList()
     var eventsResult: List<PipelineEventDto> = emptyList()
 
@@ -37,6 +38,10 @@ class FakeOrchestratorApiClient : OrchestratorApi {
     var getPipelineCallCount = 0
         private set
     var getCheckpointsCallCount = 0
+        private set
+    var retryCheckpointCallCount = 0
+        private set
+    var lastRetriedCheckpointId: String? = null
         private set
     var getPipelineHistoryCallCount = 0
         private set
@@ -91,6 +96,13 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         getCheckpointsCallCount++
         maybeThrow()
         return checkpointsResult
+    }
+
+    override suspend fun retryCheckpoint(checkpointId: String): CheckpointDto {
+        retryCheckpointCallCount++
+        lastRetriedCheckpointId = checkpointId
+        maybeThrow()
+        return retryCheckpointResult ?: throw OrchestratorNotFoundException("Checkpoint $checkpointId not found")
     }
 
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> {

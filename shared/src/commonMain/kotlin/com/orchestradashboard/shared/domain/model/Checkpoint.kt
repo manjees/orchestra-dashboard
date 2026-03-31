@@ -10,4 +10,4 @@ data class Checkpoint(
     val status: CheckpointStatus,
 )
 
-enum class CheckpointStatus { PASSED, FAILED, PENDING, UNKNOWN }
+enum class CheckpointStatus { PASSED, FAILED, PENDING, RUNNING, UNKNOWN }

@@ -1,10 +1,10 @@
 package com.orchestradashboard.shared.ui.projectexplorer
 
 import com.orchestradashboard.shared.domain.model.Project
-import com.orchestradashboard.shared.domain.model.ProjectExplorerUiState
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
+import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,6 +21,7 @@ class ProjectExplorerViewModel(
     private val getProjectsUseCase: GetProjectsUseCase,
     private val getProjectIssuesUseCase: GetProjectIssuesUseCase,
     private val getCheckpointsUseCase: GetCheckpointsUseCase,
+    private val retryCheckpointUseCase: RetryCheckpointUseCase,
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(ProjectExplorerUiState())
@@ -100,6 +101,21 @@ class ProjectExplorerViewModel(
                     },
                 )
             }
+    }
+
+    fun retryCheckpoint(checkpointId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(retryingCheckpointId = checkpointId, retryResult = null) }
+            retryCheckpointUseCase(checkpointId).fold(
+                onSuccess = { _ ->
+                    _uiState.update { it.copy(retryingCheckpointId = null, retryResult = Result.success(Unit)) }
+                    loadInitialData() // Refresh list to show running status
+                },
+                onFailure = { e ->
+                    _uiState.update { it.copy(retryingCheckpointId = null, retryResult = Result.failure(e)) }
+                },
+            )
+        }
     }
 
     fun refresh() {
