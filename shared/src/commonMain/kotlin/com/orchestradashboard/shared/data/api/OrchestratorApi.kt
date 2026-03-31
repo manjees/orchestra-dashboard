@@ -29,6 +29,8 @@ interface OrchestratorApi {
 
     suspend fun getCheckpoints(): List<CheckpointDto>
 
+    suspend fun retryCheckpoint(checkpointId: String): CheckpointDto
+
     suspend fun getPipelineHistory(): List<PipelineHistoryDto>
 
     fun connectEvents(): Flow<PipelineEventDto>
