@@ -86,115 +86,115 @@ fun ProjectExplorerScreen(
             onRefresh = { viewModel.refresh() },
             modifier = Modifier.fillMaxSize().padding(paddingValues),
         ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            uiState.error?.let { error ->
-                ErrorBanner(message = error, onDismiss = { viewModel.clearError() })
-            }
+            Column(modifier = Modifier.fillMaxSize()) {
+                uiState.error?.let { error ->
+                    ErrorBanner(message = error, onDismiss = { viewModel.clearError() })
+                }
 
-            when {
-                uiState.isLoading -> LoadingOverlay()
-                uiState.projects.isEmpty() -> ProjectEmptyState()
-                else -> {
-                    ProjectGrid(
-                        projects = uiState.projects,
-                        selectedProject = uiState.selectedProject,
-                        onProjectClick = { viewModel.selectProject(it) },
-                        modifier = Modifier.weight(0.4f),
-                    )
+                when {
+                    uiState.isLoading -> LoadingOverlay()
+                    uiState.projects.isEmpty() -> ProjectEmptyState()
+                    else -> {
+                        ProjectGrid(
+                            projects = uiState.projects,
+                            selectedProject = uiState.selectedProject,
+                            onProjectClick = { viewModel.selectProject(it) },
+                            modifier = Modifier.weight(0.4f),
+                        )
 
-                    HorizontalDivider()
+                        HorizontalDivider()
 
-                    val issuesLazyListState = rememberLazyListState()
-                    val shouldLoadMoreIssues by remember {
-                        derivedStateOf {
-                            val lastVisible = issuesLazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
-                            lastVisible != null &&
-                                uiState.issues.isNotEmpty() &&
-                                lastVisible >= uiState.issues.size - 1
+                        val issuesLazyListState = rememberLazyListState()
+                        val shouldLoadMoreIssues by remember {
+                            derivedStateOf {
+                                val lastVisible = issuesLazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+                                lastVisible != null &&
+                                    uiState.issues.isNotEmpty() &&
+                                    lastVisible >= uiState.issues.size - 1
+                            }
                         }
-                    }
-                    LaunchedEffect(shouldLoadMoreIssues) {
-                        if (shouldLoadMoreIssues) viewModel.loadMoreIssues()
-                    }
+                        LaunchedEffect(shouldLoadMoreIssues) {
+                            if (shouldLoadMoreIssues) viewModel.loadMoreIssues()
+                        }
 
-                    LazyColumn(
-                        state = issuesLazyListState,
-                        modifier = Modifier.weight(0.6f).fillMaxWidth(),
-                    ) {
-                        // Issues section
-                        if (uiState.selectedProject != null) {
+                        LazyColumn(
+                            state = issuesLazyListState,
+                            modifier = Modifier.weight(0.6f).fillMaxWidth(),
+                        ) {
+                            // Issues section
+                            if (uiState.selectedProject != null) {
+                                item {
+                                    Text(
+                                        text = "Issues — ${uiState.selectedProject!!.name}",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        modifier = Modifier.padding(16.dp),
+                                    )
+                                }
+                                if (uiState.isLoadingIssues && uiState.issues.isEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            CircularProgressIndicator()
+                                        }
+                                    }
+                                } else if (uiState.issues.isEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            Text(
+                                                "No open issues",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    items(uiState.issues, key = { it.number }) { issue ->
+                                        IssueRow(
+                                            issue = issue,
+                                            onSolveClick = { /* Phase 2 */ },
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Checkpoints section
                             item {
+                                Spacer(Modifier.height(8.dp))
+                                HorizontalDivider()
                                 Text(
-                                    text = "Issues — ${uiState.selectedProject!!.name}",
+                                    text = "Checkpoints",
                                     style = MaterialTheme.typography.titleSmall,
                                     modifier = Modifier.padding(16.dp),
                                 )
                             }
-                            if (uiState.isLoadingIssues && uiState.issues.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                        contentAlignment = Alignment.Center,
-                                    ) {
-                                        CircularProgressIndicator()
-                                    }
-                                }
-                            } else if (uiState.issues.isEmpty()) {
+                            if (uiState.checkpoints.isEmpty()) {
                                 item {
                                     Box(
                                         modifier = Modifier.fillMaxWidth().padding(32.dp),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         Text(
-                                            "No open issues",
+                                            "No checkpoints",
                                             style = MaterialTheme.typography.bodyMedium,
                                         )
                                     }
                                 }
                             } else {
-                                items(uiState.issues, key = { it.number }) { issue ->
-                                    IssueRow(
-                                        issue = issue,
-                                        onSolveClick = { /* Phase 2 */ },
+                                items(uiState.checkpoints, key = { it.id }) { checkpoint ->
+                                    CheckpointRow(
+                                        checkpoint = checkpoint,
+                                        onRetryClick = { /* Phase 2 */ },
                                     )
                                 }
-                            }
-                        }
-
-                        // Checkpoints section
-                        item {
-                            Spacer(Modifier.height(8.dp))
-                            HorizontalDivider()
-                            Text(
-                                text = "Checkpoints",
-                                style = MaterialTheme.typography.titleSmall,
-                                modifier = Modifier.padding(16.dp),
-                            )
-                        }
-                        if (uiState.checkpoints.isEmpty()) {
-                            item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    Text(
-                                        "No checkpoints",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                }
-                            }
-                        } else {
-                            items(uiState.checkpoints, key = { it.id }) { checkpoint ->
-                                CheckpointRow(
-                                    checkpoint = checkpoint,
-                                    onRetryClick = { /* Phase 2 */ },
-                                )
                             }
                         }
                     }
                 }
             }
-        }
         }
     }
 }

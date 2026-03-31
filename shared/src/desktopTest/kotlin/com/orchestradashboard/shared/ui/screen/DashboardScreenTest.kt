@@ -6,7 +6,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
-import kotlin.test.assertTrue
 import com.orchestradashboard.shared.domain.model.Agent
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.model.Metric
@@ -19,10 +18,11 @@ import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.ui.TestAgentFactory
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
+import kotlin.test.Test
+import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlin.test.Test
 
 class FakeAgentRepository(
     private val agents: List<Agent> = emptyList(),
