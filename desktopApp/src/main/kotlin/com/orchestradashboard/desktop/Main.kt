@@ -23,6 +23,9 @@ fun main() =
             DashboardTheme {
                 AppNavigation(
                     dashboardViewModel = viewModel,
+                    dashboardHomeViewModelFactory = {
+                        AppContainer.createDashboardHomeViewModel()
+                    },
                     agentDetailViewModelFactory = { agentId ->
                         AppContainer.createAgentDetailViewModel(agentId)
                     },

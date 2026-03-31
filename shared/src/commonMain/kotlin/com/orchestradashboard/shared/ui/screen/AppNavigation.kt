@@ -9,9 +9,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
+import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 
 sealed class Screen {
+    data object DashboardHome : Screen()
+
     data object Dashboard : Screen()
 
     data class AgentDetail(val agentId: String) : Screen()
@@ -22,13 +25,27 @@ sealed class Screen {
 @Composable
 fun AppNavigation(
     dashboardViewModel: DashboardViewModel,
+    dashboardHomeViewModelFactory: () -> DashboardHomeViewModel,
     agentDetailViewModelFactory: (String) -> AgentDetailViewModel,
     projectExplorerViewModelFactory: () -> ProjectExplorerViewModel,
     modifier: Modifier = Modifier,
 ) {
-    var currentScreen: Screen by remember { mutableStateOf(Screen.Dashboard) }
+    var currentScreen: Screen by remember { mutableStateOf(Screen.DashboardHome) }
 
     when (val screen = currentScreen) {
+        is Screen.DashboardHome -> {
+            val vm = remember { dashboardHomeViewModelFactory() }
+            DisposableEffect(Unit) {
+                onDispose { vm.onCleared() }
+            }
+            DashboardHomeScreen(
+                viewModel = vm,
+                onNewSolveClick = { currentScreen = Screen.ProjectExplorer },
+                onViewProjectsClick = { currentScreen = Screen.ProjectExplorer },
+                onPipelineClick = { /* future: detail screen */ },
+                modifier = modifier,
+            )
+        }
         is Screen.Dashboard ->
             DashboardScreen(
                 viewModel = dashboardViewModel,
@@ -43,7 +60,7 @@ fun AppNavigation(
             }
             AgentDetailScreen(
                 viewModel = vm,
-                onBackClick = { currentScreen = Screen.Dashboard },
+                onBackClick = { currentScreen = Screen.DashboardHome },
                 modifier = modifier,
             )
         }
@@ -54,7 +71,7 @@ fun AppNavigation(
             }
             ProjectExplorerScreen(
                 viewModel = vm,
-                onBackClick = { currentScreen = Screen.Dashboard },
+                onBackClick = { currentScreen = Screen.DashboardHome },
                 modifier = modifier,
             )
         }
