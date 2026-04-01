@@ -65,6 +65,8 @@ class FakeOrchestratorApi(
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> = throw NotImplementedError()
 
     override fun connectEvents(): Flow<PipelineEventDto> = emptyFlow()
+
+    override fun connectEvents(pipelineId: String): Flow<PipelineEventDto> = emptyFlow()
 }
 
 class ProjectRepositoryImplTest {

@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
+import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 
 sealed class Screen {
@@ -20,6 +21,8 @@ sealed class Screen {
     data class AgentDetail(val agentId: String) : Screen()
 
     data object ProjectExplorer : Screen()
+
+    data class PipelineMonitor(val pipelineId: String) : Screen()
 }
 
 @Composable
@@ -28,6 +31,7 @@ fun AppNavigation(
     dashboardHomeViewModelFactory: () -> DashboardHomeViewModel,
     agentDetailViewModelFactory: (String) -> AgentDetailViewModel,
     projectExplorerViewModelFactory: () -> ProjectExplorerViewModel,
+    pipelineMonitorViewModelFactory: (String) -> PipelineMonitorViewModel,
     modifier: Modifier = Modifier,
 ) {
     var currentScreen: Screen by remember { mutableStateOf(Screen.DashboardHome) }
@@ -42,7 +46,7 @@ fun AppNavigation(
                 viewModel = vm,
                 onNewSolveClick = { currentScreen = Screen.ProjectExplorer },
                 onViewProjectsClick = { currentScreen = Screen.ProjectExplorer },
-                onPipelineClick = { /* future: detail screen */ },
+                onPipelineClick = { pipelineId -> currentScreen = Screen.PipelineMonitor(pipelineId) },
                 modifier = modifier,
             )
         }
@@ -70,6 +74,20 @@ fun AppNavigation(
                 onDispose { vm.onCleared() }
             }
             ProjectExplorerScreen(
+                viewModel = vm,
+                onBackClick = { currentScreen = Screen.DashboardHome },
+                modifier = modifier,
+            )
+        }
+        is Screen.PipelineMonitor -> {
+            val vm =
+                remember(screen.pipelineId) {
+                    pipelineMonitorViewModelFactory(screen.pipelineId)
+                }
+            DisposableEffect(screen.pipelineId) {
+                onDispose { vm.onCleared() }
+            }
+            PipelineMonitorScreen(
                 viewModel = vm,
                 onBackClick = { currentScreen = Screen.DashboardHome },
                 modifier = modifier,
