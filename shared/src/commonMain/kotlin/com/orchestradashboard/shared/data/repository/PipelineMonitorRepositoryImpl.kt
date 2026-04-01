@@ -19,6 +19,5 @@ class PipelineMonitorRepositoryImpl(
             Result.failure(e)
         }
 
-    override fun observePipelineEvents(pipelineId: String): Flow<PipelineEventDto> =
-        api.connectEvents(pipelineId)
+    override fun observePipelineEvents(pipelineId: String): Flow<PipelineEventDto> = api.connectEvents(pipelineId)
 }
