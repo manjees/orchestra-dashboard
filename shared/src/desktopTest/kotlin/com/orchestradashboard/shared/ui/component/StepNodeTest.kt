@@ -8,6 +8,7 @@ import androidx.compose.ui.test.runComposeUiTest
 import com.orchestradashboard.shared.domain.model.MonitoredStep
 import com.orchestradashboard.shared.domain.model.StepStatus
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
+import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -74,6 +75,30 @@ class StepNodeTest {
                 }
             }
             onNodeWithText("testing").assertIsDisplayed()
+        }
+
+    @Test
+    fun `StepNode RUNNING step with startedAtMs shows live timer`() =
+        runComposeUiTest {
+            val startedAt = Clock.System.now().toEpochMilliseconds() - 90_000L
+            setContent {
+                DashboardTheme {
+                    StepNode(step = makeStep("running-step", StepStatus.RUNNING, startedAtMs = startedAt))
+                }
+            }
+            onNodeWithText("running-step").assertIsDisplayed()
+            onNodeWithText("1m 30s").assertIsDisplayed()
+        }
+
+    @Test
+    fun `StepNode RUNNING step without startedAtMs shows no timer`() =
+        runComposeUiTest {
+            setContent {
+                DashboardTheme {
+                    StepNode(step = makeStep("running-no-start", StepStatus.RUNNING, startedAtMs = null))
+                }
+            }
+            onNodeWithText("running-no-start").assertIsDisplayed()
         }
 
     private fun makeStep(
