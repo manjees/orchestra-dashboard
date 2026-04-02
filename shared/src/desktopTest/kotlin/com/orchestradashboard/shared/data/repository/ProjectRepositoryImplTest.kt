@@ -6,6 +6,7 @@ import com.orchestradashboard.shared.data.api.OrchestratorNotFoundException
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
@@ -63,6 +64,8 @@ class FakeOrchestratorApi(
     override suspend fun retryCheckpoint(checkpointId: String): CheckpointDto = throw NotImplementedError()
 
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> = throw NotImplementedError()
+
+    override suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto = throw NotImplementedError()
 
     override fun connectEvents(): Flow<PipelineEventDto> = emptyFlow()
 

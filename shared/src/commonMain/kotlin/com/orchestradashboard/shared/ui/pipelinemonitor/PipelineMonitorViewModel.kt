@@ -1,7 +1,9 @@
 package com.orchestradashboard.shared.ui.pipelinemonitor
 
+import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.domain.model.ApprovalRequest
 import com.orchestradashboard.shared.domain.model.ConnectionStatus
+import com.orchestradashboard.shared.domain.model.MonitoredPipeline
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import com.orchestradashboard.shared.domain.model.StepStatus
 import com.orchestradashboard.shared.domain.repository.PipelineMonitorRepository
@@ -50,9 +52,29 @@ class PipelineMonitorViewModel(
                             newPipeline.steps
                         }
                     _uiState.update { it.copy(pipeline = newPipeline.copy(steps = mergedSteps), isLoading = false) }
+                    if (newPipeline.isParallel) {
+                        loadParallelPipelines()
+                    }
                 }
                 .onFailure { e ->
                     _uiState.update { it.copy(error = e.message, isLoading = false) }
+                }
+        }
+    }
+
+    fun loadParallelPipelines() {
+        viewModelScope.launch {
+            repository.getParallelPipelines(pipelineId)
+                .onSuccess { group ->
+                    _uiState.update {
+                        it.copy(
+                            parallelGroup = group,
+                            parallelPipelines = group.pipelines,
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
                 }
         }
     }
@@ -70,7 +92,12 @@ class PipelineMonitorViewModel(
         }
     }
 
-    private fun handleEvent(event: com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto) {
+    private fun handleEvent(event: PipelineEventDto) {
+        val laneId = event.laneId
+        if (laneId != null) {
+            handleLaneEvent(laneId, event)
+            return
+        }
         when (event.type) {
             "step.started" -> updateStepStatus(event.step, StepStatus.RUNNING, event.elapsedSec)
             "step.completed" -> updateStepStatus(event.step, StepStatus.PASSED, event.elapsedSec)
@@ -98,6 +125,61 @@ class PipelineMonitorViewModel(
             }
         }
     }
+
+    private fun handleLaneEvent(
+        laneId: String,
+        event: PipelineEventDto,
+    ) {
+        _uiState.update { state ->
+            val group = state.parallelGroup ?: return@update state
+            val updatedPipelines =
+                group.pipelines.map { lane ->
+                    if (lane.id == laneId) applyEventToLane(lane, event) else lane
+                }
+            val updatedGroup = group.copy(pipelines = updatedPipelines)
+            state.copy(
+                parallelGroup = updatedGroup,
+                parallelPipelines = updatedGroup.pipelines,
+            )
+        }
+    }
+
+    private fun applyEventToLane(
+        lane: MonitoredPipeline,
+        event: PipelineEventDto,
+    ): MonitoredPipeline =
+        when (event.type) {
+            "step.started", "step.completed", "step.failed" -> {
+                val stepName = event.step ?: return lane
+                val newStatus =
+                    when (event.type) {
+                        "step.started" -> StepStatus.RUNNING
+                        "step.completed" -> StepStatus.PASSED
+                        else -> StepStatus.FAILED
+                    }
+                val updatedSteps =
+                    lane.steps.map { step ->
+                        if (step.name == stepName) {
+                            step.copy(
+                                status = newStatus,
+                                elapsedMs = event.elapsedSec?.let { (it * 1000).toLong() } ?: step.elapsedMs,
+                                startedAtMs =
+                                    if (newStatus == StepStatus.RUNNING) {
+                                        Clock.System.now().toEpochMilliseconds()
+                                    } else {
+                                        null
+                                    },
+                            )
+                        } else {
+                            step
+                        }
+                    }
+                lane.copy(steps = updatedSteps)
+            }
+            "pipeline.completed" -> lane.copy(status = PipelineRunStatus.PASSED)
+            "pipeline.failed" -> lane.copy(status = PipelineRunStatus.FAILED)
+            else -> lane
+        }
 
     private fun updateStepStatus(
         stepName: String?,

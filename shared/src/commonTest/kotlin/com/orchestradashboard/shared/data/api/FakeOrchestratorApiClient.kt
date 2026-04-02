@@ -3,6 +3,7 @@ package com.orchestradashboard.shared.data.api
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
@@ -24,6 +25,7 @@ class FakeOrchestratorApiClient : OrchestratorApi {
     var retryCheckpointResult: CheckpointDto? = null
     var pipelineHistoryResult: List<PipelineHistoryDto> = emptyList()
     var eventsResult: List<PipelineEventDto> = emptyList()
+    var parallelPipelinesResult: ParallelPipelineGroupDto? = null
 
     var getStatusCallCount = 0
         private set
@@ -109,6 +111,11 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         getPipelineHistoryCallCount++
         maybeThrow()
         return pipelineHistoryResult
+    }
+
+    override suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto {
+        maybeThrow()
+        return parallelPipelinesResult ?: throw OrchestratorNotFoundException("Parallel pipelines for $parentId not found")
     }
 
     override fun connectEvents(): Flow<PipelineEventDto> {

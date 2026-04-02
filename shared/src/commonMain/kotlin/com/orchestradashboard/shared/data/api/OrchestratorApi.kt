@@ -3,6 +3,7 @@ package com.orchestradashboard.shared.data.api
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
@@ -32,6 +33,8 @@ interface OrchestratorApi {
     suspend fun retryCheckpoint(checkpointId: String): CheckpointDto
 
     suspend fun getPipelineHistory(): List<PipelineHistoryDto>
+
+    suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto
 
     fun connectEvents(): Flow<PipelineEventDto>
 

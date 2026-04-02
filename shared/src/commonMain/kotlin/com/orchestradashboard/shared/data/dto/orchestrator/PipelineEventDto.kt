@@ -21,4 +21,5 @@ data class PipelineEventDto(
     @SerialName("cpu_percent") val cpuPercent: Double? = null,
     val thermal: String? = null,
     val timestamp: String? = null,
+    @SerialName("lane_id") val laneId: String? = null,
 )
