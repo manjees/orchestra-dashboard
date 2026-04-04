@@ -1,7 +1,17 @@
 package com.orchestradashboard.shared.ui.component
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -103,6 +113,41 @@ fun dependencyColor(type: DependencyType): Color =
         DependencyType.BLOCKS_START -> Color(0xFFFF9800) // Orange / Amber
         DependencyType.PROVIDES_INPUT -> Color(0xFF03A9F4) // Light Blue / Cyan
     }
+
+/**
+ * A legend row explaining arrow colors for each [DependencyType].
+ * Only shown when the parallel view has at least one dependency.
+ */
+@Composable
+fun DependencyLegend(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LegendItem(color = dependencyColor(DependencyType.BLOCKS_START), label = "Blocks")
+        LegendItem(color = dependencyColor(DependencyType.PROVIDES_INPUT), label = "Provides Input")
+    }
+}
+
+@Composable
+private fun LegendItem(
+    color: Color,
+    label: String,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(10.dp)
+                    .background(color, CircleShape),
+        )
+        Text(text = label, style = MaterialTheme.typography.labelSmall)
+    }
+}
 
 /**
  * Canvas overlay that draws curved arrows between parallel pipeline lanes.
