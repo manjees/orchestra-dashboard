@@ -16,7 +16,12 @@ struct PipelineMonitorView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 16) {
-                        if let pipeline = viewModel.pipeline {
+                        if viewModel.isParallelView {
+                            ParallelPipelineView(
+                                pipelines: viewModel.parallelPipelines,
+                                dependencies: viewModel.dependencies
+                            )
+                        } else if let pipeline = viewModel.pipeline {
                             StepTimelineView(steps: pipeline.steps)
                         }
 
