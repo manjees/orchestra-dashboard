@@ -80,12 +80,14 @@ class StepNodeTest {
     @Test
     fun `StepNode RUNNING step with startedAtMs shows live timer`() =
         runComposeUiTest {
+            mainClock.autoAdvance = false
             val startedAt = Clock.System.now().toEpochMilliseconds() - 90_000L
             setContent {
                 DashboardTheme {
                     StepNode(step = makeStep("running-step", StepStatus.RUNNING, startedAtMs = startedAt))
                 }
             }
+            mainClock.advanceTimeByFrame()
             onNodeWithText("running-step").assertIsDisplayed()
             onNodeWithText("1m 30s").assertIsDisplayed()
         }
