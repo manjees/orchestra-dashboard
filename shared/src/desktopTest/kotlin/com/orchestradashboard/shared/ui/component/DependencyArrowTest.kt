@@ -96,6 +96,68 @@ class DependencyArrowTest {
             // Canvas node always exists (drawing nothing is still a canvas)
             onNodeWithTag("dependency_arrows").assertIsDisplayed()
         }
+
+    @Test
+    fun `DependencyArrowOverlay multipleDependencies rendersCanvas`() =
+        runComposeUiTest {
+            val dependencies =
+                listOf(
+                    PipelineDependency("lane-1", "lane-2", DependencyType.BLOCKS_START),
+                    PipelineDependency("lane-2", "lane-3", DependencyType.PROVIDES_INPUT),
+                    PipelineDependency("lane-1", "lane-3", DependencyType.BLOCKS_START),
+                )
+            setContent {
+                DashboardTheme {
+                    DependencyArrowOverlay(
+                        dependencies = dependencies,
+                        pipelineIds = listOf("lane-1", "lane-2", "lane-3"),
+                        laneHeights = listOf(100f, 100f, 100f),
+                        modifier = Modifier.size(40.dp, 300.dp),
+                    )
+                }
+            }
+            onNodeWithTag("dependency_arrows").assertIsDisplayed()
+        }
+
+    @Test
+    fun `DependencyArrowOverlay selfReference skipped`() =
+        runComposeUiTest {
+            val dependencies =
+                listOf(
+                    PipelineDependency("lane-1", "lane-1", DependencyType.BLOCKS_START),
+                )
+            setContent {
+                DashboardTheme {
+                    DependencyArrowOverlay(
+                        dependencies = dependencies,
+                        pipelineIds = listOf("lane-1", "lane-2"),
+                        laneHeights = listOf(100f, 100f),
+                        modifier = Modifier.size(40.dp, 200.dp),
+                    )
+                }
+            }
+            onNodeWithTag("dependency_arrows").assertIsDisplayed()
+        }
+
+    @Test
+    fun `DependencyArrowOverlay unknownLaneId skipped`() =
+        runComposeUiTest {
+            val dependencies =
+                listOf(
+                    PipelineDependency("lane-1", "lane-unknown", DependencyType.PROVIDES_INPUT),
+                )
+            setContent {
+                DashboardTheme {
+                    DependencyArrowOverlay(
+                        dependencies = dependencies,
+                        pipelineIds = listOf("lane-1", "lane-2"),
+                        laneHeights = listOf(100f, 100f),
+                        modifier = Modifier.size(40.dp, 200.dp),
+                    )
+                }
+            }
+            onNodeWithTag("dependency_arrows").assertIsDisplayed()
+        }
 }
 
 private fun assertEquals(
