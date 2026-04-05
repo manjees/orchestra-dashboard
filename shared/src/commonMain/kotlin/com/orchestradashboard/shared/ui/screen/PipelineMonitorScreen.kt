@@ -106,6 +106,7 @@ fun PipelineMonitorScreen(
                 uiState.isParallelView -> {
                     ParallelPipelineView(
                         pipelines = uiState.parallelPipelines,
+                        dependencies = uiState.dependencies,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

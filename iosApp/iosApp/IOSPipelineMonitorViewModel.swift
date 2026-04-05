@@ -12,6 +12,12 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
     @Published var error: String? = nil
     @Published var connectionStatus: ConnectionStatus = .disconnected
 
+    // Parallel view state
+    @Published var parallelPipelines: [MonitoredPipeline] = []
+    @Published var parallelGroup: ParallelPipelineGroup? = nil
+    @Published var isParallelView: Bool = false
+    @Published var dependencies: [PipelineDependency] = []
+
     private let viewModel: PipelineMonitorViewModel
     private var collectTask: Task<Void, Never>?
 
@@ -39,6 +45,11 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
         self.isLoading = state.isLoading
         self.error = state.error
         self.connectionStatus = state.connectionStatus
+        // Parallel view state
+        self.parallelPipelines = state.parallelPipelines as? [MonitoredPipeline] ?? []
+        self.parallelGroup = state.parallelGroup
+        self.isParallelView = state.isParallelView
+        self.dependencies = state.dependencies as? [PipelineDependency] ?? []
     }
 
     func loadPipeline() {
