@@ -8,6 +8,8 @@ import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
 import kotlinx.coroutines.flow.Flow
 
@@ -31,6 +33,8 @@ interface OrchestratorApi {
     suspend fun getCheckpoints(): List<CheckpointDto>
 
     suspend fun retryCheckpoint(checkpointId: String): CheckpointDto
+
+    suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto
 
     suspend fun getPipelineHistory(): List<PipelineHistoryDto>
 

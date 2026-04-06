@@ -5,6 +5,7 @@ import com.orchestradashboard.shared.data.api.OrchestratorApiClient
 import com.orchestradashboard.shared.data.mapper.ActivePipelineMapper
 import com.orchestradashboard.shared.data.mapper.AgentEventMapper
 import com.orchestradashboard.shared.data.mapper.AgentMapper
+import com.orchestradashboard.shared.data.mapper.SolveCommandMapper
 import com.orchestradashboard.shared.data.mapper.CheckpointMapper
 import com.orchestradashboard.shared.data.mapper.IssueMapper
 import com.orchestradashboard.shared.data.mapper.MonitoredPipelineMapper
@@ -16,6 +17,7 @@ import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
 import com.orchestradashboard.shared.data.repository.AndroidTokenRepository
 import com.orchestradashboard.shared.data.repository.CheckpointRepositoryImpl
+import com.orchestradashboard.shared.data.repository.SolveRepositoryImpl
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.MetricRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineMonitorRepositoryImpl
@@ -26,6 +28,7 @@ import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.repository.CheckpointRepository
+import com.orchestradashboard.shared.domain.repository.SolveRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.repository.PipelineMonitorRepository
@@ -33,6 +36,7 @@ import com.orchestradashboard.shared.domain.repository.PipelineRepository
 import com.orchestradashboard.shared.domain.repository.ProjectRepository
 import com.orchestradashboard.shared.domain.repository.SystemRepository
 import com.orchestradashboard.shared.domain.repository.TokenRepository
+import com.orchestradashboard.shared.domain.usecase.ExecuteSolveUseCase
 import com.orchestradashboard.shared.domain.usecase.GetActivePipelinesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
@@ -130,6 +134,7 @@ object AppContainer {
     private val activePipelineMapper: ActivePipelineMapper by lazy { ActivePipelineMapper() }
     private val pipelineHistoryMapper: PipelineHistoryMapper by lazy { PipelineHistoryMapper() }
     private val monitoredPipelineMapper: MonitoredPipelineMapper by lazy { MonitoredPipelineMapper() }
+    private val solveCommandMapper: SolveCommandMapper by lazy { SolveCommandMapper() }
 
     // ─── Repositories ───────────────────────────────────────────
 
@@ -155,6 +160,10 @@ object AppContainer {
 
     private val checkpointRepository: CheckpointRepository by lazy {
         CheckpointRepositoryImpl(orchestratorApiClient, checkpointMapper)
+    }
+
+    private val solveRepository: SolveRepository by lazy {
+        SolveRepositoryImpl(orchestratorApiClient, solveCommandMapper)
     }
 
     private val pipelineMonitorRepository: PipelineMonitorRepository by lazy {
@@ -208,6 +217,10 @@ object AppContainer {
         RetryCheckpointUseCase(checkpointRepository)
     }
 
+    private val executeSolveUseCase: ExecuteSolveUseCase by lazy {
+        ExecuteSolveUseCase(solveRepository)
+    }
+
     private val getSystemStatusUseCase: GetSystemStatusUseCase by lazy {
         GetSystemStatusUseCase(systemRepository)
     }
@@ -233,7 +246,7 @@ object AppContainer {
         AgentDetailViewModel(agentId, getAgentUseCase, observePipelineRunsUseCase, observeEventsUseCase)
 
     fun createProjectExplorerViewModel(): ProjectExplorerViewModel =
-        ProjectExplorerViewModel(getProjectsUseCase, getProjectIssuesUseCase, getCheckpointsUseCase, retryCheckpointUseCase)
+        ProjectExplorerViewModel(getProjectsUseCase, getProjectIssuesUseCase, getCheckpointsUseCase, retryCheckpointUseCase, executeSolveUseCase)
 
     fun createPipelineMonitorViewModel(pipelineId: String): PipelineMonitorViewModel =
         PipelineMonitorViewModel(pipelineId, pipelineMonitorRepository)

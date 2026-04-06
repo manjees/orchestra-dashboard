@@ -8,6 +8,8 @@ import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -26,6 +28,7 @@ class FakeOrchestratorApiClient : OrchestratorApi {
     var pipelineHistoryResult: List<PipelineHistoryDto> = emptyList()
     var eventsResult: List<PipelineEventDto> = emptyList()
     var parallelPipelinesResult: ParallelPipelineGroupDto? = null
+    var postSolveResult: SolveCommandResponseDto? = null
 
     var getStatusCallCount = 0
         private set
@@ -128,5 +131,10 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         connectEventsCallCount++
         maybeThrow()
         return eventsResult.filter { it.pipelineId == pipelineId }.asFlow()
+    }
+
+    override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto {
+        maybeThrow()
+        return postSolveResult ?: SolveCommandResponseDto(pipelineId = "pipe-fake", status = "started")
     }
 }

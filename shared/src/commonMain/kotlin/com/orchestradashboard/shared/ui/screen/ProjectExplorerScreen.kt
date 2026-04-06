@@ -44,6 +44,7 @@ import com.orchestradashboard.shared.ui.component.ErrorBanner
 import com.orchestradashboard.shared.ui.component.IssueRow
 import com.orchestradashboard.shared.ui.component.LoadingOverlay
 import com.orchestradashboard.shared.ui.component.ProjectCard
+import com.orchestradashboard.shared.ui.component.SolveDialog
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,11 +52,16 @@ import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 fun ProjectExplorerScreen(
     viewModel: ProjectExplorerViewModel,
     onBackClick: () -> Unit,
+    onNavigateToPipeline: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.loadInitialData() }
+
+    LaunchedEffect(uiState.solveResult) {
+        uiState.solveResult?.let { onNavigateToPipeline(it.pipelineId) }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -81,6 +87,22 @@ fun ProjectExplorerScreen(
             )
         },
     ) { paddingValues ->
+        if (uiState.showSolveDialog) {
+            SolveDialog(
+                issues = uiState.issues,
+                selectedIssues = uiState.selectedIssues,
+                solveMode = uiState.solveMode,
+                isParallel = uiState.isParallel,
+                isSolving = uiState.isSolving,
+                solveError = uiState.solveError,
+                onToggleIssue = { viewModel.toggleIssueSelection(it) },
+                onModeChange = { viewModel.setSolveMode(it) },
+                onToggleParallel = { viewModel.toggleParallel() },
+                onSolve = { viewModel.executeSolve() },
+                onDismiss = { viewModel.closeSolveDialog() },
+            )
+        }
+
         PullToRefreshBox(
             isRefreshing = uiState.isLoading,
             onRefresh = { viewModel.refresh() },
@@ -155,7 +177,7 @@ fun ProjectExplorerScreen(
                                     items(uiState.issues, key = { it.number }) { issue ->
                                         IssueRow(
                                             issue = issue,
-                                            onSolveClick = { /* Phase 2 */ },
+                                            onSolveClick = { viewModel.openSolveDialog(issue) },
                                         )
                                     }
                                 }
