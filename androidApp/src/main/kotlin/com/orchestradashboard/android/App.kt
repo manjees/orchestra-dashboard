@@ -39,6 +39,9 @@ class MainActivity : ComponentActivity() {
                     pipelineMonitorViewModelFactory = { pipelineId ->
                         AppContainer.createPipelineMonitorViewModel(pipelineId)
                     },
+                    commandCenterViewModelFactory = {
+                        AppContainer.createCommandCenterViewModel()
+                    },
                 )
             }
         }

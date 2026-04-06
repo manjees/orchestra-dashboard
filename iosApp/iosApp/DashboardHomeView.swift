@@ -5,6 +5,7 @@ import Shared
 /// Displays system health, active pipelines, recent results, and quick actions.
 struct DashboardHomeView: View {
     @StateObject private var viewModel = IOSDashboardHomeViewModel()
+    @State private var showCommandCenter = false
 
     var body: some View {
         NavigationView {
@@ -20,7 +21,8 @@ struct DashboardHomeView: View {
 
                             QuickActionsBarView(
                                 onNewSolve: { /* navigate */ },
-                                onViewProjects: { /* navigate */ }
+                                onViewProjects: { /* navigate */ },
+                                onCommandCenter: { showCommandCenter = true }
                             )
 
                             if !viewModel.activePipelines.isEmpty {
@@ -54,6 +56,9 @@ struct DashboardHomeView: View {
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showCommandCenter) {
+            CommandCenterView()
         }
         .onAppear {
             viewModel.loadInitialData()

@@ -1,20 +1,34 @@
 package com.orchestradashboard.shared.data.api
 
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DiscussRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DiscussResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ShellRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.request.url
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.flow.Flow
@@ -89,6 +103,42 @@ class OrchestratorApiClient(
                 }
             }
         }
+
+    override suspend fun postInitProject(request: InitProjectRequestDto): InitProjectResponseDto =
+        postRequest("/api/commands/init", request)
+
+    override suspend fun postPlanIssues(projectName: String): PlanIssuesResponseDto =
+        postRequest("/api/commands/plan", PlanIssuesRequestDto(project = projectName))
+
+    override suspend fun postDiscuss(request: DiscussRequestDto): DiscussResponseDto =
+        postRequest("/api/commands/discuss", request)
+
+    override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto =
+        postRequest("/api/commands/design", request)
+
+    override suspend fun postShell(request: ShellRequestDto): ShellResponseDto =
+        postRequest("/api/commands/shell", request)
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend inline fun <reified T, reified B> postRequest(path: String, body: B): T {
+        try {
+            val response =
+                httpClient.post("$baseUrl$path") {
+                    header("X-API-Key", apiKey)
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            when (response.status.value) {
+                401 -> throw OrchestratorUnauthorizedException()
+                404 -> throw OrchestratorNotFoundException("$path not found")
+            }
+            return response.body()
+        } catch (e: OrchestratorApiException) {
+            throw e
+        } catch (e: Exception) {
+            throw OrchestratorNetworkException("Network error: ${e.message}", e)
+        }
+    }
 
     @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified T> request(path: String): T {

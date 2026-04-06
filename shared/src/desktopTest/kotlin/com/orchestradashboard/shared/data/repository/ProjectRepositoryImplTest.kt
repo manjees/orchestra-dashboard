@@ -4,13 +4,22 @@ import com.orchestradashboard.shared.data.api.OrchestratorApi
 import com.orchestradashboard.shared.data.api.OrchestratorNetworkException
 import com.orchestradashboard.shared.data.api.OrchestratorNotFoundException
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DiscussRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DiscussResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ShellRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
 import com.orchestradashboard.shared.data.mapper.CheckpointMapper
 import com.orchestradashboard.shared.data.mapper.IssueMapper
@@ -70,6 +79,16 @@ class FakeOrchestratorApi(
     override fun connectEvents(): Flow<PipelineEventDto> = emptyFlow()
 
     override fun connectEvents(pipelineId: String): Flow<PipelineEventDto> = emptyFlow()
+
+    override suspend fun postInitProject(request: InitProjectRequestDto): InitProjectResponseDto = throw NotImplementedError()
+
+    override suspend fun postPlanIssues(projectName: String): PlanIssuesResponseDto = throw NotImplementedError()
+
+    override suspend fun postDiscuss(request: DiscussRequestDto): DiscussResponseDto = throw NotImplementedError()
+
+    override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto = throw NotImplementedError()
+
+    override suspend fun postShell(request: ShellRequestDto): ShellResponseDto = throw NotImplementedError()
 }
 
 class ProjectRepositoryImplTest {
