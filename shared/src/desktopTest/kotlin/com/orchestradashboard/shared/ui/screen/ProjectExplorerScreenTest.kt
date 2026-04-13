@@ -10,8 +10,12 @@ import com.orchestradashboard.shared.domain.model.Checkpoint
 import com.orchestradashboard.shared.domain.model.CheckpointStatus
 import com.orchestradashboard.shared.domain.model.Issue
 import com.orchestradashboard.shared.domain.model.Project
+import com.orchestradashboard.shared.domain.model.SolveRequest
+import com.orchestradashboard.shared.domain.model.SolveResponse
 import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 import com.orchestradashboard.shared.domain.repository.ProjectRepository
+import com.orchestradashboard.shared.domain.repository.SolveRepository
+import com.orchestradashboard.shared.domain.usecase.ExecuteSolveUseCase
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
@@ -47,6 +51,12 @@ class FakeProjectRepository(
     override suspend fun retryCheckpoint(checkpointId: String): Result<Checkpoint> = Result.failure(NotImplementedError())
 }
 
+private val noOpSolveRepository =
+    object : SolveRepository {
+        override suspend fun executeSolve(request: SolveRequest): Result<SolveResponse> =
+            Result.success(SolveResponse("pipe-noop", "started"))
+    }
+
 private fun createViewModel(
     projects: List<Project> = emptyList(),
     issues: Map<String, List<Issue>> = emptyMap(),
@@ -58,6 +68,7 @@ private fun createViewModel(
         getProjectIssuesUseCase = GetProjectIssuesUseCase(repo),
         getCheckpointsUseCase = GetCheckpointsUseCase(repo),
         retryCheckpointUseCase = RetryCheckpointUseCase(repo),
+        executeSolveUseCase = ExecuteSolveUseCase(noOpSolveRepository),
     )
 }
 

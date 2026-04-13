@@ -8,13 +8,19 @@ import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.client.request.url
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import io.ktor.websocket.Frame
 import io.ktor.websocket.readText
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +57,8 @@ class OrchestratorApiClient(
     override suspend fun getCheckpoints(): List<CheckpointDto> = request("/api/checkpoints")
 
     override suspend fun retryCheckpoint(checkpointId: String): CheckpointDto = request("/api/checkpoints/$checkpointId/retry")
+
+    override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto = postRequest("/api/commands/solve", request)
 
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> = request("/api/pipelines/history")
 
@@ -89,6 +97,30 @@ class OrchestratorApiClient(
                 }
             }
         }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend inline fun <reified T, reified B> postRequest(
+        path: String,
+        body: B,
+    ): T {
+        try {
+            val response =
+                httpClient.post("$baseUrl$path") {
+                    header("X-API-Key", apiKey)
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            when (response.status.value) {
+                401 -> throw OrchestratorUnauthorizedException()
+                404 -> throw OrchestratorNotFoundException("$path not found")
+            }
+            return response.body()
+        } catch (e: OrchestratorApiException) {
+            throw e
+        } catch (e: Exception) {
+            throw OrchestratorNetworkException("Network error: ${e.message}", e)
+        }
+    }
 
     @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified T> request(path: String): T {

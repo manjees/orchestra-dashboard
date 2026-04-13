@@ -76,6 +76,7 @@ fun AppNavigation(
             ProjectExplorerScreen(
                 viewModel = vm,
                 onBackClick = { currentScreen = Screen.DashboardHome },
+                onNavigateToPipeline = { pipelineId -> currentScreen = Screen.PipelineMonitor(pipelineId) },
                 modifier = modifier,
             )
         }
