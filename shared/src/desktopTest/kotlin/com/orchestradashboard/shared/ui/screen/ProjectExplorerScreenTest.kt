@@ -51,10 +51,11 @@ class FakeProjectRepository(
     override suspend fun retryCheckpoint(checkpointId: String): Result<Checkpoint> = Result.failure(NotImplementedError())
 }
 
-private val noOpSolveRepository = object : SolveRepository {
-    override suspend fun executeSolve(request: SolveRequest): Result<SolveResponse> =
-        Result.success(SolveResponse("pipe-noop", "started"))
-}
+private val noOpSolveRepository =
+    object : SolveRepository {
+        override suspend fun executeSolve(request: SolveRequest): Result<SolveResponse> =
+            Result.success(SolveResponse("pipe-noop", "started"))
+    }
 
 private fun createViewModel(
     projects: List<Project> = emptyList(),

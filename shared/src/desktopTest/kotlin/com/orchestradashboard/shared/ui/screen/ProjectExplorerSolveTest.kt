@@ -54,10 +54,11 @@ class ProjectExplorerSolveTest {
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         fakeSolveRepo = FakeSolveRepository()
-        fakeProjectRepo = FakeProjectRepository(
-            projects = listOf(sampleProject),
-            issues = mapOf("my-project" to listOf(sampleIssue, sampleIssue2)),
-        )
+        fakeProjectRepo =
+            FakeProjectRepository(
+                projects = listOf(sampleProject),
+                issues = mapOf("my-project" to listOf(sampleIssue, sampleIssue2)),
+            )
     }
 
     @AfterTest
@@ -76,174 +77,186 @@ class ProjectExplorerSolveTest {
     }
 
     @Test
-    fun `openSolveDialog sets showSolveDialog true with selected issue`() = runTest {
-        val vm = createViewModel()
-        vm.openSolveDialog(sampleIssue)
-        val state = vm.uiState.value
-        assertTrue(state.showSolveDialog)
-        assertTrue(state.selectedIssues.contains(1))
-    }
+    fun `openSolveDialog sets showSolveDialog true with selected issue`() =
+        runTest {
+            val vm = createViewModel()
+            vm.openSolveDialog(sampleIssue)
+            val state = vm.uiState.value
+            assertTrue(state.showSolveDialog)
+            assertTrue(state.selectedIssues.contains(1))
+        }
 
     @Test
-    fun `toggleIssueSelection adds issue when not selected`() = runTest {
-        val vm = createViewModel()
-        vm.openSolveDialog(sampleIssue)
-        vm.toggleIssueSelection(2)
-        assertTrue(vm.uiState.value.selectedIssues.contains(2))
-    }
+    fun `toggleIssueSelection adds issue when not selected`() =
+        runTest {
+            val vm = createViewModel()
+            vm.openSolveDialog(sampleIssue)
+            vm.toggleIssueSelection(2)
+            assertTrue(vm.uiState.value.selectedIssues.contains(2))
+        }
 
     @Test
-    fun `toggleIssueSelection removes issue when already selected`() = runTest {
-        val vm = createViewModel()
-        vm.openSolveDialog(sampleIssue)
-        vm.toggleIssueSelection(1)
-        assertFalse(vm.uiState.value.selectedIssues.contains(1))
-    }
+    fun `toggleIssueSelection removes issue when already selected`() =
+        runTest {
+            val vm = createViewModel()
+            vm.openSolveDialog(sampleIssue)
+            vm.toggleIssueSelection(1)
+            assertFalse(vm.uiState.value.selectedIssues.contains(1))
+        }
 
     @Test
-    fun `setSolveMode updates solveMode in state`() = runTest {
-        val vm = createViewModel()
-        vm.setSolveMode(SolveMode.EXPRESS)
-        assertEquals(SolveMode.EXPRESS, vm.uiState.value.solveMode)
-    }
+    fun `setSolveMode updates solveMode in state`() =
+        runTest {
+            val vm = createViewModel()
+            vm.setSolveMode(SolveMode.EXPRESS)
+            assertEquals(SolveMode.EXPRESS, vm.uiState.value.solveMode)
+        }
 
     @Test
-    fun `toggleParallel flips isParallel in state`() = runTest {
-        val vm = createViewModel()
-        assertFalse(vm.uiState.value.isParallel)
-        vm.toggleParallel()
-        assertTrue(vm.uiState.value.isParallel)
-        vm.toggleParallel()
-        assertFalse(vm.uiState.value.isParallel)
-    }
+    fun `toggleParallel flips isParallel in state`() =
+        runTest {
+            val vm = createViewModel()
+            assertFalse(vm.uiState.value.isParallel)
+            vm.toggleParallel()
+            assertTrue(vm.uiState.value.isParallel)
+            vm.toggleParallel()
+            assertFalse(vm.uiState.value.isParallel)
+        }
 
     @Test
-    fun `default solveMode is AUTO`() = runTest {
-        val vm = createViewModel()
-        assertEquals(SolveMode.AUTO, vm.uiState.value.solveMode)
-    }
+    fun `default solveMode is AUTO`() =
+        runTest {
+            val vm = createViewModel()
+            assertEquals(SolveMode.AUTO, vm.uiState.value.solveMode)
+        }
 
     @Test
-    fun `executeSolve calls repository with correct SolveRequest`() = runTest {
-        val vm = createViewModel()
-        vm.uiState.value.let { } // ensure state is initialized
+    fun `executeSolve calls repository with correct SolveRequest`() =
+        runTest {
+            val vm = createViewModel()
+            vm.uiState.value.let { } // ensure state is initialized
 
-        // Set up state
-        vm.openSolveDialog(sampleIssue)
-        vm.toggleIssueSelection(2)
-        vm.setSolveMode(SolveMode.STANDARD)
-        vm.toggleParallel()
+            // Set up state
+            vm.openSolveDialog(sampleIssue)
+            vm.toggleIssueSelection(2)
+            vm.setSolveMode(SolveMode.STANDARD)
+            vm.toggleParallel()
 
-        // Need selectedProject set — simulate by loading data and selecting project
-        // Since we don't have full VM flow here, test with just the repo call
-        // Set selected project manually by loading initial data
-        vm.loadInitialData()
-        advanceUntilIdle()
-        vm.selectProject(sampleProject)
-        advanceUntilIdle()
+            // Need selectedProject set — simulate by loading data and selecting project
+            // Since we don't have full VM flow here, test with just the repo call
+            // Set selected project manually by loading initial data
+            vm.loadInitialData()
+            advanceUntilIdle()
+            vm.selectProject(sampleProject)
+            advanceUntilIdle()
 
-        // Re-open dialog after project selection
-        vm.openSolveDialog(sampleIssue)
-        vm.toggleIssueSelection(2)
-        vm.setSolveMode(SolveMode.STANDARD)
-        vm.toggleParallel()
+            // Re-open dialog after project selection
+            vm.openSolveDialog(sampleIssue)
+            vm.toggleIssueSelection(2)
+            vm.setSolveMode(SolveMode.STANDARD)
+            vm.toggleParallel()
 
-        vm.executeSolve()
-        advanceUntilIdle()
+            vm.executeSolve()
+            advanceUntilIdle()
 
-        val request = fakeSolveRepo.lastRequest
-        assertNotNull(request)
-        assertEquals("my-project", request.projectName)
-        assertTrue(request.issueNumbers.contains(1))
-        assertEquals(SolveMode.STANDARD, request.mode)
-        assertTrue(request.parallel)
-    }
-
-    @Test
-    fun `executeSolve success sets solveResult and closes dialog`() = runTest {
-        val vm = createViewModel()
-        vm.loadInitialData()
-        advanceUntilIdle()
-        vm.selectProject(sampleProject)
-        advanceUntilIdle()
-        vm.openSolveDialog(sampleIssue)
-
-        vm.executeSolve()
-        advanceUntilIdle()
-
-        val state = vm.uiState.value
-        assertNotNull(state.solveResult)
-        assertEquals("pipe-1", state.solveResult!!.pipelineId)
-        assertFalse(state.showSolveDialog)
-    }
+            val request = fakeSolveRepo.lastRequest
+            assertNotNull(request)
+            assertEquals("my-project", request.projectName)
+            assertTrue(request.issueNumbers.contains(1))
+            assertEquals(SolveMode.STANDARD, request.mode)
+            assertTrue(request.parallel)
+        }
 
     @Test
-    fun `executeSolve failure sets solveError in state`() = runTest {
-        val failRepo = FakeSolveRepository(Result.failure(Exception("Network error")))
-        val vm = createViewModel(failRepo)
-        vm.loadInitialData()
-        advanceUntilIdle()
-        vm.selectProject(sampleProject)
-        advanceUntilIdle()
-        vm.openSolveDialog(sampleIssue)
+    fun `executeSolve success sets solveResult and closes dialog`() =
+        runTest {
+            val vm = createViewModel()
+            vm.loadInitialData()
+            advanceUntilIdle()
+            vm.selectProject(sampleProject)
+            advanceUntilIdle()
+            vm.openSolveDialog(sampleIssue)
 
-        vm.executeSolve()
-        advanceUntilIdle()
+            vm.executeSolve()
+            advanceUntilIdle()
 
-        val state = vm.uiState.value
-        assertNotNull(state.solveError)
-        assertEquals("Network error", state.solveError)
-        assertNull(state.solveResult)
-    }
-
-    @Test
-    fun `executeSolve sets isSolving true during execution`() = runTest {
-        val vm = createViewModel()
-        vm.loadInitialData()
-        advanceUntilIdle()
-        vm.selectProject(sampleProject)
-        advanceUntilIdle()
-        vm.openSolveDialog(sampleIssue)
-
-        vm.executeSolve()
-        // Before advanceUntilIdle, isSolving should be true
-        assertTrue(vm.uiState.value.isSolving)
-        advanceUntilIdle()
-        assertFalse(vm.uiState.value.isSolving)
-    }
+            val state = vm.uiState.value
+            assertNotNull(state.solveResult)
+            assertEquals("pipe-1", state.solveResult!!.pipelineId)
+            assertFalse(state.showSolveDialog)
+        }
 
     @Test
-    fun `closeSolveDialog resets all dialog state`() = runTest {
-        val vm = createViewModel()
-        vm.openSolveDialog(sampleIssue)
-        vm.setSolveMode(SolveMode.EXPRESS)
-        vm.toggleParallel()
+    fun `executeSolve failure sets solveError in state`() =
+        runTest {
+            val failRepo = FakeSolveRepository(Result.failure(Exception("Network error")))
+            val vm = createViewModel(failRepo)
+            vm.loadInitialData()
+            advanceUntilIdle()
+            vm.selectProject(sampleProject)
+            advanceUntilIdle()
+            vm.openSolveDialog(sampleIssue)
 
-        vm.closeSolveDialog()
+            vm.executeSolve()
+            advanceUntilIdle()
 
-        val state = vm.uiState.value
-        assertFalse(state.showSolveDialog)
-        assertTrue(state.selectedIssues.isEmpty())
-        assertEquals(SolveMode.AUTO, state.solveMode)
-        assertFalse(state.isParallel)
-        assertNull(state.solveError)
-        assertNull(state.solveResult)
-    }
+            val state = vm.uiState.value
+            assertNotNull(state.solveError)
+            assertEquals("Network error", state.solveError)
+            assertNull(state.solveResult)
+        }
 
     @Test
-    fun `executeSolve does nothing when no issues selected`() = runTest {
-        val vm = createViewModel()
-        vm.loadInitialData()
-        advanceUntilIdle()
-        vm.selectProject(sampleProject)
-        advanceUntilIdle()
-        vm.openSolveDialog(sampleIssue)
-        vm.toggleIssueSelection(1) // deselect all
+    fun `executeSolve sets isSolving true during execution`() =
+        runTest {
+            val vm = createViewModel()
+            vm.loadInitialData()
+            advanceUntilIdle()
+            vm.selectProject(sampleProject)
+            advanceUntilIdle()
+            vm.openSolveDialog(sampleIssue)
 
-        vm.executeSolve()
-        advanceUntilIdle()
+            vm.executeSolve()
+            // Before advanceUntilIdle, isSolving should be true
+            assertTrue(vm.uiState.value.isSolving)
+            advanceUntilIdle()
+            assertFalse(vm.uiState.value.isSolving)
+        }
 
-        assertNull(fakeSolveRepo.lastRequest)
-        assertFalse(vm.uiState.value.isSolving)
-    }
+    @Test
+    fun `closeSolveDialog resets all dialog state`() =
+        runTest {
+            val vm = createViewModel()
+            vm.openSolveDialog(sampleIssue)
+            vm.setSolveMode(SolveMode.EXPRESS)
+            vm.toggleParallel()
+
+            vm.closeSolveDialog()
+
+            val state = vm.uiState.value
+            assertFalse(state.showSolveDialog)
+            assertTrue(state.selectedIssues.isEmpty())
+            assertEquals(SolveMode.AUTO, state.solveMode)
+            assertFalse(state.isParallel)
+            assertNull(state.solveError)
+            assertNull(state.solveResult)
+        }
+
+    @Test
+    fun `executeSolve does nothing when no issues selected`() =
+        runTest {
+            val vm = createViewModel()
+            vm.loadInitialData()
+            advanceUntilIdle()
+            vm.selectProject(sampleProject)
+            advanceUntilIdle()
+            vm.openSolveDialog(sampleIssue)
+            vm.toggleIssueSelection(1) // deselect all
+
+            vm.executeSolve()
+            advanceUntilIdle()
+
+            assertNull(fakeSolveRepo.lastRequest)
+            assertFalse(vm.uiState.value.isSolving)
+        }
 }

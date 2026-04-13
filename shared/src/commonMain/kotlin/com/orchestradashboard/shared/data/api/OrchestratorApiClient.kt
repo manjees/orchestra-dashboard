@@ -58,8 +58,7 @@ class OrchestratorApiClient(
 
     override suspend fun retryCheckpoint(checkpointId: String): CheckpointDto = request("/api/checkpoints/$checkpointId/retry")
 
-    override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto =
-        postRequest("/api/commands/solve", request)
+    override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto = postRequest("/api/commands/solve", request)
 
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> = request("/api/pipelines/history")
 
@@ -100,7 +99,10 @@ class OrchestratorApiClient(
         }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend inline fun <reified T, reified B> postRequest(path: String, body: B): T {
+    private suspend inline fun <reified T, reified B> postRequest(
+        path: String,
+        body: B,
+    ): T {
         try {
             val response =
                 httpClient.post("$baseUrl$path") {

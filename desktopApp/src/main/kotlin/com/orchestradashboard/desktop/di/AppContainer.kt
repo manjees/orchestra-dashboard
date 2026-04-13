@@ -10,9 +10,9 @@ import com.orchestradashboard.shared.data.mapper.MonitoredPipelineMapper
 import com.orchestradashboard.shared.data.mapper.PipelineHistoryMapper
 import com.orchestradashboard.shared.data.mapper.PipelineRunMapper
 import com.orchestradashboard.shared.data.mapper.ProjectMapper
+import com.orchestradashboard.shared.data.mapper.SolveCommandMapper
 import com.orchestradashboard.shared.data.mapper.SystemStatusMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
-import com.orchestradashboard.shared.data.mapper.SolveCommandMapper
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
 import com.orchestradashboard.shared.data.repository.CheckpointRepositoryImpl
 import com.orchestradashboard.shared.data.repository.DesktopTokenRepository
@@ -27,12 +27,12 @@ import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
 import com.orchestradashboard.shared.domain.repository.CheckpointRepository
-import com.orchestradashboard.shared.domain.repository.SolveRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.repository.PipelineMonitorRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
 import com.orchestradashboard.shared.domain.repository.ProjectRepository
+import com.orchestradashboard.shared.domain.repository.SolveRepository
 import com.orchestradashboard.shared.domain.repository.SystemRepository
 import com.orchestradashboard.shared.domain.repository.TokenRepository
 import com.orchestradashboard.shared.domain.usecase.ExecuteSolveUseCase
@@ -261,7 +261,13 @@ object AppContainer {
         AgentDetailViewModel(agentId, getAgentUseCase, observePipelineRunsUseCase, observeEventsUseCase)
 
     fun createProjectExplorerViewModel(): ProjectExplorerViewModel =
-        ProjectExplorerViewModel(getProjectsUseCase, getProjectIssuesUseCase, getCheckpointsUseCase, retryCheckpointUseCase, executeSolveUseCase)
+        ProjectExplorerViewModel(
+            getProjectsUseCase,
+            getProjectIssuesUseCase,
+            getCheckpointsUseCase,
+            retryCheckpointUseCase,
+            executeSolveUseCase,
+        )
 
     fun createPipelineMonitorViewModel(pipelineId: String): PipelineMonitorViewModel =
         PipelineMonitorViewModel(pipelineId, pipelineMonitorRepository)

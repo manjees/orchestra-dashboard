@@ -35,12 +35,13 @@ import com.orchestradashboard.shared.domain.model.SolveMode
 
 private val solveModes = listOf(SolveMode.EXPRESS, SolveMode.STANDARD, SolveMode.FULL, SolveMode.AUTO)
 
-private fun SolveMode.label(): String = when (this) {
-    SolveMode.EXPRESS -> "Express"
-    SolveMode.STANDARD -> "Standard"
-    SolveMode.FULL -> "Full"
-    SolveMode.AUTO -> "Auto"
-}
+private fun SolveMode.label(): String =
+    when (this) {
+        SolveMode.EXPRESS -> "Express"
+        SolveMode.STANDARD -> "Standard"
+        SolveMode.FULL -> "Full"
+        SolveMode.AUTO -> "Auto"
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,9 +73,10 @@ fun SolveDialog(
                     items(issues, key = { it.number }) { issue ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onToggleIssue(issue.number) },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onToggleIssue(issue.number) },
                         ) {
                             Checkbox(
                                 checked = selectedIssues.contains(issue.number),
@@ -115,9 +117,10 @@ fun SolveDialog(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("parallel_toggle"),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .testTag("parallel_toggle"),
                     ) {
                         Text(
                             text = "Run in Parallel",

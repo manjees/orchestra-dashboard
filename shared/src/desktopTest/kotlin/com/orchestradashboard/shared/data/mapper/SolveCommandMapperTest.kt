@@ -11,12 +11,13 @@ class SolveCommandMapperTest {
 
     @Test
     fun `maps SolveRequest to SolveCommandRequestDto correctly`() {
-        val request = SolveRequest(
-            projectName = "my-project",
-            issueNumbers = listOf(1, 2, 3),
-            mode = SolveMode.STANDARD,
-            parallel = true,
-        )
+        val request =
+            SolveRequest(
+                projectName = "my-project",
+                issueNumbers = listOf(1, 2, 3),
+                mode = SolveMode.STANDARD,
+                parallel = true,
+            )
         val dto = mapper.toDto(request)
         assertEquals("my-project", dto.projectName)
         assertEquals(listOf(1, 2, 3), dto.issueNumbers)

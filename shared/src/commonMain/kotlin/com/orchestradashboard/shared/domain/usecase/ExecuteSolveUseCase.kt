@@ -7,6 +7,5 @@ import com.orchestradashboard.shared.domain.repository.SolveRepository
 class ExecuteSolveUseCase(
     private val repository: SolveRepository,
 ) {
-    suspend operator fun invoke(request: SolveRequest): Result<SolveResponse> =
-        repository.executeSolve(request)
+    suspend operator fun invoke(request: SolveRequest): Result<SolveResponse> = repository.executeSolve(request)
 }

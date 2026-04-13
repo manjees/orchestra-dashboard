@@ -169,12 +169,13 @@ class ProjectExplorerViewModel(
         _uiState.update { it.copy(isSolving = true, solveError = null) }
 
         viewModelScope.launch {
-            val request = SolveRequest(
-                projectName = project.name,
-                issueNumbers = state.selectedIssues.toList(),
-                mode = state.solveMode,
-                parallel = state.isParallel,
-            )
+            val request =
+                SolveRequest(
+                    projectName = project.name,
+                    issueNumbers = state.selectedIssues.toList(),
+                    mode = state.solveMode,
+                    parallel = state.isParallel,
+                )
             executeSolveUseCase(request).fold(
                 onSuccess = { response ->
                     _uiState.update {

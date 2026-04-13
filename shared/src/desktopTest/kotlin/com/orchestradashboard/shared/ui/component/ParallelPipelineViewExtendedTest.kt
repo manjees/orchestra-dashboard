@@ -16,7 +16,6 @@ import kotlin.test.Test
 
 @OptIn(ExperimentalTestApi::class)
 class ParallelPipelineViewExtendedTest {
-
     // ─── Empty state ──────────────────────────────────────────────────────────
 
     @Test
