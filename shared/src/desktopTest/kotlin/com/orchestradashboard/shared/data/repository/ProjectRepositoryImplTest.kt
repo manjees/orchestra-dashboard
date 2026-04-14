@@ -20,6 +20,8 @@ import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ShellRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
 import com.orchestradashboard.shared.data.mapper.CheckpointMapper
 import com.orchestradashboard.shared.data.mapper.IssueMapper
@@ -79,6 +81,9 @@ class FakeOrchestratorApi(
     override fun connectEvents(): Flow<PipelineEventDto> = emptyFlow()
 
     override fun connectEvents(pipelineId: String): Flow<PipelineEventDto> = emptyFlow()
+
+    override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto =
+        SolveCommandResponseDto(pipelineId = "pipe-fake", status = "started")
 
     override suspend fun postInitProject(request: InitProjectRequestDto): InitProjectResponseDto = throw NotImplementedError()
 

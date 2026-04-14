@@ -18,6 +18,8 @@ import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ShellRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -66,6 +68,8 @@ class OrchestratorApiClient(
 
     override suspend fun retryCheckpoint(checkpointId: String): CheckpointDto = request("/api/checkpoints/$checkpointId/retry")
 
+    override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto = postRequest("/api/commands/solve", request)
+
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> = request("/api/pipelines/history")
 
     override suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto = request("/api/pipelines/$parentId/parallel")
@@ -110,17 +114,17 @@ class OrchestratorApiClient(
     override suspend fun postPlanIssues(projectName: String): PlanIssuesResponseDto =
         postRequest("/api/commands/plan", PlanIssuesRequestDto(project = projectName))
 
-    override suspend fun postDiscuss(request: DiscussRequestDto): DiscussResponseDto =
-        postRequest("/api/commands/discuss", request)
+    override suspend fun postDiscuss(request: DiscussRequestDto): DiscussResponseDto = postRequest("/api/commands/discuss", request)
 
-    override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto =
-        postRequest("/api/commands/design", request)
+    override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto = postRequest("/api/commands/design", request)
 
-    override suspend fun postShell(request: ShellRequestDto): ShellResponseDto =
-        postRequest("/api/commands/shell", request)
+    override suspend fun postShell(request: ShellRequestDto): ShellResponseDto = postRequest("/api/commands/shell", request)
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend inline fun <reified T, reified B> postRequest(path: String, body: B): T {
+    private suspend inline fun <reified T, reified B> postRequest(
+        path: String,
+        body: B,
+    ): T {
         try {
             val response =
                 httpClient.post("$baseUrl$path") {
