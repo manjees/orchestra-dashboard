@@ -3,8 +3,8 @@ package com.orchestradashboard.shared.data.mapper
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DiscussResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDto
-import com.orchestradashboard.shared.data.dto.orchestrator.PlannedIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PlannedIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,12 +36,14 @@ class CommandMapperTest {
 
     @Test
     fun `mapPlanResponse converts PlanIssuesResponseDto to PlanIssuesResult with issue list`() {
-        val dto = PlanIssuesResponseDto(
-            issues = listOf(
-                PlannedIssueDto(title = "Issue 1", body = "Body 1", labels = listOf("bug")),
-                PlannedIssueDto(title = "Issue 2", body = "Body 2", labels = listOf("feature")),
-            ),
-        )
+        val dto =
+            PlanIssuesResponseDto(
+                issues =
+                    listOf(
+                        PlannedIssueDto(title = "Issue 1", body = "Body 1", labels = listOf("bug")),
+                        PlannedIssueDto(title = "Issue 2", body = "Body 2", labels = listOf("feature")),
+                    ),
+            )
 
         val result = mapper.mapPlanResponse(dto)
 
@@ -53,10 +55,11 @@ class CommandMapperTest {
 
     @Test
     fun `mapDiscussResponse converts DiscussResponseDto to DiscussResult`() {
-        val dto = DiscussResponseDto(
-            answer = "Here is the answer",
-            suggestedIssues = listOf(PlannedIssueDto("suggestion", "body", emptyList())),
-        )
+        val dto =
+            DiscussResponseDto(
+                answer = "Here is the answer",
+                suggestedIssues = listOf(PlannedIssueDto("suggestion", "body", emptyList())),
+            )
 
         val result = mapper.mapDiscussResponse(dto)
 
@@ -67,10 +70,11 @@ class CommandMapperTest {
 
     @Test
     fun `mapDesignResponse converts DesignResponseDto to DesignResult`() {
-        val dto = DesignResponseDto(
-            spec = "Component layout description",
-            suggestedIssues = emptyList(),
-        )
+        val dto =
+            DesignResponseDto(
+                spec = "Component layout description",
+                suggestedIssues = emptyList(),
+            )
 
         val result = mapper.mapDesignResponse(dto)
 

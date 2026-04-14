@@ -64,11 +64,12 @@ fun ShellPanel(
             Text(
                 text = "Exit code: ${shellResult.exitCode}",
                 style = MaterialTheme.typography.labelSmall,
-                color = if (shellResult.exitCode == 0) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
+                color =
+                    if (shellResult.exitCode == 0) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
             )
             Spacer(modifier = Modifier.height(4.dp))
             SelectionContainer {
@@ -76,11 +77,12 @@ fun ShellPanel(
                     text = shellResult.output,
                     fontFamily = FontFamily.Monospace,
                     style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 300.dp)
-                        .verticalScroll(rememberScrollState())
-                        .horizontalScroll(rememberScrollState()),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 300.dp)
+                            .verticalScroll(rememberScrollState())
+                            .horizontalScroll(rememberScrollState()),
                 )
             }
         }

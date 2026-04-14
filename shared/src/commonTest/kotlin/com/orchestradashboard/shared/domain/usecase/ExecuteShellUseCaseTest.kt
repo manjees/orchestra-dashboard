@@ -12,24 +12,26 @@ class ExecuteShellUseCaseTest {
     private val useCase = ExecuteShellUseCase(repository)
 
     @Test
-    fun `invoke with safe command returns Result success with output`() = runTest {
-        val expected = ShellResult(output = "file1.txt\nfile2.txt", exitCode = 0)
-        repository.shellResult = Result.success(expected)
+    fun `invoke with safe command returns Result success with output`() =
+        runTest {
+            val expected = ShellResult(output = "file1.txt\nfile2.txt", exitCode = 0)
+            repository.shellResult = Result.success(expected)
 
-        val result = useCase("ls -la")
+            val result = useCase("ls -la")
 
-        assertTrue(result.isSuccess)
-        assertEquals("file1.txt\nfile2.txt", result.getOrNull()?.output)
-        assertEquals(0, result.getOrNull()?.exitCode)
-    }
+            assertTrue(result.isSuccess)
+            assertEquals("file1.txt\nfile2.txt", result.getOrNull()?.output)
+            assertEquals(0, result.getOrNull()?.exitCode)
+        }
 
     @Test
-    fun `invoke when repository throws returns Result failure`() = runTest {
-        repository.shellResult = Result.failure(RuntimeException("Shell error"))
+    fun `invoke when repository throws returns Result failure`() =
+        runTest {
+            repository.shellResult = Result.failure(RuntimeException("Shell error"))
 
-        val result = useCase("ls")
+            val result = useCase("ls")
 
-        assertTrue(result.isFailure)
-        assertEquals("Shell error", result.exceptionOrNull()?.message)
-    }
+            assertTrue(result.isFailure)
+            assertEquals("Shell error", result.exceptionOrNull()?.message)
+        }
 }

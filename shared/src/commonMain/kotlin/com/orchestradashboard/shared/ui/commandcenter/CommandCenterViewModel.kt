@@ -106,11 +106,12 @@ class CommandCenterViewModel(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isInitLoading = true, error = null) }
-            val request = InitProjectRequest(
-                name = state.initName,
-                description = state.initDescription,
-                visibility = state.initVisibility,
-            )
+            val request =
+                InitProjectRequest(
+                    name = state.initName,
+                    description = state.initDescription,
+                    visibility = state.initVisibility,
+                )
             initProjectUseCase(request).fold(
                 onSuccess = { result ->
                     _uiState.update { it.copy(isInitLoading = false, initResult = result) }

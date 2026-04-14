@@ -9,9 +9,10 @@ import com.orchestradashboard.shared.domain.model.ShellResult
 import com.orchestradashboard.shared.domain.repository.CommandRepository
 
 class FakeCommandRepository : CommandRepository {
-    var initProjectResult: Result<CommandResult> = Result.success(
-        CommandResult(success = true, message = "Project initialized"),
-    )
+    var initProjectResult: Result<CommandResult> =
+        Result.success(
+            CommandResult(success = true, message = "Project initialized"),
+        )
     var planIssuesResult: Result<PlanIssuesResult> = Result.success(PlanIssuesResult(emptyList()))
     var discussResult: Result<DiscussResult> = Result.success(DiscussResult(answer = "Answer"))
     var designResult: Result<DesignResult> = Result.success(DesignResult(spec = "Spec"))
@@ -55,14 +56,20 @@ class FakeCommandRepository : CommandRepository {
         return planIssuesResult
     }
 
-    override suspend fun discuss(projectName: String, question: String): Result<DiscussResult> {
+    override suspend fun discuss(
+        projectName: String,
+        question: String,
+    ): Result<DiscussResult> {
         discussCallCount++
         lastDiscussProject = projectName
         lastDiscussQuestion = question
         return discussResult
     }
 
-    override suspend fun design(projectName: String, figmaUrl: String): Result<DesignResult> {
+    override suspend fun design(
+        projectName: String,
+        figmaUrl: String,
+    ): Result<DesignResult> {
         designCallCount++
         lastDesignProject = projectName
         lastDesignFigmaUrl = figmaUrl

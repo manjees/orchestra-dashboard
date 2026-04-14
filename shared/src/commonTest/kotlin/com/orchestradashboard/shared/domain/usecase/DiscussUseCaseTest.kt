@@ -12,23 +12,25 @@ class DiscussUseCaseTest {
     private val useCase = DiscussUseCase(repository)
 
     @Test
-    fun `invoke with project and question returns Result success with answer text`() = runTest {
-        val expected = DiscussResult(answer = "Here is your answer", suggestedIssues = emptyList())
-        repository.discussResult = Result.success(expected)
+    fun `invoke with project and question returns Result success with answer text`() =
+        runTest {
+            val expected = DiscussResult(answer = "Here is your answer", suggestedIssues = emptyList())
+            repository.discussResult = Result.success(expected)
 
-        val result = useCase("my-project", "What should I implement first?")
+            val result = useCase("my-project", "What should I implement first?")
 
-        assertTrue(result.isSuccess)
-        assertEquals("Here is your answer", result.getOrNull()?.answer)
-    }
+            assertTrue(result.isSuccess)
+            assertEquals("Here is your answer", result.getOrNull()?.answer)
+        }
 
     @Test
-    fun `invoke when repository throws returns Result failure`() = runTest {
-        repository.discussResult = Result.failure(RuntimeException("Discuss error"))
+    fun `invoke when repository throws returns Result failure`() =
+        runTest {
+            repository.discussResult = Result.failure(RuntimeException("Discuss error"))
 
-        val result = useCase("my-project", "question")
+            val result = useCase("my-project", "question")
 
-        assertTrue(result.isFailure)
-        assertEquals("Discuss error", result.exceptionOrNull()?.message)
-    }
+            assertTrue(result.isFailure)
+            assertEquals("Discuss error", result.exceptionOrNull()?.message)
+        }
 }

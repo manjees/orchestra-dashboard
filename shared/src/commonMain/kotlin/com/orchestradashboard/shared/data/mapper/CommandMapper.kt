@@ -8,8 +8,8 @@ import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
 import com.orchestradashboard.shared.domain.model.CommandResult
 import com.orchestradashboard.shared.domain.model.DesignResult
 import com.orchestradashboard.shared.domain.model.DiscussResult
-import com.orchestradashboard.shared.domain.model.PlannedIssue
 import com.orchestradashboard.shared.domain.model.PlanIssuesResult
+import com.orchestradashboard.shared.domain.model.PlannedIssue
 import com.orchestradashboard.shared.domain.model.ShellResult
 
 class CommandMapper {

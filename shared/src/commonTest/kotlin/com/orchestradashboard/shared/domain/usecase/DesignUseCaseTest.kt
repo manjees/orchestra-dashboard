@@ -12,23 +12,25 @@ class DesignUseCaseTest {
     private val useCase = DesignUseCase(repository)
 
     @Test
-    fun `invoke with project and figmaUrl returns Result success with UI spec`() = runTest {
-        val expected = DesignResult(spec = "Component layout spec")
-        repository.designResult = Result.success(expected)
+    fun `invoke with project and figmaUrl returns Result success with UI spec`() =
+        runTest {
+            val expected = DesignResult(spec = "Component layout spec")
+            repository.designResult = Result.success(expected)
 
-        val result = useCase("my-project", "https://figma.com/file/abc")
+            val result = useCase("my-project", "https://figma.com/file/abc")
 
-        assertTrue(result.isSuccess)
-        assertEquals("Component layout spec", result.getOrNull()?.spec)
-    }
+            assertTrue(result.isSuccess)
+            assertEquals("Component layout spec", result.getOrNull()?.spec)
+        }
 
     @Test
-    fun `invoke when repository throws returns Result failure`() = runTest {
-        repository.designResult = Result.failure(RuntimeException("Design error"))
+    fun `invoke when repository throws returns Result failure`() =
+        runTest {
+            repository.designResult = Result.failure(RuntimeException("Design error"))
 
-        val result = useCase("my-project", "https://figma.com/file/abc")
+            val result = useCase("my-project", "https://figma.com/file/abc")
 
-        assertTrue(result.isFailure)
-        assertEquals("Design error", result.exceptionOrNull()?.message)
-    }
+            assertTrue(result.isFailure)
+            assertEquals("Design error", result.exceptionOrNull()?.message)
+        }
 }

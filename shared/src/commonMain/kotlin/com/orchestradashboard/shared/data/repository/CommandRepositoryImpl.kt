@@ -18,29 +18,40 @@ class CommandRepositoryImpl(
     private val api: OrchestratorApi,
     private val mapper: CommandMapper,
 ) : CommandRepository {
+    override suspend fun initProject(request: InitProjectRequest): Result<CommandResult> =
+        runCatching {
+            val dto =
+                InitProjectRequestDto(
+                    name = request.name,
+                    description = request.description,
+                    visibility = request.visibility.name,
+                )
+            mapper.mapInitResponse(api.postInitProject(dto))
+        }
 
-    override suspend fun initProject(request: InitProjectRequest): Result<CommandResult> = runCatching {
-        val dto = InitProjectRequestDto(
-            name = request.name,
-            description = request.description,
-            visibility = request.visibility.name,
-        )
-        mapper.mapInitResponse(api.postInitProject(dto))
-    }
+    override suspend fun planIssues(projectName: String): Result<PlanIssuesResult> =
+        runCatching {
+            mapper.mapPlanResponse(api.postPlanIssues(projectName))
+        }
 
-    override suspend fun planIssues(projectName: String): Result<PlanIssuesResult> = runCatching {
-        mapper.mapPlanResponse(api.postPlanIssues(projectName))
-    }
+    override suspend fun discuss(
+        projectName: String,
+        question: String,
+    ): Result<DiscussResult> =
+        runCatching {
+            mapper.mapDiscussResponse(api.postDiscuss(DiscussRequestDto(project = projectName, question = question)))
+        }
 
-    override suspend fun discuss(projectName: String, question: String): Result<DiscussResult> = runCatching {
-        mapper.mapDiscussResponse(api.postDiscuss(DiscussRequestDto(project = projectName, question = question)))
-    }
+    override suspend fun design(
+        projectName: String,
+        figmaUrl: String,
+    ): Result<DesignResult> =
+        runCatching {
+            mapper.mapDesignResponse(api.postDesign(DesignRequestDto(project = projectName, figmaUrl = figmaUrl)))
+        }
 
-    override suspend fun design(projectName: String, figmaUrl: String): Result<DesignResult> = runCatching {
-        mapper.mapDesignResponse(api.postDesign(DesignRequestDto(project = projectName, figmaUrl = figmaUrl)))
-    }
-
-    override suspend fun executeShell(command: String): Result<ShellResult> = runCatching {
-        mapper.mapShellResponse(api.postShell(ShellRequestDto(command = command)))
-    }
+    override suspend fun executeShell(command: String): Result<ShellResult> =
+        runCatching {
+            mapper.mapShellResponse(api.postShell(ShellRequestDto(command = command)))
+        }
 }

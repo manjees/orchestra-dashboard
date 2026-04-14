@@ -26,8 +26,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.orchestradashboard.shared.domain.model.PlannedIssue
 import com.orchestradashboard.shared.domain.model.PlanIssuesResult
+import com.orchestradashboard.shared.domain.model.PlannedIssue
 import com.orchestradashboard.shared.domain.model.Project
 
 @OptIn(ExperimentalMaterial3Api::class)
