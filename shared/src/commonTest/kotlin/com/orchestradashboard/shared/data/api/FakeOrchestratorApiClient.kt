@@ -1,13 +1,22 @@
 package com.orchestradashboard.shared.data.api
 
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DiscussRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DiscussResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ShellRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
@@ -16,6 +25,23 @@ import kotlinx.coroutines.flow.asFlow
 
 class FakeOrchestratorApiClient : OrchestratorApi {
     var errorToThrow: Exception? = null
+
+    var initProjectResult: InitProjectResponseDto? = null
+    var planIssuesResult: PlanIssuesResponseDto? = null
+    var discussResult: DiscussResponseDto? = null
+    var designResult: DesignResponseDto? = null
+    var shellResult: ShellResponseDto? = null
+
+    var postInitProjectCallCount = 0
+        private set
+    var postPlanIssuesCallCount = 0
+        private set
+    var postDiscussCallCount = 0
+        private set
+    var postDesignCallCount = 0
+        private set
+    var postShellCallCount = 0
+        private set
 
     var statusResult: SystemStatusDto? = null
     var projectsResult: List<ProjectDto> = emptyList()
@@ -136,5 +162,35 @@ class FakeOrchestratorApiClient : OrchestratorApi {
     override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto {
         maybeThrow()
         return postSolveResult ?: SolveCommandResponseDto(pipelineId = "pipe-fake", status = "started")
+    }
+
+    override suspend fun postInitProject(request: InitProjectRequestDto): InitProjectResponseDto {
+        postInitProjectCallCount++
+        maybeThrow()
+        return initProjectResult ?: throw OrchestratorNetworkException("No initProjectResult configured")
+    }
+
+    override suspend fun postPlanIssues(projectName: String): PlanIssuesResponseDto {
+        postPlanIssuesCallCount++
+        maybeThrow()
+        return planIssuesResult ?: throw OrchestratorNetworkException("No planIssuesResult configured")
+    }
+
+    override suspend fun postDiscuss(request: DiscussRequestDto): DiscussResponseDto {
+        postDiscussCallCount++
+        maybeThrow()
+        return discussResult ?: throw OrchestratorNetworkException("No discussResult configured")
+    }
+
+    override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto {
+        postDesignCallCount++
+        maybeThrow()
+        return designResult ?: throw OrchestratorNetworkException("No designResult configured")
+    }
+
+    override suspend fun postShell(request: ShellRequestDto): ShellResponseDto {
+        postShellCallCount++
+        maybeThrow()
+        return shellResult ?: throw OrchestratorNetworkException("No shellResult configured")
     }
 }

@@ -1,13 +1,23 @@
 package com.orchestradashboard.shared.data.api
 
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DiscussRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.DiscussResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ShellRequestDto
+import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
@@ -97,6 +107,18 @@ class OrchestratorApiClient(
                 }
             }
         }
+
+    override suspend fun postInitProject(request: InitProjectRequestDto): InitProjectResponseDto =
+        postRequest("/api/commands/init", request)
+
+    override suspend fun postPlanIssues(projectName: String): PlanIssuesResponseDto =
+        postRequest("/api/commands/plan", PlanIssuesRequestDto(project = projectName))
+
+    override suspend fun postDiscuss(request: DiscussRequestDto): DiscussResponseDto = postRequest("/api/commands/discuss", request)
+
+    override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto = postRequest("/api/commands/design", request)
+
+    override suspend fun postShell(request: ShellRequestDto): ShellResponseDto = postRequest("/api/commands/shell", request)
 
     @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified T, reified B> postRequest(

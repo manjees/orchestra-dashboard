@@ -38,6 +38,7 @@ fun DashboardHomeScreen(
     viewModel: DashboardHomeViewModel,
     onNewSolveClick: () -> Unit,
     onViewProjectsClick: () -> Unit,
+    onCommandCenterClick: () -> Unit,
     onPipelineClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -79,6 +80,7 @@ fun DashboardHomeScreen(
                             QuickActionsBar(
                                 onNewSolveClick = onNewSolveClick,
                                 onViewProjectsClick = onViewProjectsClick,
+                                onCommandCenterClick = onCommandCenterClick,
                             )
                         }
 

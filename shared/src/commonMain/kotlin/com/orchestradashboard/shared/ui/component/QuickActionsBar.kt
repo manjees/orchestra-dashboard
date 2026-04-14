@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 fun QuickActionsBar(
     onNewSolveClick: () -> Unit,
     onViewProjectsClick: () -> Unit,
+    onCommandCenterClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -31,6 +32,12 @@ fun QuickActionsBar(
             modifier = Modifier.weight(1f),
         ) {
             Text("View Projects")
+        }
+        FilledTonalButton(
+            onClick = onCommandCenterClick,
+            modifier = Modifier.weight(1f),
+        ) {
+            Text("Command Center")
         }
     }
 }
