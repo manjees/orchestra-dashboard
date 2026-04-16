@@ -23,6 +23,7 @@ struct SolveDialogView: View {
     let solveError: String?
     let onSolve: () -> Void
     let onDismiss: () -> Void
+    var onClearError: (() -> Void)? = nil
 
     var body: some View {
         NavigationView {
@@ -59,14 +60,6 @@ struct SolveDialogView: View {
                         Toggle("Run in Parallel", isOn: $isParallel)
                     }
                 }
-
-                if let error = solveError {
-                    Section {
-                        Text(error)
-                            .foregroundColor(.red)
-                            .font(.caption)
-                    }
-                }
             }
             .navigationTitle("Solve Issues")
             .navigationBarTitleDisplayMode(.inline)
@@ -83,6 +76,25 @@ struct SolveDialogView: View {
                     }
                 }
             }
+            .alert(
+                "Solve Failed",
+                isPresented: Binding(
+                    get: { solveError != nil },
+                    set: { presented in
+                        if !presented { onClearError?() }
+                    }
+                ),
+                actions: {
+                    Button("Dismiss", role: .cancel) {
+                        onClearError?()
+                    }
+                },
+                message: {
+                    if let error = solveError {
+                        Text(error)
+                    }
+                }
+            )
         }
     }
 }

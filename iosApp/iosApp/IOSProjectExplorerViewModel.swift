@@ -5,6 +5,9 @@ import Shared
 /// Bridges Kotlin coroutine Flows to Swift's ObservableObject/Combine.
 @MainActor
 final class IOSProjectExplorerViewModel: ObservableObject {
+    @Published var projects: [Project] = []
+    @Published var selectedProject: Project? = nil
+    @Published var issues: [Issue] = []
     @Published var checkpoints: [Checkpoint] = []
     @Published var isLoading: Bool = false
     @Published var error: String? = nil
@@ -22,6 +25,9 @@ final class IOSProjectExplorerViewModel: ObservableObject {
         stateCollectionTask = Task { @MainActor [weak self] in
             guard let self else { return }
             for await state in kmpViewModel.uiState {
+                self.projects = state.projects
+                self.selectedProject = state.selectedProject
+                self.issues = state.issues
                 self.isLoading = state.isLoading
                 self.error = state.error
                 self.checkpoints = state.checkpoints
@@ -32,6 +38,10 @@ final class IOSProjectExplorerViewModel: ObservableObject {
 
     func loadInitialData() {
         kmpViewModel.loadInitialData()
+    }
+
+    func selectProject(_ project: Project) {
+        kmpViewModel.selectProject(project: project)
     }
 
     func retryCheckpoint(checkpointId: String) {
