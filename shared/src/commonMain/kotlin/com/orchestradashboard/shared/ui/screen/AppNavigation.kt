@@ -13,6 +13,7 @@ import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
+import com.orchestradashboard.shared.ui.solvedialog.SolveDialogViewModel
 
 sealed class Screen {
     data object DashboardHome : Screen()
@@ -34,6 +35,7 @@ fun AppNavigation(
     dashboardHomeViewModelFactory: () -> DashboardHomeViewModel,
     agentDetailViewModelFactory: (String) -> AgentDetailViewModel,
     projectExplorerViewModelFactory: () -> ProjectExplorerViewModel,
+    solveDialogViewModelFactory: () -> SolveDialogViewModel,
     pipelineMonitorViewModelFactory: (String) -> PipelineMonitorViewModel,
     commandCenterViewModelFactory: () -> CommandCenterViewModel,
     modifier: Modifier = Modifier,
@@ -75,11 +77,16 @@ fun AppNavigation(
         }
         is Screen.ProjectExplorer -> {
             val vm = remember { projectExplorerViewModelFactory() }
+            val solveVm = remember { solveDialogViewModelFactory() }
             DisposableEffect(Unit) {
-                onDispose { vm.onCleared() }
+                onDispose {
+                    vm.onCleared()
+                    solveVm.onCleared()
+                }
             }
             ProjectExplorerScreen(
                 viewModel = vm,
+                solveDialogViewModel = solveVm,
                 onBackClick = { currentScreen = Screen.DashboardHome },
                 onNavigateToPipeline = { pipelineId -> currentScreen = Screen.PipelineMonitor(pipelineId) },
                 modifier = modifier,

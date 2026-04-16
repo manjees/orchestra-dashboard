@@ -62,6 +62,7 @@ import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
+import com.orchestradashboard.shared.ui.solvedialog.SolveDialogViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -286,8 +287,9 @@ object AppContainer {
             getProjectIssuesUseCase,
             getCheckpointsUseCase,
             retryCheckpointUseCase,
-            executeSolveUseCase,
         )
+
+    fun createSolveDialogViewModel(): SolveDialogViewModel = SolveDialogViewModel(executeSolveUseCase)
 
     fun createPipelineMonitorViewModel(pipelineId: String): PipelineMonitorViewModel =
         PipelineMonitorViewModel(pipelineId, pipelineMonitorRepository)

@@ -41,6 +41,10 @@ final class IOSAppContainer {
         fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
     }
 
+    func createSolveDialogViewModel() -> SolveDialogViewModel {
+        fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
+    }
+
     func createDashboardHomeViewModel() -> DashboardHomeViewModel {
         fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
     }
