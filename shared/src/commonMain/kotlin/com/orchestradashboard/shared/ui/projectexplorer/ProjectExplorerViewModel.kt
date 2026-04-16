@@ -1,10 +1,6 @@
 package com.orchestradashboard.shared.ui.projectexplorer
 
-import com.orchestradashboard.shared.domain.model.Issue
 import com.orchestradashboard.shared.domain.model.Project
-import com.orchestradashboard.shared.domain.model.SolveMode
-import com.orchestradashboard.shared.domain.model.SolveRequest
-import com.orchestradashboard.shared.domain.usecase.ExecuteSolveUseCase
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
@@ -26,7 +22,6 @@ class ProjectExplorerViewModel(
     private val getProjectIssuesUseCase: GetProjectIssuesUseCase,
     private val getCheckpointsUseCase: GetCheckpointsUseCase,
     private val retryCheckpointUseCase: RetryCheckpointUseCase,
-    private val executeSolveUseCase: ExecuteSolveUseCase,
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(ProjectExplorerUiState())
@@ -130,85 +125,6 @@ class ProjectExplorerViewModel(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
-    }
-
-    fun openSolveDialog(issue: Issue) {
-        _uiState.update {
-            it.copy(
-                showSolveDialog = true,
-                selectedIssues = setOf(issue.number),
-                solveMode = SolveMode.AUTO,
-                isParallel = false,
-                solveError = null,
-                solveResult = null,
-            )
-        }
-    }
-
-    fun toggleIssueSelection(issueNumber: Int) {
-        _uiState.update { state ->
-            val current = state.selectedIssues
-            val updated = if (current.contains(issueNumber)) current - issueNumber else current + issueNumber
-            state.copy(selectedIssues = updated)
-        }
-    }
-
-    fun setSolveMode(mode: SolveMode) {
-        _uiState.update { it.copy(solveMode = mode) }
-    }
-
-    fun toggleParallel() {
-        _uiState.update { it.copy(isParallel = !it.isParallel) }
-    }
-
-    fun executeSolve() {
-        val state = _uiState.value
-        val project = state.selectedProject ?: return
-        if (state.selectedIssues.isEmpty()) return
-
-        _uiState.update { it.copy(isSolving = true, solveError = null) }
-
-        viewModelScope.launch {
-            val request =
-                SolveRequest(
-                    projectName = project.name,
-                    issueNumbers = state.selectedIssues.toList(),
-                    mode = state.solveMode,
-                    parallel = state.isParallel,
-                )
-            executeSolveUseCase(request).fold(
-                onSuccess = { response ->
-                    _uiState.update {
-                        it.copy(
-                            isSolving = false,
-                            solveResult = response,
-                            showSolveDialog = false,
-                        )
-                    }
-                },
-                onFailure = { e ->
-                    _uiState.update {
-                        it.copy(
-                            isSolving = false,
-                            solveError = e.message ?: "Failed to execute solve",
-                        )
-                    }
-                },
-            )
-        }
-    }
-
-    fun closeSolveDialog() {
-        _uiState.update {
-            it.copy(
-                showSolveDialog = false,
-                selectedIssues = emptySet(),
-                solveMode = SolveMode.AUTO,
-                isParallel = false,
-                solveError = null,
-                solveResult = null,
-            )
-        }
     }
 
     fun onCleared() {

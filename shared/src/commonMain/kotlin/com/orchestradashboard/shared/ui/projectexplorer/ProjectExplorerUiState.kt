@@ -3,8 +3,6 @@ package com.orchestradashboard.shared.ui.projectexplorer
 import com.orchestradashboard.shared.domain.model.Checkpoint
 import com.orchestradashboard.shared.domain.model.Issue
 import com.orchestradashboard.shared.domain.model.Project
-import com.orchestradashboard.shared.domain.model.SolveMode
-import com.orchestradashboard.shared.domain.model.SolveResponse
 
 data class ProjectExplorerUiState(
     val projects: List<Project> = emptyList(),
@@ -19,12 +17,4 @@ data class ProjectExplorerUiState(
     val hasMoreIssues: Boolean = false,
     val retryingCheckpointId: String? = null,
     val retryResult: Result<Unit>? = null,
-    // Solve Dialog state
-    val showSolveDialog: Boolean = false,
-    val selectedIssues: Set<Int> = emptySet(),
-    val solveMode: SolveMode = SolveMode.AUTO,
-    val isParallel: Boolean = false,
-    val isSolving: Boolean = false,
-    val solveResult: SolveResponse? = null,
-    val solveError: String? = null,
 )

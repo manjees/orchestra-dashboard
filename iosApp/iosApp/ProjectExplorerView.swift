@@ -3,6 +3,7 @@ import Shared
 
 struct ProjectExplorerView: View {
     @StateObject private var viewModel = IOSProjectExplorerViewModel()
+    @StateObject private var solveDialogViewModel = IOSSolveDialogViewModel()
 
     var body: some View {
         VStack {
@@ -23,30 +24,30 @@ struct ProjectExplorerView: View {
             viewModel.loadInitialData()
         }
         .sheet(isPresented: .init(
-            get: { viewModel.showSolveDialog },
-            set: { if !$0 { viewModel.closeSolveDialog() } }
+            get: { solveDialogViewModel.showDialog },
+            set: { if !$0 { solveDialogViewModel.close() } }
         )) {
             SolveDialogView(
-                issues: viewModel.selectedIssueIds.map { SolveIssueItem(id: $0, title: "#\($0)") },
+                issues: solveDialogViewModel.selectedIssueIds.map { SolveIssueItem(id: $0, title: "#\($0)") },
                 selectedIssueIds: .init(
-                    get: { viewModel.selectedIssueIds },
+                    get: { solveDialogViewModel.selectedIssueIds },
                     set: { _ in }
                 ),
                 selectedMode: .init(
-                    get: { viewModel.solveMode },
-                    set: { viewModel.setSolveMode($0) }
+                    get: { solveDialogViewModel.mode },
+                    set: { solveDialogViewModel.setMode($0) }
                 ),
                 isParallel: .init(
-                    get: { viewModel.isParallel },
-                    set: { _ in viewModel.toggleParallel() }
+                    get: { solveDialogViewModel.isParallel },
+                    set: { _ in solveDialogViewModel.toggleParallel() }
                 ),
-                isSolving: viewModel.isSolving,
-                solveError: viewModel.solveError,
+                isSolving: solveDialogViewModel.isLoading,
+                solveError: solveDialogViewModel.error,
                 onSolve: {
-                    viewModel.executeSolve()
+                    solveDialogViewModel.executeSolve()
                 },
                 onDismiss: {
-                    viewModel.closeSolveDialog()
+                    solveDialogViewModel.close()
                 }
             )
         }

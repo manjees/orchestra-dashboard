@@ -46,21 +46,27 @@ import com.orchestradashboard.shared.ui.component.LoadingOverlay
 import com.orchestradashboard.shared.ui.component.ProjectCard
 import com.orchestradashboard.shared.ui.component.SolveDialog
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
+import com.orchestradashboard.shared.ui.solvedialog.SolveDialogViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProjectExplorerScreen(
     viewModel: ProjectExplorerViewModel,
+    solveDialogViewModel: SolveDialogViewModel,
     onBackClick: () -> Unit,
     onNavigateToPipeline: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val solveDialogState by solveDialogViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) { viewModel.loadInitialData() }
 
-    LaunchedEffect(uiState.solveResult) {
-        uiState.solveResult?.let { onNavigateToPipeline(it.pipelineId) }
+    LaunchedEffect(solveDialogState.result) {
+        solveDialogState.result?.let {
+            onNavigateToPipeline(it.pipelineId)
+            solveDialogViewModel.consumeResult()
+        }
     }
 
     Scaffold(
@@ -87,19 +93,19 @@ fun ProjectExplorerScreen(
             )
         },
     ) { paddingValues ->
-        if (uiState.showSolveDialog) {
+        if (solveDialogState.showDialog) {
             SolveDialog(
                 issues = uiState.issues,
-                selectedIssues = uiState.selectedIssues,
-                solveMode = uiState.solveMode,
-                isParallel = uiState.isParallel,
-                isSolving = uiState.isSolving,
-                solveError = uiState.solveError,
-                onToggleIssue = { viewModel.toggleIssueSelection(it) },
-                onModeChange = { viewModel.setSolveMode(it) },
-                onToggleParallel = { viewModel.toggleParallel() },
-                onSolve = { viewModel.executeSolve() },
-                onDismiss = { viewModel.closeSolveDialog() },
+                selectedIssues = solveDialogState.selectedIssues,
+                solveMode = solveDialogState.mode,
+                isParallel = solveDialogState.isParallel,
+                isSolving = solveDialogState.isLoading,
+                solveError = solveDialogState.error,
+                onToggleIssue = { solveDialogViewModel.toggleIssueSelection(it) },
+                onModeChange = { solveDialogViewModel.setMode(it) },
+                onToggleParallel = { solveDialogViewModel.toggleParallel() },
+                onSolve = { solveDialogViewModel.executeSolve() },
+                onDismiss = { solveDialogViewModel.close() },
             )
         }
 
@@ -177,7 +183,11 @@ fun ProjectExplorerScreen(
                                     items(uiState.issues, key = { it.number }) { issue ->
                                         IssueRow(
                                             issue = issue,
-                                            onSolveClick = { viewModel.openSolveDialog(issue) },
+                                            onSolveClick = {
+                                                uiState.selectedProject?.let { project ->
+                                                    solveDialogViewModel.open(project, issue)
+                                                }
+                                            },
                                         )
                                     }
                                 }

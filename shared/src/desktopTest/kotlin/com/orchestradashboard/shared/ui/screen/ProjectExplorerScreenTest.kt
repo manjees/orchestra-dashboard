@@ -21,6 +21,7 @@ import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
 import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
+import com.orchestradashboard.shared.ui.solvedialog.SolveDialogViewModel
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -68,9 +69,10 @@ private fun createViewModel(
         getProjectIssuesUseCase = GetProjectIssuesUseCase(repo),
         getCheckpointsUseCase = GetCheckpointsUseCase(repo),
         retryCheckpointUseCase = RetryCheckpointUseCase(repo),
-        executeSolveUseCase = ExecuteSolveUseCase(noOpSolveRepository),
     )
 }
+
+private fun createSolveDialogViewModel(): SolveDialogViewModel = SolveDialogViewModel(ExecuteSolveUseCase(noOpSolveRepository))
 
 private val sampleProjects =
     listOf(
@@ -98,9 +100,10 @@ class ProjectExplorerScreenTest {
     fun `displays toolbar title`() =
         runComposeUiTest {
             val vm = createViewModel()
+            val solveVm = createSolveDialogViewModel()
             setContent {
                 DashboardTheme {
-                    ProjectExplorerScreen(viewModel = vm, onBackClick = {})
+                    ProjectExplorerScreen(viewModel = vm, solveDialogViewModel = solveVm, onBackClick = {})
                 }
             }
             onNodeWithText("Project Explorer").assertIsDisplayed()
@@ -110,9 +113,10 @@ class ProjectExplorerScreenTest {
     fun `displays empty state when no projects`() =
         runComposeUiTest {
             val vm = createViewModel()
+            val solveVm = createSolveDialogViewModel()
             setContent {
                 DashboardTheme {
-                    ProjectExplorerScreen(viewModel = vm, onBackClick = {})
+                    ProjectExplorerScreen(viewModel = vm, solveDialogViewModel = solveVm, onBackClick = {})
                 }
             }
             waitForIdle()
@@ -123,9 +127,10 @@ class ProjectExplorerScreenTest {
     fun `displays project cards when projects exist`() =
         runComposeUiTest {
             val vm = createViewModel(projects = sampleProjects)
+            val solveVm = createSolveDialogViewModel()
             setContent {
                 DashboardTheme {
-                    ProjectExplorerScreen(viewModel = vm, onBackClick = {})
+                    ProjectExplorerScreen(viewModel = vm, solveDialogViewModel = solveVm, onBackClick = {})
                 }
             }
             waitForIdle()
@@ -137,9 +142,10 @@ class ProjectExplorerScreenTest {
     fun `selecting project shows issue list`() =
         runComposeUiTest {
             val vm = createViewModel(projects = sampleProjects, issues = sampleIssues)
+            val solveVm = createSolveDialogViewModel()
             setContent {
                 DashboardTheme {
-                    ProjectExplorerScreen(viewModel = vm, onBackClick = {})
+                    ProjectExplorerScreen(viewModel = vm, solveDialogViewModel = solveVm, onBackClick = {})
                 }
             }
             waitForIdle()
@@ -153,9 +159,10 @@ class ProjectExplorerScreenTest {
     fun `displays checkpoints section`() =
         runComposeUiTest {
             val vm = createViewModel(projects = sampleProjects, checkpoints = sampleCheckpoints)
+            val solveVm = createSolveDialogViewModel()
             setContent {
                 DashboardTheme {
-                    ProjectExplorerScreen(viewModel = vm, onBackClick = {})
+                    ProjectExplorerScreen(viewModel = vm, solveDialogViewModel = solveVm, onBackClick = {})
                 }
             }
             waitForIdle()
@@ -168,9 +175,10 @@ class ProjectExplorerScreenTest {
     fun `displays empty checkpoint state when none exist`() =
         runComposeUiTest {
             val vm = createViewModel(projects = sampleProjects)
+            val solveVm = createSolveDialogViewModel()
             setContent {
                 DashboardTheme {
-                    ProjectExplorerScreen(viewModel = vm, onBackClick = {})
+                    ProjectExplorerScreen(viewModel = vm, solveDialogViewModel = solveVm, onBackClick = {})
                 }
             }
             waitForIdle()
@@ -182,9 +190,14 @@ class ProjectExplorerScreenTest {
         runComposeUiTest {
             var backClicked = false
             val vm = createViewModel()
+            val solveVm = createSolveDialogViewModel()
             setContent {
                 DashboardTheme {
-                    ProjectExplorerScreen(viewModel = vm, onBackClick = { backClicked = true })
+                    ProjectExplorerScreen(
+                        viewModel = vm,
+                        solveDialogViewModel = solveVm,
+                        onBackClick = { backClicked = true },
+                    )
                 }
             }
             // Click the back icon button
@@ -196,9 +209,10 @@ class ProjectExplorerScreenTest {
     fun `refresh button triggers reload`() =
         runComposeUiTest {
             val vm = createViewModel(projects = sampleProjects)
+            val solveVm = createSolveDialogViewModel()
             setContent {
                 DashboardTheme {
-                    ProjectExplorerScreen(viewModel = vm, onBackClick = {})
+                    ProjectExplorerScreen(viewModel = vm, solveDialogViewModel = solveVm, onBackClick = {})
                 }
             }
             waitForIdle()
