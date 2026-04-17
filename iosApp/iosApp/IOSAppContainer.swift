@@ -31,6 +31,14 @@ final class IOSAppContainer {
 
     private lazy var executeSolveUseCase = ExecuteSolveUseCase(repository: solveRepository)
 
+    // MARK: - Settings
+
+    private lazy var settingsRepository: any SettingsRepository = IOSSettingsRepository()
+
+    private lazy var getSettingsUseCase = GetSettingsUseCase(repository: settingsRepository)
+
+    private lazy var saveSettingsUseCase = SaveSettingsUseCase(repository: settingsRepository)
+
     // MARK: - ViewModel Factories
 
     func createDashboardViewModel() -> DashboardViewModel {
@@ -55,5 +63,12 @@ final class IOSAppContainer {
 
     func createCommandCenterViewModel() -> CommandCenterViewModel {
         fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
+    }
+
+    func createSettingsViewModel() -> SettingsViewModel {
+        return SettingsViewModel(
+            getSettingsUseCase: getSettingsUseCase,
+            saveSettingsUseCase: saveSettingsUseCase
+        )
     }
 }

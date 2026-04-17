@@ -41,6 +41,9 @@ fun main() =
                     commandCenterViewModelFactory = {
                         AppContainer.createCommandCenterViewModel()
                     },
+                    settingsViewModelFactory = {
+                        AppContainer.createSettingsViewModel()
+                    },
                 )
             }
         }
