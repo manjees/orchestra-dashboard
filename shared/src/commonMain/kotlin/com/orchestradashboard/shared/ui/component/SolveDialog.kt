@@ -148,6 +148,7 @@ fun SolveDialog(
             Button(
                 onClick = onSolve,
                 enabled = selectedIssues.isNotEmpty() && !isSolving,
+                modifier = Modifier.testTag("solve_confirm_button"),
             ) {
                 if (isSolving) {
                     CircularProgressIndicator(
