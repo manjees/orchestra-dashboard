@@ -58,6 +58,7 @@ tasks.named<JacocoReport>("jacocoTestReport") {
                         "**/model/EventType*",
                         "**/model/*Mapper*",
                         "**/config/*",
+                        "**/service/PipelineEventConsumerService*",
                         "**/*Application*",
                     )
                 }
