@@ -8,6 +8,8 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
     @Published var pipeline: MonitoredPipeline? = nil
     @Published var logLines: [String] = []
     @Published var pendingApproval: ApprovalRequest? = nil
+    @Published var remainingTimeSec: Int32? = nil
+    @Published var isApprovalTimedOut: Bool = false
     @Published var isLoading: Bool = false
     @Published var error: String? = nil
     @Published var connectionStatus: ConnectionStatus = .disconnected
@@ -42,6 +44,12 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
         self.pipeline = state.pipeline
         self.logLines = state.logLines as? [String] ?? []
         self.pendingApproval = state.pendingApproval
+        if let remaining = state.remainingTimeSec {
+            self.remainingTimeSec = remaining.int32Value
+        } else {
+            self.remainingTimeSec = nil
+        }
+        self.isApprovalTimedOut = state.isApprovalTimedOut
         self.isLoading = state.isLoading
         self.error = state.error
         self.connectionStatus = state.connectionStatus
@@ -62,6 +70,10 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
 
     func refresh() {
         viewModel.refresh()
+    }
+
+    func respondToApproval(decision: String) {
+        viewModel.respondToApproval(decision: decision, comment: "")
     }
 
     func dismissApproval() {

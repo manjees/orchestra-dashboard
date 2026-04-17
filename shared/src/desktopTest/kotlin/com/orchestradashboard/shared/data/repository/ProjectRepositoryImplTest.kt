@@ -3,6 +3,7 @@ package com.orchestradashboard.shared.data.repository
 import com.orchestradashboard.shared.data.api.OrchestratorApi
 import com.orchestradashboard.shared.data.api.OrchestratorNetworkException
 import com.orchestradashboard.shared.data.api.OrchestratorNotFoundException
+import com.orchestradashboard.shared.data.dto.orchestrator.ApprovalRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
@@ -94,6 +95,11 @@ class FakeOrchestratorApi(
     override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto = throw NotImplementedError()
 
     override suspend fun postShell(request: ShellRequestDto): ShellResponseDto = throw NotImplementedError()
+
+    override suspend fun respondToApproval(
+        approvalId: String,
+        request: ApprovalRequestDto,
+    ) = throw NotImplementedError()
 }
 
 class ProjectRepositoryImplTest {

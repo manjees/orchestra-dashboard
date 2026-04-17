@@ -1,5 +1,6 @@
 package com.orchestradashboard.shared.data.api
 
+import com.orchestradashboard.shared.data.dto.orchestrator.ApprovalRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
@@ -119,6 +120,36 @@ class OrchestratorApiClient(
     override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto = postRequest("/api/commands/design", request)
 
     override suspend fun postShell(request: ShellRequestDto): ShellResponseDto = postRequest("/api/commands/shell", request)
+
+    override suspend fun respondToApproval(
+        approvalId: String,
+        request: ApprovalRequestDto,
+    ) {
+        postRequestUnit("/api/approvals/$approvalId/respond", request)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend inline fun <reified B> postRequestUnit(
+        path: String,
+        body: B,
+    ) {
+        try {
+            val response =
+                httpClient.post("$baseUrl$path") {
+                    header("X-API-Key", apiKey)
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }
+            when (response.status.value) {
+                401 -> throw OrchestratorUnauthorizedException()
+                404 -> throw OrchestratorNotFoundException("$path not found")
+            }
+        } catch (e: OrchestratorApiException) {
+            throw e
+        } catch (e: Exception) {
+            throw OrchestratorNetworkException("Network error: ${e.message}", e)
+        }
+    }
 
     @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified T, reified B> postRequest(

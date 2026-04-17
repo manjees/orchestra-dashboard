@@ -1,16 +1,20 @@
 package com.orchestradashboard.shared.ui.pipelinemonitor
 
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
+import com.orchestradashboard.shared.data.mapper.ApprovalMapper
 import com.orchestradashboard.shared.domain.model.ApprovalRequest
 import com.orchestradashboard.shared.domain.model.ConnectionStatus
 import com.orchestradashboard.shared.domain.model.MonitoredPipeline
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import com.orchestradashboard.shared.domain.model.StepStatus
 import com.orchestradashboard.shared.domain.repository.PipelineMonitorRepository
+import com.orchestradashboard.shared.domain.usecase.RespondToApprovalUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,14 +24,20 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
 private const val MAX_LOG_LINES = 500
+private const val DEFAULT_TIMEOUT_SEC = 300
+private const val COUNTDOWN_INTERVAL_MS = 1000L
 
 class PipelineMonitorViewModel(
     private val pipelineId: String,
     private val repository: PipelineMonitorRepository,
+    private val respondToApprovalUseCase: RespondToApprovalUseCase? = null,
+    private val approvalMapper: ApprovalMapper = ApprovalMapper(),
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(PipelineMonitorUiState())
     val uiState: StateFlow<PipelineMonitorUiState> = _uiState.asStateFlow()
+
+    private var countdownJob: Job? = null
 
     fun loadPipeline() {
         viewModelScope.launch {
@@ -104,17 +114,7 @@ class PipelineMonitorViewModel(
             "step.failed" -> updateStepStatus(event.step, StepStatus.FAILED, event.elapsedSec)
             "pipeline.completed" -> updatePipelineStatus(PipelineRunStatus.PASSED)
             "pipeline.failed" -> updatePipelineStatus(PipelineRunStatus.FAILED)
-            "approval.requested" -> {
-                _uiState.update {
-                    it.copy(
-                        pendingApproval =
-                            ApprovalRequest(
-                                approvalType = event.approvalType ?: "unknown",
-                                options = event.options ?: emptyList(),
-                            ),
-                    )
-                }
-            }
+            "approval.requested", "supreme_court.required" -> handleApprovalEvent(event)
             "log" -> {
                 event.detail?.let { line ->
                     _uiState.update { state ->
@@ -124,6 +124,41 @@ class PipelineMonitorViewModel(
                 }
             }
         }
+    }
+
+    private fun handleApprovalEvent(event: PipelineEventDto) {
+        val nowMs = Clock.System.now().toEpochMilliseconds()
+        val timeoutSec = event.timeoutSec ?: DEFAULT_TIMEOUT_SEC
+        val approval =
+            ApprovalRequest(
+                approvalType = event.approvalType ?: "unknown",
+                options = event.options ?: emptyList(),
+                id = event.approvalId ?: event.pipelineId ?: "",
+                context = approvalMapper.toDomain(event.context),
+                timeoutSec = timeoutSec,
+                requestedAtMs = nowMs,
+            )
+        _uiState.update {
+            it.copy(
+                pendingApproval = approval,
+                remainingTimeSec = timeoutSec,
+            )
+        }
+        startCountdown(timeoutSec)
+    }
+
+    private fun startCountdown(timeoutSec: Int) {
+        countdownJob?.cancel()
+        countdownJob =
+            viewModelScope.launch {
+                var remaining = timeoutSec
+                while (remaining > 0) {
+                    delay(COUNTDOWN_INTERVAL_MS)
+                    remaining--
+                    _uiState.update { it.copy(remainingTimeSec = remaining) }
+                }
+                // Timeout reached: client just shows message, server handles auto-approval
+            }
     }
 
     private fun handleLaneEvent(
@@ -216,8 +251,26 @@ class PipelineMonitorViewModel(
         }
     }
 
+    fun respondToApproval(
+        decision: String,
+        comment: String = "",
+    ) {
+        val approvalId = _uiState.value.pendingApproval?.id ?: return
+        viewModelScope.launch {
+            respondToApprovalUseCase?.invoke(approvalId, decision, comment)
+                ?.onSuccess {
+                    countdownJob?.cancel()
+                    _uiState.update { it.copy(pendingApproval = null, remainingTimeSec = null) }
+                }
+                ?.onFailure { e ->
+                    _uiState.update { it.copy(error = e.message) }
+                }
+        }
+    }
+
     fun dismissApproval() {
-        _uiState.update { it.copy(pendingApproval = null) }
+        countdownJob?.cancel()
+        _uiState.update { it.copy(pendingApproval = null, remainingTimeSec = null) }
     }
 
     fun clearError() {

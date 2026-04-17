@@ -47,6 +47,9 @@ fun PipelineMonitorScreen(
     uiState.pendingApproval?.let { approval ->
         ApprovalDialog(
             approval = approval,
+            remainingTimeSec = uiState.remainingTimeSec,
+            isTimedOut = uiState.isApprovalTimedOut,
+            onRespond = { decision -> viewModel.respondToApproval(decision) },
             onDismiss = { viewModel.dismissApproval() },
         )
     }

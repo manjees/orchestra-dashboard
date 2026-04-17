@@ -11,6 +11,21 @@ data class MonitoredStep(
 data class ApprovalRequest(
     val approvalType: String,
     val options: List<String>,
+    val id: String = "",
+    val context: ApprovalContext? = null,
+    val timeoutSec: Int = 300,
+    val requestedAtMs: Long = 0L,
+)
+
+data class ApprovalContext(
+    val eta: String? = null,
+    val splitProposal: String? = null,
+    val detail: String? = null,
+)
+
+data class ApprovalResponse(
+    val decision: String,
+    val comment: String = "",
 )
 
 data class MonitoredPipeline(

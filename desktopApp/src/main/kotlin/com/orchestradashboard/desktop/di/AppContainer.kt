@@ -4,6 +4,7 @@ import com.orchestradashboard.shared.data.api.OrchestratorApiClient
 import com.orchestradashboard.shared.data.mapper.ActivePipelineMapper
 import com.orchestradashboard.shared.data.mapper.AgentEventMapper
 import com.orchestradashboard.shared.data.mapper.AgentMapper
+import com.orchestradashboard.shared.data.mapper.ApprovalMapper
 import com.orchestradashboard.shared.data.mapper.CheckpointMapper
 import com.orchestradashboard.shared.data.mapper.CommandMapper
 import com.orchestradashboard.shared.data.mapper.IssueMapper
@@ -15,6 +16,7 @@ import com.orchestradashboard.shared.data.mapper.SolveCommandMapper
 import com.orchestradashboard.shared.data.mapper.SystemStatusMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
+import com.orchestradashboard.shared.data.repository.ApprovalRepositoryImpl
 import com.orchestradashboard.shared.data.repository.CheckpointRepositoryImpl
 import com.orchestradashboard.shared.data.repository.CommandRepositoryImpl
 import com.orchestradashboard.shared.data.repository.DesktopTokenRepository
@@ -28,6 +30,7 @@ import com.orchestradashboard.shared.data.repository.SystemRepositoryImpl
 import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
+import com.orchestradashboard.shared.domain.repository.ApprovalRepository
 import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 import com.orchestradashboard.shared.domain.repository.CommandRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
@@ -56,6 +59,7 @@ import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveSystemEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.PlanIssuesUseCase
+import com.orchestradashboard.shared.domain.usecase.RespondToApprovalUseCase
 import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
@@ -160,6 +164,7 @@ object AppContainer {
     private val pipelineHistoryMapper: PipelineHistoryMapper by lazy { PipelineHistoryMapper() }
     private val monitoredPipelineMapper: MonitoredPipelineMapper by lazy { MonitoredPipelineMapper() }
     private val commandMapper: CommandMapper by lazy { CommandMapper() }
+    private val approvalMapper: ApprovalMapper by lazy { ApprovalMapper() }
     private val solveCommandMapper: SolveCommandMapper by lazy { SolveCommandMapper() }
 
     // ─── Repositories ───────────────────────────────────────────
@@ -203,6 +208,10 @@ object AppContainer {
             activePipelineMapper,
             pipelineHistoryMapper,
         )
+    }
+
+    private val approvalRepository: ApprovalRepository by lazy {
+        ApprovalRepositoryImpl(orchestratorApiClient)
     }
 
     private val commandRepository: CommandRepository by lazy {
@@ -271,6 +280,9 @@ object AppContainer {
     private val planIssuesUseCase: PlanIssuesUseCase by lazy { PlanIssuesUseCase(commandRepository) }
     private val discussUseCase: DiscussUseCase by lazy { DiscussUseCase(commandRepository) }
     private val designUseCase: DesignUseCase by lazy { DesignUseCase(commandRepository) }
+    private val respondToApprovalUseCase: RespondToApprovalUseCase by lazy {
+        RespondToApprovalUseCase(approvalRepository)
+    }
     private val executeShellUseCase: ExecuteShellUseCase by lazy { ExecuteShellUseCase(commandRepository) }
 
     // ─── ViewModels (new instance per screen lifecycle) ─────────
@@ -292,7 +304,7 @@ object AppContainer {
     fun createSolveDialogViewModel(): SolveDialogViewModel = SolveDialogViewModel(executeSolveUseCase)
 
     fun createPipelineMonitorViewModel(pipelineId: String): PipelineMonitorViewModel =
-        PipelineMonitorViewModel(pipelineId, pipelineMonitorRepository)
+        PipelineMonitorViewModel(pipelineId, pipelineMonitorRepository, respondToApprovalUseCase, approvalMapper)
 
     fun createDashboardHomeViewModel(): DashboardHomeViewModel =
         DashboardHomeViewModel(
