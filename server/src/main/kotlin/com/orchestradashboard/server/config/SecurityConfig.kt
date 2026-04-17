@@ -26,7 +26,7 @@ class SecurityConfig(
                     .requestMatchers("/api/v1/projects/**").permitAll()
                     .requestMatchers("/api/v1/system/**").permitAll()
                     .requestMatchers("/api/v1/orchestrator/**").permitAll()
-                    .requestMatchers("/api/v1/commands/**").permitAll()
+                    .requestMatchers("/api/v1/proxy/commands/**").permitAll()
                     .requestMatchers("/api/v1/approvals/**").permitAll()
                     .requestMatchers("/api/v1/checkpoints/**").permitAll()
                     .requestMatchers("/api/v1/pipeline-history/**").permitAll()

@@ -211,37 +211,37 @@ class DashboardApiClient(
         httpClient.post("$baseUrl/api/v1/checkpoints/$checkpointId/retry").body()
 
     override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto =
-        httpClient.post("$baseUrl/api/v1/commands/solve") {
+        httpClient.post("$baseUrl/api/v1/proxy/commands/solve") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
 
     override suspend fun postInitProject(request: InitProjectRequestDto): InitProjectResponseDto =
-        httpClient.post("$baseUrl/api/v1/commands/init") {
+        httpClient.post("$baseUrl/api/v1/proxy/commands/init") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
 
     override suspend fun postPlanIssues(projectName: String): PlanIssuesResponseDto =
-        httpClient.post("$baseUrl/api/v1/commands/plan") {
+        httpClient.post("$baseUrl/api/v1/proxy/commands/plan") {
             contentType(ContentType.Application.Json)
             setBody(PlanIssuesRequestDto(project = projectName))
         }.body()
 
     override suspend fun postDiscuss(request: DiscussRequestDto): DiscussResponseDto =
-        httpClient.post("$baseUrl/api/v1/commands/discuss") {
+        httpClient.post("$baseUrl/api/v1/proxy/commands/discuss") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
 
     override suspend fun postDesign(request: DesignRequestDto): DesignResponseDto =
-        httpClient.post("$baseUrl/api/v1/commands/design") {
+        httpClient.post("$baseUrl/api/v1/proxy/commands/design") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
 
     override suspend fun postShell(request: ShellRequestDto): ShellResponseDto =
-        httpClient.post("$baseUrl/api/v1/commands/shell") {
+        httpClient.post("$baseUrl/api/v1/proxy/commands/shell") {
             contentType(ContentType.Application.Json)
             setBody(request)
         }.body()
