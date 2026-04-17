@@ -53,7 +53,13 @@ struct PipelineMonitorView: View {
         }
         .sheet(isPresented: .constant(viewModel.pendingApproval != nil)) {
             if let approval = viewModel.pendingApproval {
-                ApprovalDialogView(approval: approval, onDismiss: { viewModel.dismissApproval() })
+                ApprovalDialogView(
+                    approval: approval,
+                    remainingTimeSec: viewModel.remainingTimeSec,
+                    isTimedOut: viewModel.isApprovalTimedOut,
+                    onRespond: { decision in viewModel.respondToApproval(decision: decision) },
+                    onDismiss: { viewModel.dismissApproval() }
+                )
             }
         }
     }

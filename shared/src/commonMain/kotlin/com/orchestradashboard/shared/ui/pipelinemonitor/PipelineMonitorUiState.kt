@@ -10,6 +10,7 @@ data class PipelineMonitorUiState(
     val pipeline: MonitoredPipeline? = null,
     val logLines: List<String> = emptyList(),
     val pendingApproval: ApprovalRequest? = null,
+    val remainingTimeSec: Int? = null,
     val parallelPipelines: List<MonitoredPipeline> = emptyList(),
     val parallelGroup: ParallelPipelineGroup? = null,
     val isLoading: Boolean = false,
@@ -23,4 +24,6 @@ data class PipelineMonitorUiState(
     val currentStepName: String? get() = pipeline?.currentRunningStep?.name
 
     val dependencies: List<PipelineDependency> get() = parallelGroup?.dependencies ?: emptyList()
+
+    val isApprovalTimedOut: Boolean get() = remainingTimeSec != null && remainingTimeSec <= 0
 }

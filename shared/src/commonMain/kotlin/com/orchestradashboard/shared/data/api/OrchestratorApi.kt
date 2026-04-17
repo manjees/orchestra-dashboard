@@ -1,5 +1,6 @@
 package com.orchestradashboard.shared.data.api
 
+import com.orchestradashboard.shared.data.dto.orchestrator.ApprovalRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
@@ -62,4 +63,9 @@ interface OrchestratorApi {
     suspend fun postDesign(request: DesignRequestDto): DesignResponseDto
 
     suspend fun postShell(request: ShellRequestDto): ShellResponseDto
+
+    suspend fun respondToApproval(
+        approvalId: String,
+        request: ApprovalRequestDto,
+    )
 }

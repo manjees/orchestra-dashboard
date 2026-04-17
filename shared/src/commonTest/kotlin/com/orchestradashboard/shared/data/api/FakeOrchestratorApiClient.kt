@@ -1,5 +1,6 @@
 package com.orchestradashboard.shared.data.api
 
+import com.orchestradashboard.shared.data.dto.orchestrator.ApprovalRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignResponseDto
@@ -192,5 +193,12 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         postShellCallCount++
         maybeThrow()
         return shellResult ?: throw OrchestratorNetworkException("No shellResult configured")
+    }
+
+    override suspend fun respondToApproval(
+        approvalId: String,
+        request: ApprovalRequestDto,
+    ) {
+        maybeThrow()
     }
 }
