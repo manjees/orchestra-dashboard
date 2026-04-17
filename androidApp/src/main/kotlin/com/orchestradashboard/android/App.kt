@@ -45,6 +45,9 @@ class MainActivity : ComponentActivity() {
                     commandCenterViewModelFactory = {
                         AppContainer.createCommandCenterViewModel()
                     },
+                    settingsViewModelFactory = {
+                        AppContainer.createSettingsViewModel()
+                    },
                 )
             }
         }

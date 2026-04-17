@@ -19,6 +19,7 @@ import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
 import com.orchestradashboard.shared.data.repository.ApprovalRepositoryImpl
 import com.orchestradashboard.shared.data.repository.CheckpointRepositoryImpl
 import com.orchestradashboard.shared.data.repository.CommandRepositoryImpl
+import com.orchestradashboard.shared.data.repository.DesktopSettingsRepository
 import com.orchestradashboard.shared.data.repository.DesktopTokenRepository
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.MetricRepositoryImpl
@@ -38,6 +39,7 @@ import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.repository.PipelineMonitorRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
 import com.orchestradashboard.shared.domain.repository.ProjectRepository
+import com.orchestradashboard.shared.domain.repository.SettingsRepository
 import com.orchestradashboard.shared.domain.repository.SolveRepository
 import com.orchestradashboard.shared.domain.repository.SystemRepository
 import com.orchestradashboard.shared.domain.repository.TokenRepository
@@ -52,6 +54,7 @@ import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetPipelineHistoryUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetSettingsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetSystemStatusUseCase
 import com.orchestradashboard.shared.domain.usecase.InitProjectUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
@@ -61,11 +64,13 @@ import com.orchestradashboard.shared.domain.usecase.ObserveSystemEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.PlanIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.RespondToApprovalUseCase
 import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
+import com.orchestradashboard.shared.domain.usecase.SaveSettingsUseCase
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
+import com.orchestradashboard.shared.ui.settings.SettingsViewModel
 import com.orchestradashboard.shared.ui.solvedialog.SolveDialogViewModel
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -149,6 +154,20 @@ object AppContainer {
 
     val tokenRefreshHandler: TokenRefreshHandler by lazy {
         TokenRefreshHandler(httpClient, serverBaseUrl, tokenRepository)
+    }
+
+    // ─── Settings ──────────────────────────────────────────────────
+
+    val settingsRepository: SettingsRepository by lazy {
+        DesktopSettingsRepository()
+    }
+
+    private val getSettingsUseCase: GetSettingsUseCase by lazy {
+        GetSettingsUseCase(settingsRepository)
+    }
+
+    private val saveSettingsUseCase: SaveSettingsUseCase by lazy {
+        SaveSettingsUseCase(settingsRepository)
     }
 
     // ─── Mappers ────────────────────────────────────────────────
@@ -323,4 +342,6 @@ object AppContainer {
             executeShellUseCase = executeShellUseCase,
             getProjectsUseCase = getProjectsUseCase,
         )
+
+    fun createSettingsViewModel(): SettingsViewModel = SettingsViewModel(getSettingsUseCase, saveSettingsUseCase)
 }

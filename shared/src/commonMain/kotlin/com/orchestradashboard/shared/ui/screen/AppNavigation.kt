@@ -13,6 +13,7 @@ import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
+import com.orchestradashboard.shared.ui.settings.SettingsViewModel
 import com.orchestradashboard.shared.ui.solvedialog.SolveDialogViewModel
 
 sealed class Screen {
@@ -27,6 +28,8 @@ sealed class Screen {
     data class PipelineMonitor(val pipelineId: String) : Screen()
 
     data object CommandCenter : Screen()
+
+    data object Settings : Screen()
 }
 
 @Composable
@@ -38,6 +41,7 @@ fun AppNavigation(
     solveDialogViewModelFactory: () -> SolveDialogViewModel,
     pipelineMonitorViewModelFactory: (String) -> PipelineMonitorViewModel,
     commandCenterViewModelFactory: () -> CommandCenterViewModel,
+    settingsViewModelFactory: () -> SettingsViewModel,
     modifier: Modifier = Modifier,
 ) {
     var currentScreen: Screen by remember { mutableStateOf(Screen.DashboardHome) }
@@ -54,6 +58,7 @@ fun AppNavigation(
                 onViewProjectsClick = { currentScreen = Screen.ProjectExplorer },
                 onCommandCenterClick = { currentScreen = Screen.CommandCenter },
                 onPipelineClick = { pipelineId -> currentScreen = Screen.PipelineMonitor(pipelineId) },
+                onSettingsClick = { currentScreen = Screen.Settings },
                 modifier = modifier,
             )
         }
@@ -112,6 +117,17 @@ fun AppNavigation(
                 onDispose { vm.onCleared() }
             }
             CommandCenterScreen(
+                viewModel = vm,
+                onBackClick = { currentScreen = Screen.DashboardHome },
+                modifier = modifier,
+            )
+        }
+        is Screen.Settings -> {
+            val vm = remember { settingsViewModelFactory() }
+            DisposableEffect(Unit) {
+                onDispose { vm.onCleared() }
+            }
+            SettingsScreen(
                 viewModel = vm,
                 onBackClick = { currentScreen = Screen.DashboardHome },
                 modifier = modifier,
