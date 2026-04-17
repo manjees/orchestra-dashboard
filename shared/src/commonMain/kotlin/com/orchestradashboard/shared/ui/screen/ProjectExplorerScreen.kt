@@ -109,7 +109,10 @@ fun ProjectExplorerScreen(
                 onModeChange = { solveDialogViewModel.setMode(it) },
                 onToggleParallel = { solveDialogViewModel.toggleParallel() },
                 onSolve = { solveDialogViewModel.executeSolve() },
-                onDismiss = { solveDialogViewModel.close(); solveDialogViewModel.clearError() },
+                onDismiss = {
+                    solveDialogViewModel.close()
+                    solveDialogViewModel.clearError()
+                },
             )
         }
 
