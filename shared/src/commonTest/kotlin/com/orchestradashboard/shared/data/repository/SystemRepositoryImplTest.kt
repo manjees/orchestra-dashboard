@@ -1,6 +1,7 @@
 package com.orchestradashboard.shared.data.repository
 
 import com.orchestradashboard.shared.data.api.FakeOrchestratorApiClient
+import com.orchestradashboard.shared.data.api.FakeOrchestratorEventsApi
 import com.orchestradashboard.shared.data.dto.orchestrator.OllamaModelDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OllamaStatusDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
@@ -22,12 +23,14 @@ import kotlin.test.assertTrue
 
 class SystemRepositoryImplTest {
     private val fakeApi = FakeOrchestratorApiClient()
+    private val fakeEventsApi = FakeOrchestratorEventsApi()
     private val repository =
         SystemRepositoryImpl(
             api = fakeApi,
             statusMapper = SystemStatusMapper(),
             pipelineMapper = ActivePipelineMapper(),
             historyMapper = PipelineHistoryMapper(),
+            orchestratorApi = fakeEventsApi,
         )
 
     private val testStatusDto =
@@ -145,7 +148,7 @@ class SystemRepositoryImplTest {
     @Test
     fun `observeSystemEvents returns mapped flow from connectEvents`() =
         runTest {
-            fakeApi.eventsResult =
+            fakeEventsApi.eventsResult =
                 listOf(
                     PipelineEventDto(
                         type = "heartbeat",

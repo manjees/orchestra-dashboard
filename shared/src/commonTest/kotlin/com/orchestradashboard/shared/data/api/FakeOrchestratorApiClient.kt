@@ -1,5 +1,15 @@
 package com.orchestradashboard.shared.data.api
 
+import com.orchestradashboard.shared.data.dto.AgentCommandDto
+import com.orchestradashboard.shared.data.dto.AgentDto
+import com.orchestradashboard.shared.data.dto.AgentEventDto
+import com.orchestradashboard.shared.data.dto.AgentPageDto
+import com.orchestradashboard.shared.data.dto.AggregatedMetricDto
+import com.orchestradashboard.shared.data.dto.AuthResponseDto
+import com.orchestradashboard.shared.data.dto.PipelineRunDto
+import com.orchestradashboard.shared.data.dto.analytics.AnalyticsSummaryDto
+import com.orchestradashboard.shared.data.dto.analytics.DurationTrendDto
+import com.orchestradashboard.shared.data.dto.analytics.StepFailureDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ApprovalRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
@@ -21,10 +31,12 @@ import com.orchestradashboard.shared.data.dto.orchestrator.ShellResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SolveCommandResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.SystemStatusDto
+import com.orchestradashboard.shared.data.network.DashboardApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.emptyFlow
 
-class FakeOrchestratorApiClient : OrchestratorApi {
+@Suppress("TooManyFunctions")
+class FakeOrchestratorApiClient : DashboardApi {
     var errorToThrow: Exception? = null
 
     var initProjectResult: InitProjectResponseDto? = null
@@ -84,7 +96,60 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         errorToThrow?.let { throw it }
     }
 
-    override suspend fun getStatus(): SystemStatusDto {
+    // ─── DashboardApi (BFF) methods ──────────────────────────────
+
+    override fun observeAgents(): Flow<List<AgentDto>> = emptyFlow()
+
+    override suspend fun getAgents(): List<AgentDto> = emptyList()
+
+    override suspend fun getAgent(agentId: String): AgentDto = throw NotImplementedError()
+
+    override suspend fun getPipelineRuns(agentId: String?): List<PipelineRunDto> = emptyList()
+
+    override suspend fun getPipelineRun(runId: String): PipelineRunDto = throw NotImplementedError()
+
+    override suspend fun getRecentEvents(
+        agentId: String?,
+        limit: Int,
+    ): List<AgentEventDto> = emptyList()
+
+    override fun observePipelineRuns(agentId: String?): Flow<List<PipelineRunDto>> = emptyFlow()
+
+    override fun observeEvents(agentId: String): Flow<List<AgentEventDto>> = emptyFlow()
+
+    override suspend fun registerAgent(agent: AgentDto): AgentDto = throw NotImplementedError()
+
+    override suspend fun deregisterAgent(agentId: String) = throw NotImplementedError()
+
+    override suspend fun getAgentsPaged(
+        page: Int,
+        pageSize: Int,
+        status: String?,
+    ): AgentPageDto = throw NotImplementedError()
+
+    override suspend fun login(apiKey: String): AuthResponseDto = throw NotImplementedError()
+
+    override suspend fun refreshToken(refreshToken: String): AuthResponseDto = throw NotImplementedError()
+
+    override suspend fun sendCommand(
+        agentId: String,
+        commandType: String,
+    ): AgentCommandDto = throw NotImplementedError()
+
+    override suspend fun getCommands(
+        agentId: String,
+        limit: Int,
+    ): List<AgentCommandDto> = emptyList()
+
+    override suspend fun getAggregatedMetrics(
+        agentId: String,
+        startTime: Long,
+        endTime: Long,
+    ): List<AggregatedMetricDto> = emptyList()
+
+    // ─── BFF Proxy: Orchestrator ────────────────────────────────
+
+    override suspend fun getSystemStatus(): SystemStatusDto {
         getStatusCallCount++
         maybeThrow()
         return statusResult ?: throw OrchestratorNetworkException("No status result configured")
@@ -112,16 +177,28 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         return projectIssuesResult
     }
 
-    override suspend fun getPipelines(): List<OrchestratorPipelineDto> {
+    override suspend fun getActivePipelines(): List<OrchestratorPipelineDto> {
         getPipelinesCallCount++
         maybeThrow()
         return pipelinesResult
     }
 
-    override suspend fun getPipeline(id: String): OrchestratorPipelineDto {
+    override suspend fun getActivePipeline(id: String): OrchestratorPipelineDto {
         getPipelineCallCount++
         maybeThrow()
         return pipelineResult ?: throw OrchestratorNotFoundException("Pipeline $id not found")
+    }
+
+    override suspend fun getPipelineHistory(): List<PipelineHistoryDto> {
+        getPipelineHistoryCallCount++
+        maybeThrow()
+        return pipelineHistoryResult
+    }
+
+    override suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto {
+        maybeThrow()
+        return parallelPipelinesResult
+            ?: throw OrchestratorNotFoundException("Parallel pipelines for $parentId not found")
     }
 
     override suspend fun getCheckpoints(): List<CheckpointDto> {
@@ -134,30 +211,8 @@ class FakeOrchestratorApiClient : OrchestratorApi {
         retryCheckpointCallCount++
         lastRetriedCheckpointId = checkpointId
         maybeThrow()
-        return retryCheckpointResult ?: throw OrchestratorNotFoundException("Checkpoint $checkpointId not found")
-    }
-
-    override suspend fun getPipelineHistory(): List<PipelineHistoryDto> {
-        getPipelineHistoryCallCount++
-        maybeThrow()
-        return pipelineHistoryResult
-    }
-
-    override suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto {
-        maybeThrow()
-        return parallelPipelinesResult ?: throw OrchestratorNotFoundException("Parallel pipelines for $parentId not found")
-    }
-
-    override fun connectEvents(): Flow<PipelineEventDto> {
-        connectEventsCallCount++
-        maybeThrow()
-        return eventsResult.asFlow()
-    }
-
-    override fun connectEvents(pipelineId: String): Flow<PipelineEventDto> {
-        connectEventsCallCount++
-        maybeThrow()
-        return eventsResult.filter { it.pipelineId == pipelineId }.asFlow()
+        return retryCheckpointResult
+            ?: throw OrchestratorNotFoundException("Checkpoint $checkpointId not found")
     }
 
     override suspend fun postSolve(request: SolveCommandRequestDto): SolveCommandResponseDto {
@@ -201,4 +256,19 @@ class FakeOrchestratorApiClient : OrchestratorApi {
     ) {
         maybeThrow()
     }
+
+    // ─── BFF: Analytics ─────────────────────────────────────────
+
+    override suspend fun getAnalyticsSummary(
+        project: String,
+        from: Long?,
+        to: Long?,
+    ): AnalyticsSummaryDto = throw NotImplementedError()
+
+    override suspend fun getStepFailures(project: String): List<StepFailureDto> = throw NotImplementedError()
+
+    override suspend fun getDurationTrends(
+        project: String,
+        granularity: String,
+    ): List<DurationTrendDto> = throw NotImplementedError()
 }

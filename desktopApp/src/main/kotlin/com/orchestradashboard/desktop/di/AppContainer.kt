@@ -4,6 +4,7 @@ import com.orchestradashboard.shared.data.api.OrchestratorApiClient
 import com.orchestradashboard.shared.data.mapper.ActivePipelineMapper
 import com.orchestradashboard.shared.data.mapper.AgentEventMapper
 import com.orchestradashboard.shared.data.mapper.AgentMapper
+import com.orchestradashboard.shared.data.mapper.AnalyticsMapper
 import com.orchestradashboard.shared.data.mapper.ApprovalMapper
 import com.orchestradashboard.shared.data.mapper.CheckpointMapper
 import com.orchestradashboard.shared.data.mapper.CommandMapper
@@ -16,6 +17,7 @@ import com.orchestradashboard.shared.data.mapper.SolveCommandMapper
 import com.orchestradashboard.shared.data.mapper.SystemStatusMapper
 import com.orchestradashboard.shared.data.network.DashboardApiClient
 import com.orchestradashboard.shared.data.repository.AgentRepositoryImpl
+import com.orchestradashboard.shared.data.repository.AnalyticsRepositoryImpl
 import com.orchestradashboard.shared.data.repository.ApprovalRepositoryImpl
 import com.orchestradashboard.shared.data.repository.CheckpointRepositoryImpl
 import com.orchestradashboard.shared.data.repository.CommandRepositoryImpl
@@ -31,6 +33,7 @@ import com.orchestradashboard.shared.data.repository.SystemRepositoryImpl
 import com.orchestradashboard.shared.data.repository.TokenRefreshHandler
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.domain.repository.AgentRepository
+import com.orchestradashboard.shared.domain.repository.AnalyticsRepository
 import com.orchestradashboard.shared.domain.repository.ApprovalRepository
 import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 import com.orchestradashboard.shared.domain.repository.CommandRepository
@@ -51,10 +54,13 @@ import com.orchestradashboard.shared.domain.usecase.GetActivePipelinesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetDurationTrendsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetPipelineAnalyticsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetPipelineHistoryUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetSettingsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetStepFailureRatesUseCase
 import com.orchestradashboard.shared.domain.usecase.GetSystemStatusUseCase
 import com.orchestradashboard.shared.domain.usecase.InitProjectUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
@@ -185,6 +191,7 @@ object AppContainer {
     private val commandMapper: CommandMapper by lazy { CommandMapper() }
     private val approvalMapper: ApprovalMapper by lazy { ApprovalMapper() }
     private val solveCommandMapper: SolveCommandMapper by lazy { SolveCommandMapper() }
+    private val analyticsMapper: AnalyticsMapper by lazy { AnalyticsMapper() }
 
     // ─── Repositories ───────────────────────────────────────────
 
@@ -205,36 +212,41 @@ object AppContainer {
     }
 
     private val projectRepository: ProjectRepository by lazy {
-        ProjectRepositoryImpl(orchestratorApiClient, projectMapper, issueMapper, checkpointMapper)
+        ProjectRepositoryImpl(apiClient, projectMapper, issueMapper, checkpointMapper)
     }
 
     private val checkpointRepository: CheckpointRepository by lazy {
-        CheckpointRepositoryImpl(orchestratorApiClient, checkpointMapper)
+        CheckpointRepositoryImpl(apiClient, checkpointMapper)
     }
 
     private val solveRepository: SolveRepository by lazy {
-        SolveRepositoryImpl(orchestratorApiClient, solveCommandMapper)
+        SolveRepositoryImpl(apiClient, solveCommandMapper)
     }
 
     private val pipelineMonitorRepository: PipelineMonitorRepository by lazy {
-        PipelineMonitorRepositoryImpl(orchestratorApiClient, monitoredPipelineMapper)
+        PipelineMonitorRepositoryImpl(apiClient, monitoredPipelineMapper, orchestratorApi = orchestratorApiClient)
     }
 
     private val systemRepository: SystemRepository by lazy {
         SystemRepositoryImpl(
-            orchestratorApiClient,
+            apiClient,
             systemStatusMapper,
             activePipelineMapper,
             pipelineHistoryMapper,
+            orchestratorApi = orchestratorApiClient,
         )
     }
 
     private val approvalRepository: ApprovalRepository by lazy {
-        ApprovalRepositoryImpl(orchestratorApiClient)
+        ApprovalRepositoryImpl(apiClient)
     }
 
     private val commandRepository: CommandRepository by lazy {
-        CommandRepositoryImpl(orchestratorApiClient, commandMapper)
+        CommandRepositoryImpl(apiClient, commandMapper)
+    }
+
+    private val analyticsRepository: AnalyticsRepository by lazy {
+        AnalyticsRepositoryImpl(apiClient, analyticsMapper)
     }
 
     // ─── UseCases ───────────────────────────────────────────────
@@ -303,6 +315,21 @@ object AppContainer {
         RespondToApprovalUseCase(approvalRepository)
     }
     private val executeShellUseCase: ExecuteShellUseCase by lazy { ExecuteShellUseCase(commandRepository) }
+
+    @Suppress("UnusedPrivateProperty")
+    private val getPipelineAnalyticsUseCase: GetPipelineAnalyticsUseCase by lazy {
+        GetPipelineAnalyticsUseCase(analyticsRepository)
+    }
+
+    @Suppress("UnusedPrivateProperty")
+    private val getStepFailureRatesUseCase: GetStepFailureRatesUseCase by lazy {
+        GetStepFailureRatesUseCase(analyticsRepository)
+    }
+
+    @Suppress("UnusedPrivateProperty")
+    private val getDurationTrendsUseCase: GetDurationTrendsUseCase by lazy {
+        GetDurationTrendsUseCase(analyticsRepository)
+    }
 
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 

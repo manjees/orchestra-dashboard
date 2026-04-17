@@ -12,6 +12,7 @@ final class IOSAppContainer {
 
     // MARK: - Configuration
 
+    private let serverBaseUrl = ProcessInfo.processInfo.environment["ORCHESTRATOR_API_URL"] ?? "http://localhost:8080"
     private let orchestratorBaseUrl = ProcessInfo.processInfo.environment["ORCHESTRATOR_URL"] ?? "http://localhost:9000"
     private let orchestratorApiKey = ProcessInfo.processInfo.environment["ORCHESTRATOR_API_KEY"] ?? ""
 
@@ -19,11 +20,14 @@ final class IOSAppContainer {
 
     private lazy var solveCommandMapper = SolveCommandMapper()
 
+    // NOTE: BFF client (DashboardApiClient) should be used for most API calls.
+    // OrchestratorApiClient is retained only for WebSocket event connections.
     private lazy var orchestratorApiClient = OrchestratorApiClient(
         baseUrl: orchestratorBaseUrl,
         apiKey: orchestratorApiKey
     )
 
+    // TODO: Replace with DashboardApiClient once KMP framework is linked
     private lazy var solveRepository: any SolveRepository = SolveRepositoryImpl(
         api: orchestratorApiClient,
         mapper: solveCommandMapper
