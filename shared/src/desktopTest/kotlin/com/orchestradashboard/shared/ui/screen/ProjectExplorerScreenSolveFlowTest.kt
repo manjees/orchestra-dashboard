@@ -42,6 +42,7 @@ private val flowProject = Project("flow-project", "/home/flow", listOf("pytest")
 private val flowIssue = Issue(1, "Fix auth bug", listOf("bug"), "open", Instant.parse("2025-01-10T00:00:00Z"))
 
 private val flowProjects = listOf(flowProject)
+
 // Single issue avoids multiple "Solve" button ambiguity on issue row
 private val flowIssuesMap = mapOf("flow-project" to listOf(flowIssue))
 
@@ -53,8 +54,7 @@ private val successSolveRepository =
 
 private val failingSolveRepository =
     object : SolveRepository {
-        override suspend fun executeSolve(request: SolveRequest): Result<SolveResponse> =
-            Result.failure(Exception("Network error"))
+        override suspend fun executeSolve(request: SolveRequest): Result<SolveResponse> = Result.failure(Exception("Network error"))
     }
 
 private fun createSolveFlowViewModel(repo: SolveRepository = successSolveRepository): SolveDialogViewModel =
