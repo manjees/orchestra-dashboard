@@ -1,41 +1,30 @@
-## CI Parity 결과 — issue #113 (Approval Modal Compose UI)
+## CI Parity 결과 — issue #114 (Approval Modal — SwiftUI iosApp, #Preview refactor)
 
 | 잡 | 명령 | 상태 | 비고 |
 |----|------|------|------|
-| 1. ktlintCommonMainSourceSetCheck | `./gradlew :shared:ktlintCommonMainSourceSetCheck` | PASS | 1회차 실패 후 수정 → 2회차 PASS. |
-| 2. ktlintCommonTestSourceSetCheck | `./gradlew :shared:ktlintCommonTestSourceSetCheck` | PASS | FROM-CACHE. |
-| 3. ktlintDesktopTestSourceSetCheck | `./gradlew :shared:ktlintDesktopTestSourceSetCheck` | PASS | FROM-CACHE. |
-| 4. detekt | `./gradlew detekt` | PASS | shared=NO-SOURCE, desktopApp/androidApp/server PASS. |
-| 5. shared:desktopTest | `./gradlew :shared:desktopTest` | PASS | **552 tests / 0 failed / 0 skipped / 0 error**. (1회차 1건 실패 → 테스트 수정 후 2회차 PASS) |
-| 6. server:test | `./gradlew :server:test` | PASS | **209 tests / 0 failed**. FROM-CACHE. |
+| 1. Shared (KMP) Tests | `./gradlew :shared:desktopTest --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 2. Server (Spring Boot) Build & Test | `./gradlew :server:assemble --parallel && :server:test && :server:bootJar` | PASS | UP-TO-DATE (cache hit) |
+| 3. Desktop App Build | `./gradlew :desktopApp:build --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 4. Android App Build | `./gradlew :androidApp:assembleDebug --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 5. Code Quality — Detekt | `./gradlew detekt --continue` | PASS | UP-TO-DATE (cache hit) |
+| 6. Code Quality — ktlint (root) | `./gradlew ktlintCheck` | PASS | UP-TO-DATE (cache hit) |
 
-## 총 테스트 카운트
+## 변경 범위
 
-- **shared:desktopTest: 552 tests pass, 0 fail, 0 skipped, 0 error** (79 suites)
-  - `ApprovalDialogStateTest`: 21 tests (issue #113 Compose UI 상태)
-  - `ApprovalModalViewModelTest`: 29 tests (issue #113 ViewModel 로직)
-  - `PipelineMonitorViewModelTest`: 17 tests (통합 회귀)
-  - 기타 repository/mapper/api 등: 485 tests
-- **server:test: 209 tests pass, 0 fail** (Controller/Service/Config 등 전 범위)
+- 수정 파일: `iosApp/iosApp/ApprovalModalView.swift` (SwiftUI `#Preview` 매크로 2종)
+- 변경 내용: `#Preview` 블록을 `ApprovalDialogView` 직접 인스턴스화 → `ApprovalModalView` + `PreviewHost` 래퍼 구조로 전환
+- 프로덕션 로직 변경 없음 (Preview-only)
+
+## CI Parity 분석
+
+- `.github/workflows/ci.yml` 6-job 구성은 전부 JVM/Android 기반 Gradle 태스크
+- iOS/SwiftUI 소스는 Gradle 빌드 그래프에 없음 → 본 수정이 CI 6개 잡에 미치는 영향 = 0
+- 6개 잡 모두 UP-TO-DATE (`--parallel` 상태에서도 캐시 히트)로 통과 확인
 
 ## 수정 이력
 
-### 1회차 (초기 실행)
-- `:shared:ktlintCommonMainSourceSetCheck` FAILED:
-  - `PipelineMonitorViewModel.kt:34` — `standard:property-naming` 위반. `_pipelineState` 네이밍이 백킹 프로퍼티 규칙에 부적합 (public property `uiState`가 있는데 이름 불일치).
-  - 조치: 전 파일에서 `_pipelineState` → `_uiState` 리네임 (13곳). 백킹 프로퍼티 규칙(`_uiState` ↔ `val uiState`) 준수.
-- `:shared:desktopTest` FAILED:
-  - `PipelineMonitorViewModelTest.clearError sets error to null` — `uiState`가 `combine(_uiState, approvalModal.uiState).stateIn(...)` 파이프라인을 거치므로, `clearError()` 호출 직후 동기적으로 `uiState.value`가 갱신되지 않음 (TestDispatcher에서 combine 파이프가 한 스텝 필요).
-  - 조치: `clearError()` 호출 뒤 `advanceUntilIdle()` 1회 추가. 다른 error-관련 테스트(`loadPipeline sets error on failure`)가 이미 `advanceUntilIdle()`을 쓰는 것과 동일한 패턴.
+- 1회차 실행에서 6개 잡 전체 PASS. 수정 불필요.
 
-### 2회차 (재실행)
-- 6개 잡 전체 PASS. 변경 없음.
+## 최종 상태: ALL GREEN (PR 생성 가능)
 
-## 경고 (비-블로킹)
-
-- Compose Material 3 deprecation 경고 4건 (DesignPanel/DiscussPanel/PlanIssuesPanel L52~57, CommandCenterScreen L50) — 이슈 #113 범위 밖, 기존 경고 유지.
-- Gradle 8.7의 Gradle 9.0 deprecation 경고 — 인프라 범위.
-
-## 최종 상태: ALL GREEN
-
-커밋: `443a907 feat(shared): Approval Modal — Compose UI + ViewModel + Tests (#113)`
+참고: iOS SwiftUI 코드는 리포지토리 CI 파이프라인에 포함되지 않으므로 (Issue #110/#113/#114 공통), iOS 프리뷰 렌더링 검증은 Xcode 로컬에서만 가능하다. 본 에이전트는 CI Parity (6개 잡) 게이트만 커버한다.
