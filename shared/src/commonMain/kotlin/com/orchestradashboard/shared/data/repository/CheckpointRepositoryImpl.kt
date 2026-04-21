@@ -1,24 +1,24 @@
 package com.orchestradashboard.shared.data.repository
 
-import com.orchestradashboard.shared.data.api.OrchestratorApi
 import com.orchestradashboard.shared.data.mapper.CheckpointMapper
+import com.orchestradashboard.shared.data.network.DashboardApi
 import com.orchestradashboard.shared.domain.model.Checkpoint
 import com.orchestradashboard.shared.domain.model.CheckpointStatus
 import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 
 class CheckpointRepositoryImpl(
-    private val orchestratorApi: OrchestratorApi,
+    private val api: DashboardApi,
     private val mapper: CheckpointMapper,
 ) : CheckpointRepository {
     override suspend fun getFailedCheckpoints(): Result<List<Checkpoint>> =
         runCatching {
-            orchestratorApi.getCheckpoints()
+            api.getCheckpoints()
                 .let(mapper::toDomain)
                 .filter { it.status == CheckpointStatus.FAILED }
         }
 
     override suspend fun retryCheckpoint(checkpointId: String): Result<Checkpoint> =
         runCatching {
-            mapper.toDomain(orchestratorApi.retryCheckpoint(checkpointId))
+            mapper.toDomain(api.retryCheckpoint(checkpointId))
         }
 }

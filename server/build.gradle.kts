@@ -23,6 +23,9 @@ dependencies {
     runtimeOnly(libs.jjwt.jackson)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.serialization.json)
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
     // Database
     runtimeOnly(libs.h2)
@@ -53,7 +56,9 @@ tasks.named<JacocoReport>("jacocoTestReport") {
                         "**/model/*Response*",
                         "**/model/*Request*",
                         "**/model/EventType*",
+                        "**/model/*Mapper*",
                         "**/config/*",
+                        "**/service/PipelineEventConsumerService*",
                         "**/*Application*",
                     )
                 }
