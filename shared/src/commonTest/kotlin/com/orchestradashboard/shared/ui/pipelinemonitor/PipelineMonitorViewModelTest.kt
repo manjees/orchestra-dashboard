@@ -1,18 +1,15 @@
 package com.orchestradashboard.shared.ui.pipelinemonitor
 
-import com.orchestradashboard.shared.data.dto.orchestrator.ApprovalContextDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
 import com.orchestradashboard.shared.domain.model.ConnectionStatus
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import com.orchestradashboard.shared.domain.model.StepStatus
-import com.orchestradashboard.shared.domain.usecase.RespondToApprovalUseCase
+import com.orchestradashboard.shared.ui.approvalmodal.ApprovalModalViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlin.test.AfterTest
@@ -34,7 +31,7 @@ class PipelineMonitorViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = FakePipelineMonitorRepository()
-        viewModel = PipelineMonitorViewModel("p1", repository, nowMs = { testDispatcher.scheduler.currentTime })
+        viewModel = PipelineMonitorViewModel("p1", repository)
     }
 
     @AfterTest
@@ -186,12 +183,12 @@ class PipelineMonitorViewModelTest {
         }
 
     @Test
-    fun `approval requested event sets pendingApproval in state`() =
+    fun `approval requested event is forwarded to approvalModal`() =
         runTest {
-            viewModel.loadPipeline()
-            advanceUntilIdle()
+            val approvalModal = ApprovalModalViewModel(nowMs = { testDispatcher.scheduler.currentTime })
+            val vm = PipelineMonitorViewModel("p1", repository, approvalModal)
 
-            viewModel.startObserving()
+            vm.startObserving()
             advanceUntilIdle()
 
             repository.eventsFlow.emit(
@@ -200,27 +197,28 @@ class PipelineMonitorViewModelTest {
                     pipelineId = "p1",
                     approvalId = "approval-1",
                     approvalType = "strategy",
-                    options = listOf("approve", "reject"),
+                    options = listOf("split_execute", "no_split", "cancel"),
                     timeoutSec = 60,
                 ),
             )
             advanceUntilIdle()
 
-            val approval = viewModel.uiState.value.pendingApproval
+            val approval = approvalModal.uiState.value.pendingApproval
             assertNotNull(approval)
-            assertEquals("strategy", approval.approvalType)
-            assertEquals(listOf("approve", "reject"), approval.options)
             assertEquals("approval-1", approval.id)
-            assertEquals(60, approval.timeoutSec)
+            assertEquals("strategy", approval.approvalType)
+            assertTrue(approvalModal.uiState.value.showDialog)
+
+            vm.onCleared()
         }
 
     @Test
-    fun `supreme court required event sets pendingApproval in state`() =
+    fun `supreme court required event is forwarded to approvalModal`() =
         runTest {
-            viewModel.loadPipeline()
-            advanceUntilIdle()
+            val approvalModal = ApprovalModalViewModel(nowMs = { testDispatcher.scheduler.currentTime })
+            val vm = PipelineMonitorViewModel("p1", repository, approvalModal)
 
-            viewModel.startObserving()
+            vm.startObserving()
             advanceUntilIdle()
 
             repository.eventsFlow.emit(
@@ -230,192 +228,15 @@ class PipelineMonitorViewModelTest {
                     approvalId = "sc-1",
                     approvalType = "supreme_court",
                     options = listOf("uphold", "overturn", "redesign"),
-                    context = ApprovalContextDto(eta = "5m", detail = "Test ruling"),
                     timeoutSec = 120,
                 ),
             )
             advanceUntilIdle()
 
-            val approval = viewModel.uiState.value.pendingApproval
+            val approval = approvalModal.uiState.value.pendingApproval
             assertNotNull(approval)
-            assertEquals("supreme_court", approval.approvalType)
             assertEquals("sc-1", approval.id)
-            assertNotNull(approval.context)
-            assertEquals("5m", approval.context?.eta)
-            assertEquals("Test ruling", approval.context?.detail)
-        }
-
-    @Test
-    fun `approval event starts countdown and remainingTimeSec decreases`() =
-        runTest {
-            viewModel.loadPipeline()
-            advanceUntilIdle()
-
-            viewModel.startObserving()
-            advanceUntilIdle()
-
-            repository.eventsFlow.emit(
-                PipelineEventDto(
-                    type = "approval.requested",
-                    pipelineId = "p1",
-                    approvalId = "a1",
-                    approvalType = "strategy",
-                    options = listOf("approve"),
-                    timeoutSec = 10,
-                ),
-            )
-            runCurrent()
-
-            assertEquals(10, viewModel.uiState.value.remainingTimeSec)
-
-            advanceTimeBy(3001)
-            runCurrent()
-
-            assertEquals(7, viewModel.uiState.value.remainingTimeSec)
-            assertFalse(viewModel.uiState.value.isApprovalTimedOut)
-        }
-
-    @Test
-    fun `countdown reaching zero sets isApprovalTimedOut`() =
-        runTest {
-            viewModel.loadPipeline()
-            advanceUntilIdle()
-
-            viewModel.startObserving()
-            advanceUntilIdle()
-
-            repository.eventsFlow.emit(
-                PipelineEventDto(
-                    type = "approval.requested",
-                    pipelineId = "p1",
-                    approvalId = "a1",
-                    approvalType = "strategy",
-                    options = listOf("approve"),
-                    timeoutSec = 3,
-                ),
-            )
-            advanceUntilIdle()
-
-            advanceTimeBy(4000)
-
-            assertEquals(0, viewModel.uiState.value.remainingTimeSec)
-            assertTrue(viewModel.uiState.value.isApprovalTimedOut)
-        }
-
-    @Test
-    fun `respondToApproval calls use case and clears approval`() =
-        runTest {
-            val fakeApprovalRepo = FakeApprovalRepository()
-            val useCase = RespondToApprovalUseCase(fakeApprovalRepo)
-            val vm = PipelineMonitorViewModel("p1", repository, useCase, nowMs = { testDispatcher.scheduler.currentTime })
-
-            vm.loadPipeline()
-            advanceUntilIdle()
-
-            vm.startObserving()
-            advanceUntilIdle()
-
-            repository.eventsFlow.emit(
-                PipelineEventDto(
-                    type = "approval.requested",
-                    pipelineId = "p1",
-                    approvalId = "a1",
-                    approvalType = "strategy",
-                    options = listOf("approve"),
-                    timeoutSec = 60,
-                ),
-            )
-            // runCurrent instead of advanceUntilIdle to avoid exhausting the countdown before responding
-            runCurrent()
-
-            assertNotNull(vm.uiState.value.pendingApproval)
-
-            vm.respondToApproval("split_execute")
-            advanceUntilIdle()
-
-            assertEquals(1, fakeApprovalRepo.respondCallCount)
-            assertEquals("a1", fakeApprovalRepo.lastApprovalId)
-            assertEquals("split_execute", fakeApprovalRepo.lastDecision)
-            // Finding 4: verify comment is sent as empty string, not null
-            assertEquals("", fakeApprovalRepo.lastComment)
-            assertNull(vm.uiState.value.pendingApproval)
-            assertNull(vm.uiState.value.remainingTimeSec)
-
-            vm.onCleared()
-        }
-
-    @Test
-    fun `respondToApproval failure sets error`() =
-        runTest {
-            val fakeApprovalRepo = FakeApprovalRepository()
-            fakeApprovalRepo.respondResult = Result.failure(RuntimeException("Network error"))
-            val useCase = RespondToApprovalUseCase(fakeApprovalRepo)
-            val vm = PipelineMonitorViewModel("p1", repository, useCase, nowMs = { testDispatcher.scheduler.currentTime })
-
-            vm.loadPipeline()
-            advanceUntilIdle()
-
-            vm.startObserving()
-            advanceUntilIdle()
-
-            repository.eventsFlow.emit(
-                PipelineEventDto(
-                    type = "approval.requested",
-                    pipelineId = "p1",
-                    approvalId = "a1",
-                    approvalType = "strategy",
-                    options = listOf("approve"),
-                    timeoutSec = 60,
-                ),
-            )
-            // runCurrent instead of advanceUntilIdle to avoid exhausting the countdown before responding
-            runCurrent()
-
-            vm.respondToApproval("approve")
-            advanceUntilIdle()
-
-            assertEquals("Network error", vm.uiState.value.error)
-            // Approval should remain since the call failed
-            assertNotNull(vm.uiState.value.pendingApproval)
-
-            vm.onCleared()
-        }
-
-    @Test
-    fun `respondToApproval is ignored when approval is already timed out`() =
-        runTest {
-            val fakeApprovalRepo = FakeApprovalRepository()
-            val useCase = RespondToApprovalUseCase(fakeApprovalRepo)
-            val vm = PipelineMonitorViewModel("p1", repository, useCase, nowMs = { testDispatcher.scheduler.currentTime })
-
-            vm.loadPipeline()
-            advanceUntilIdle()
-
-            vm.startObserving()
-            advanceUntilIdle()
-
-            repository.eventsFlow.emit(
-                PipelineEventDto(
-                    type = "approval.requested",
-                    pipelineId = "p1",
-                    approvalId = "a1",
-                    approvalType = "strategy",
-                    options = listOf("approve"),
-                    timeoutSec = 3,
-                ),
-            )
-            // Let the countdown run to completion
-            advanceUntilIdle()
-
-            assertTrue(vm.uiState.value.isApprovalTimedOut)
-
-            // Simulate user clicking a button at the exact moment the timer expires
-            vm.respondToApproval("split_execute")
-            advanceUntilIdle()
-
-            // Should be ignored — no API call made, timed-out state preserved
-            assertEquals(0, fakeApprovalRepo.respondCallCount)
-            assertTrue(vm.uiState.value.isApprovalTimedOut)
+            assertEquals("supreme_court", approval.approvalType)
 
             vm.onCleared()
         }
@@ -466,35 +287,6 @@ class PipelineMonitorViewModelTest {
             viewModel.refresh()
             advanceUntilIdle()
             assertEquals(2, repository.getPipelineDetailCallCount)
-        }
-
-    @Test
-    fun `dismissApproval clears pendingApproval and remainingTimeSec`() =
-        runTest {
-            viewModel.loadPipeline()
-            advanceUntilIdle()
-
-            viewModel.startObserving()
-            advanceUntilIdle()
-
-            repository.eventsFlow.emit(
-                PipelineEventDto(
-                    type = "approval.requested",
-                    pipelineId = "p1",
-                    approvalType = "supreme_court",
-                    options = listOf("approve"),
-                    timeoutSec = 60,
-                ),
-            )
-            advanceUntilIdle()
-
-            assertNotNull(viewModel.uiState.value.pendingApproval)
-            assertNotNull(viewModel.uiState.value.remainingTimeSec)
-
-            viewModel.dismissApproval()
-
-            assertNull(viewModel.uiState.value.pendingApproval)
-            assertNull(viewModel.uiState.value.remainingTimeSec)
         }
 
     @Test

@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.orchestradashboard.shared.domain.model.ConnectionStatus
+import com.orchestradashboard.shared.domain.model.GenericDecision
 import com.orchestradashboard.shared.ui.component.ApprovalDialog
 import com.orchestradashboard.shared.ui.component.ErrorBanner
 import com.orchestradashboard.shared.ui.component.LiveLogPanel
@@ -38,19 +39,22 @@ fun PipelineMonitorScreen(
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val approvalState by viewModel.approvalModal.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadPipeline()
         viewModel.startObserving()
     }
 
-    uiState.pendingApproval?.let { approval ->
+    approvalState.pendingApproval?.let { approval ->
         ApprovalDialog(
             approval = approval,
-            remainingTimeSec = uiState.remainingTimeSec,
-            isTimedOut = uiState.isApprovalTimedOut,
-            onRespond = { decision -> viewModel.respondToApproval(decision) },
-            onDismiss = { viewModel.dismissApproval() },
+            remainingTimeSec = approvalState.remainingTimeSec,
+            isTimedOut = approvalState.isTimedOut,
+            onRespond = { decision ->
+                viewModel.approvalModal.respond(GenericDecision(decision))
+            },
+            onDismiss = { viewModel.approvalModal.dismiss() },
         )
     }
 
