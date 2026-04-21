@@ -7,8 +7,11 @@ struct ApprovalDialogView: View {
     let approval: ApprovalRequest
     let remainingTimeSec: Int32?
     let isTimedOut: Bool
-    let onRespond: (String) -> Void
+    let isSubmitting: Bool
+    let error: String?
+    let onRespond: (ApprovalDecisionValue) -> Void
     let onDismiss: () -> Void
+    let onClearError: () -> Void
 
     var body: some View {
         NavigationView {
@@ -41,9 +44,25 @@ struct ApprovalDialogView: View {
             }
             .padding()
             .toolbar {
+                if isSubmitting {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        ProgressView()
+                    }
+                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Dismiss", action: onDismiss)
                 }
+            }
+            .alert(
+                "Error",
+                isPresented: Binding(
+                    get: { error != nil },
+                    set: { _ in onClearError() }
+                )
+            ) {
+                Button("OK") { onClearError() }
+            } message: {
+                Text(error ?? "")
             }
         }
     }
@@ -125,61 +144,69 @@ struct ApprovalDialogView: View {
 
     private var strategyButtons: some View {
         VStack(spacing: 8) {
-            Button(action: { onRespond("split_execute") }) {
+            Button(action: { onRespond(.splitExecute) }) {
                 Text("Split & Execute")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .disabled(isSubmitting)
 
-            Button(action: { onRespond("no_split") }) {
+            Button(action: { onRespond(.noSplit) }) {
                 Text("No Split (Full)")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .disabled(isSubmitting)
 
-            Button(role: .destructive, action: { onRespond("cancel") }) {
+            Button(role: .destructive, action: { onRespond(.cancel) }) {
                 Text("Cancel")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .disabled(isSubmitting)
         }
     }
 
     private var supremeCourtButtons: some View {
         VStack(spacing: 8) {
-            Button(action: { onRespond("uphold") }) {
+            Button(action: { onRespond(.uphold) }) {
                 Text("Uphold")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .disabled(isSubmitting)
 
-            Button(action: { onRespond("overturn") }) {
+            Button(action: { onRespond(.overturn) }) {
                 Text("Overturn")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .disabled(isSubmitting)
 
-            Button(action: { onRespond("redesign") }) {
+            Button(action: { onRespond(.redesign) }) {
                 Text("Redesign")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .disabled(isSubmitting)
         }
     }
 
     private var genericButtons: some View {
         HStack(spacing: 8) {
-            Button(action: { onRespond("approve") }) {
+            Button(action: { onRespond(.approve) }) {
                 Text("Approve")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+            .disabled(isSubmitting)
 
-            Button(action: { onRespond("reject") }) {
+            Button(action: { onRespond(.reject) }) {
                 Text("Reject")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
+            .disabled(isSubmitting)
         }
     }
 

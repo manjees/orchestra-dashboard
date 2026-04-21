@@ -57,8 +57,11 @@ struct PipelineMonitorView: View {
                     approval: approval,
                     remainingTimeSec: viewModel.remainingTimeSec,
                     isTimedOut: viewModel.isApprovalTimedOut,
+                    isSubmitting: viewModel.isApprovalSubmitting,
+                    error: viewModel.approvalError,
                     onRespond: { decision in viewModel.respondToApproval(decision: decision) },
-                    onDismiss: { viewModel.dismissApproval() }
+                    onDismiss: { viewModel.dismissApproval() },
+                    onClearError: { viewModel.clearApprovalError() }
                 )
             }
         }

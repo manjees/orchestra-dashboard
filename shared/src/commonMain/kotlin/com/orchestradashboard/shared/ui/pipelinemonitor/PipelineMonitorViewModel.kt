@@ -1,7 +1,9 @@
 package com.orchestradashboard.shared.ui.pipelinemonitor
 
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
+import com.orchestradashboard.shared.domain.model.ApprovalDecisionValue
 import com.orchestradashboard.shared.domain.model.ConnectionStatus
+import com.orchestradashboard.shared.domain.model.GenericDecision
 import com.orchestradashboard.shared.domain.model.MonitoredPipeline
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import com.orchestradashboard.shared.domain.model.StepStatus
@@ -12,9 +14,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -27,15 +31,28 @@ class PipelineMonitorViewModel(
     val approvalModal: ApprovalModalViewModel = ApprovalModalViewModel(),
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private val _uiState = MutableStateFlow(PipelineMonitorUiState())
-    val uiState: StateFlow<PipelineMonitorUiState> = _uiState.asStateFlow()
+    private val _pipelineState = MutableStateFlow(PipelineMonitorUiState())
+    val uiState: StateFlow<PipelineMonitorUiState> =
+        combine(_pipelineState, approvalModal.uiState) { pipelineState, approvalState ->
+            pipelineState.copy(
+                pendingApproval = approvalState.pendingApproval,
+                approvalRemainingTimeSec = approvalState.remainingTimeSec,
+                isApprovalTimedOut = approvalState.isTimedOut,
+                isApprovalSubmitting = approvalState.isSubmitting,
+                approvalError = approvalState.error,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = PipelineMonitorUiState(),
+        )
 
     fun loadPipeline() {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            _pipelineState.update { it.copy(isLoading = true, error = null) }
             repository.getPipelineDetail(pipelineId)
                 .onSuccess { newPipeline ->
-                    val oldSteps = _uiState.value.pipeline?.steps
+                    val oldSteps = _pipelineState.value.pipeline?.steps
                     val mergedSteps =
                         if (oldSteps != null) {
                             newPipeline.steps.map { newStep ->
@@ -52,13 +69,13 @@ class PipelineMonitorViewModel(
                         } else {
                             newPipeline.steps
                         }
-                    _uiState.update { it.copy(pipeline = newPipeline.copy(steps = mergedSteps), isLoading = false) }
+                    _pipelineState.update { it.copy(pipeline = newPipeline.copy(steps = mergedSteps), isLoading = false) }
                     if (newPipeline.isParallel) {
                         loadParallelPipelines()
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message, isLoading = false) }
+                    _pipelineState.update { it.copy(error = e.message, isLoading = false) }
                 }
         }
     }
@@ -67,7 +84,7 @@ class PipelineMonitorViewModel(
         viewModelScope.launch {
             repository.getParallelPipelines(pipelineId)
                 .onSuccess { group ->
-                    _uiState.update {
+                    _pipelineState.update {
                         it.copy(
                             parallelGroup = group,
                             parallelPipelines = group.pipelines,
@@ -75,17 +92,17 @@ class PipelineMonitorViewModel(
                     }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message) }
+                    _pipelineState.update { it.copy(error = e.message) }
                 }
         }
     }
 
     fun startObserving() {
         viewModelScope.launch {
-            _uiState.update { it.copy(connectionStatus = ConnectionStatus.CONNECTED) }
+            _pipelineState.update { it.copy(connectionStatus = ConnectionStatus.CONNECTED) }
             repository.observePipelineEvents(pipelineId)
                 .catch { e ->
-                    _uiState.update {
+                    _pipelineState.update {
                         it.copy(connectionStatus = ConnectionStatus.DISCONNECTED, error = e.message)
                     }
                 }
@@ -108,7 +125,7 @@ class PipelineMonitorViewModel(
             "approval.requested", "supreme_court.required" -> approvalModal.onApprovalRequested(event)
             "log" -> {
                 event.detail?.let { line ->
-                    _uiState.update { state ->
+                    _pipelineState.update { state ->
                         val updated = state.logLines.toMutableList().apply { add(line) }
                         state.copy(logLines = if (updated.size > MAX_LOG_LINES) updated.takeLast(MAX_LOG_LINES) else updated)
                     }
@@ -121,7 +138,7 @@ class PipelineMonitorViewModel(
         laneId: String,
         event: PipelineEventDto,
     ) {
-        _uiState.update { state ->
+        _pipelineState.update { state ->
             val group = state.parallelGroup ?: return@update state
             val updatedPipelines =
                 group.pipelines.map { lane ->
@@ -178,7 +195,7 @@ class PipelineMonitorViewModel(
         elapsedSec: Double?,
     ) {
         if (stepName == null) return
-        _uiState.update { state ->
+        _pipelineState.update { state ->
             val pipeline = state.pipeline ?: return@update state
             val updatedSteps =
                 pipeline.steps.map { step ->
@@ -202,13 +219,28 @@ class PipelineMonitorViewModel(
     }
 
     private fun updatePipelineStatus(status: PipelineRunStatus) {
-        _uiState.update { state ->
+        _pipelineState.update { state ->
             state.copy(pipeline = state.pipeline?.copy(status = status))
         }
     }
 
     fun clearError() {
-        _uiState.update { it.copy(error = null) }
+        _pipelineState.update { it.copy(error = null) }
+    }
+
+    fun respondToApproval(
+        decision: ApprovalDecisionValue,
+        comment: String = "",
+    ) {
+        approvalModal.respond(GenericDecision(decision.value), comment)
+    }
+
+    fun dismissApproval() {
+        approvalModal.dismiss()
+    }
+
+    fun clearApprovalError() {
+        approvalModal.clearError()
     }
 
     fun refresh() {

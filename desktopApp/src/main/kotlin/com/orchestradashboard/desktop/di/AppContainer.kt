@@ -66,6 +66,7 @@ import com.orchestradashboard.shared.domain.usecase.RespondToApprovalUseCase
 import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import com.orchestradashboard.shared.domain.usecase.SaveSettingsUseCase
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
+import com.orchestradashboard.shared.ui.approvalmodal.ApprovalModalViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
@@ -323,7 +324,15 @@ object AppContainer {
     fun createSolveDialogViewModel(): SolveDialogViewModel = SolveDialogViewModel(executeSolveUseCase)
 
     fun createPipelineMonitorViewModel(pipelineId: String): PipelineMonitorViewModel =
-        PipelineMonitorViewModel(pipelineId, pipelineMonitorRepository, respondToApprovalUseCase, approvalMapper)
+        PipelineMonitorViewModel(
+            pipelineId = pipelineId,
+            repository = pipelineMonitorRepository,
+            approvalModal =
+                ApprovalModalViewModel(
+                    respondToApprovalUseCase = respondToApprovalUseCase,
+                    approvalMapper = approvalMapper,
+                ),
+        )
 
     fun createDashboardHomeViewModel(): DashboardHomeViewModel =
         DashboardHomeViewModel(
