@@ -1,33 +1,41 @@
-## CI Parity 결과 (6개 잡) — issue #110 (Approval Modal UI)
+## CI Parity 결과 — issue #113 (Approval Modal Compose UI)
 
 | 잡 | 명령 | 상태 | 비고 |
 |----|------|------|------|
-| 1. ktlintCheck (루트) | `./gradlew ktlintCheck` | PASS | 41 tasks, 모두 UP-TO-DATE. commonMain/commonTest/desktopMain/desktopTest/androidMain/kotlinScripts 전부 통과. |
-| 2. detekt (shared) | `./gradlew :shared:detekt` | PASS | NO-SOURCE (shared는 Kotlin Multiplatform 구성으로 detekt 태스크가 소스 없음 보고). 루트 `detekt` 구성은 CI 워크플로우에서 별도 처리. |
-| 3. shared allTests | `./gradlew :shared:allTests` | PASS | 4 target × 합계 **1,788 tests / 0 failure / 0 error / 0 skip**. 상세: desktopTest 552, iosSimulatorArm64Test 412, testDebugUnitTest 412, testReleaseUnitTest 412. iosX64Test는 SKIPPED (unlinked `kotlin.uuid` 심볼 — kotlinx-serialization 1.7 + Kotlin 2.0 호환 이슈로 iosX64 링크 스킵, CI의 macOS 러너 동작과 동일). |
-| 4. shared compileCommonMainKotlinMetadata | `./gradlew :shared:compileCommonMainKotlinMetadata` | PASS | 4 tasks UP-TO-DATE. |
-| 5. desktopApp assemble | `./gradlew :desktopApp:assemble` | PASS | 13 tasks UP-TO-DATE. desktopJar 산출물 확인. |
-| 6. androidApp assembleDebug | `./gradlew :androidApp:assembleDebug` | PASS | 61 tasks UP-TO-DATE. Debug APK 산출물 확인. |
+| 1. ktlintCommonMainSourceSetCheck | `./gradlew :shared:ktlintCommonMainSourceSetCheck` | PASS | 1회차 실패 후 수정 → 2회차 PASS. |
+| 2. ktlintCommonTestSourceSetCheck | `./gradlew :shared:ktlintCommonTestSourceSetCheck` | PASS | FROM-CACHE. |
+| 3. ktlintDesktopTestSourceSetCheck | `./gradlew :shared:ktlintDesktopTestSourceSetCheck` | PASS | FROM-CACHE. |
+| 4. detekt | `./gradlew detekt` | PASS | shared=NO-SOURCE, desktopApp/androidApp/server PASS. |
+| 5. shared:desktopTest | `./gradlew :shared:desktopTest` | PASS | **552 tests / 0 failed / 0 skipped / 0 error**. (1회차 1건 실패 → 테스트 수정 후 2회차 PASS) |
+| 6. server:test | `./gradlew :server:test` | PASS | **209 tests / 0 failed**. FROM-CACHE. |
 
 ## 총 테스트 카운트
 
-- **shared 합계: 1,788 tests pass, 0 fail, 0 error, 0 skipped** (4 타겟 합산)
-- desktopTest 기준 단일 타겟: 78 suites / 552 tests
-  - `ApprovalDialogStateTest`: 21 tests (issue #110 신규 UI 상태 검증)
-  - `ApprovalModalViewModelTest`: 29 tests (issue #109 회귀 검증)
-  - `PipelineMonitorViewModelTest`: 17 tests (delegation 패턴 회귀 검증)
-  - `ParallelPipelineViewModelTest`: 13 tests
-  - 기타 repository/mapper/api 테스트: 472 tests
+- **shared:desktopTest: 552 tests pass, 0 fail, 0 skipped, 0 error** (79 suites)
+  - `ApprovalDialogStateTest`: 21 tests (issue #113 Compose UI 상태)
+  - `ApprovalModalViewModelTest`: 29 tests (issue #113 ViewModel 로직)
+  - `PipelineMonitorViewModelTest`: 17 tests (통합 회귀)
+  - 기타 repository/mapper/api 등: 485 tests
+- **server:test: 209 tests pass, 0 fail** (Controller/Service/Config 등 전 범위)
 
 ## 수정 이력
 
-- 1회차: 6개 잡 모두 PASS, 코드 수정 없음.
+### 1회차 (초기 실행)
+- `:shared:ktlintCommonMainSourceSetCheck` FAILED:
+  - `PipelineMonitorViewModel.kt:34` — `standard:property-naming` 위반. `_pipelineState` 네이밍이 백킹 프로퍼티 규칙에 부적합 (public property `uiState`가 있는데 이름 불일치).
+  - 조치: 전 파일에서 `_pipelineState` → `_uiState` 리네임 (13곳). 백킹 프로퍼티 규칙(`_uiState` ↔ `val uiState`) 준수.
+- `:shared:desktopTest` FAILED:
+  - `PipelineMonitorViewModelTest.clearError sets error to null` — `uiState`가 `combine(_uiState, approvalModal.uiState).stateIn(...)` 파이프라인을 거치므로, `clearError()` 호출 직후 동기적으로 `uiState.value`가 갱신되지 않음 (TestDispatcher에서 combine 파이프가 한 스텝 필요).
+  - 조치: `clearError()` 호출 뒤 `advanceUntilIdle()` 1회 추가. 다른 error-관련 테스트(`loadPipeline sets error on failure`)가 이미 `advanceUntilIdle()`을 쓰는 것과 동일한 패턴.
+
+### 2회차 (재실행)
+- 6개 잡 전체 PASS. 변경 없음.
 
 ## 경고 (비-블로킹)
 
-- Compose Material 3 deprecation 경고 4건 (DesignPanel.kt:52, DiscussPanel.kt:55, PlanIssuesPanel.kt:57, CommandCenterScreen.kt:50) — 이슈 #110 범위 밖, 기존 코드 그대로.
-- Gradle 8.7의 Gradle 9.0 deprecation 경고 — 인프라 범위, 이슈 범위 밖.
-- kotlinx-serialization-core의 `kotlin.uuid/Uuid` unlinked symbol 경고 — iosX64Test SKIPPED 원인. iosSimulatorArm64Test는 정상 실행되어 iOS 로직 커버됨.
-- iOS `IOSPipelineMonitorViewModel.swift` / `PipelineMonitorView.swift` / `ApprovalDialogView.swift` 변경은 KMP bridge 시그니처에 정합하며 shared 테스트로 간접 검증됨. iOS xcodebuild는 현 CI 워크플로우 미포함 (`.github/workflows/ci.yml` 6-job).
+- Compose Material 3 deprecation 경고 4건 (DesignPanel/DiscussPanel/PlanIssuesPanel L52~57, CommandCenterScreen L50) — 이슈 #113 범위 밖, 기존 경고 유지.
+- Gradle 8.7의 Gradle 9.0 deprecation 경고 — 인프라 범위.
 
-## 최종 상태: ALL GREEN (PR 생성 가능)
+## 최종 상태: ALL GREEN
+
+커밋: `443a907 feat(shared): Approval Modal — Compose UI + ViewModel + Tests (#113)`

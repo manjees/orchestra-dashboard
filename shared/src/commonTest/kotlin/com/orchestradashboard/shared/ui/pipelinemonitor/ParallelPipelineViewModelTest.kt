@@ -5,6 +5,7 @@ import com.orchestradashboard.shared.domain.model.DependencyType
 import com.orchestradashboard.shared.domain.model.MonitoredPipeline
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import com.orchestradashboard.shared.domain.model.StepStatus
+import com.orchestradashboard.shared.ui.approvalmodal.ApprovalModalViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,7 +31,7 @@ class ParallelPipelineViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = FakePipelineMonitorRepository()
-        viewModel = PipelineMonitorViewModel("p1", repository)
+        viewModel = PipelineMonitorViewModel("p1", repository, ApprovalModalViewModel())
     }
 
     @AfterTest
