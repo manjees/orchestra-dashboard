@@ -32,6 +32,7 @@ class PipelineMonitorViewModel(
     private val repository: PipelineMonitorRepository,
     private val respondToApprovalUseCase: RespondToApprovalUseCase? = null,
     private val approvalMapper: ApprovalMapper = ApprovalMapper(),
+    private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(PipelineMonitorUiState())
@@ -127,8 +128,12 @@ class PipelineMonitorViewModel(
     }
 
     private fun handleApprovalEvent(event: PipelineEventDto) {
-        val nowMs = Clock.System.now().toEpochMilliseconds()
+        // Finding 3: ignore concurrent approval requests while one is already pending
+        if (_uiState.value.pendingApproval != null) return
+
+        val currentMs = nowMs()
         val timeoutSec = event.timeoutSec ?: DEFAULT_TIMEOUT_SEC
+        val deadlineMs = currentMs + timeoutSec * 1000L
         val approval =
             ApprovalRequest(
                 approvalType = event.approvalType ?: "unknown",
@@ -136,7 +141,7 @@ class PipelineMonitorViewModel(
                 id = event.approvalId ?: event.pipelineId ?: "",
                 context = approvalMapper.toDomain(event.context),
                 timeoutSec = timeoutSec,
-                requestedAtMs = nowMs,
+                requestedAtMs = currentMs,
             )
         _uiState.update {
             it.copy(
@@ -144,20 +149,20 @@ class PipelineMonitorViewModel(
                 remainingTimeSec = timeoutSec,
             )
         }
-        startCountdown(timeoutSec)
+        startCountdown(deadlineMs)
     }
 
-    private fun startCountdown(timeoutSec: Int) {
+    // Finding 1: deadline-based countdown so it stays accurate regardless of UI thread delays
+    private fun startCountdown(deadlineMs: Long) {
         countdownJob?.cancel()
         countdownJob =
             viewModelScope.launch {
-                var remaining = timeoutSec
-                while (remaining > 0) {
+                while (true) {
                     delay(COUNTDOWN_INTERVAL_MS)
-                    remaining--
+                    val remaining = maxOf(0, ((deadlineMs - nowMs()) / 1000).toInt())
                     _uiState.update { it.copy(remainingTimeSec = remaining) }
+                    if (remaining <= 0) break
                 }
-                // Timeout reached: client just shows message, server handles auto-approval
             }
     }
 
@@ -256,6 +261,8 @@ class PipelineMonitorViewModel(
         comment: String = "",
     ) {
         val approvalId = _uiState.value.pendingApproval?.id ?: return
+        // Finding 2: ignore user action if the approval already timed out
+        if (_uiState.value.isApprovalTimedOut) return
         viewModelScope.launch {
             respondToApprovalUseCase?.invoke(approvalId, decision, comment)
                 ?.onSuccess {

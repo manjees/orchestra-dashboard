@@ -34,7 +34,7 @@ class PipelineMonitorViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = FakePipelineMonitorRepository()
-        viewModel = PipelineMonitorViewModel("p1", repository)
+        viewModel = PipelineMonitorViewModel("p1", repository, nowMs = { testDispatcher.scheduler.currentTime })
     }
 
     @AfterTest
@@ -307,7 +307,7 @@ class PipelineMonitorViewModelTest {
         runTest {
             val fakeApprovalRepo = FakeApprovalRepository()
             val useCase = RespondToApprovalUseCase(fakeApprovalRepo)
-            val vm = PipelineMonitorViewModel("p1", repository, useCase)
+            val vm = PipelineMonitorViewModel("p1", repository, useCase, nowMs = { testDispatcher.scheduler.currentTime })
 
             vm.loadPipeline()
             advanceUntilIdle()
@@ -325,7 +325,8 @@ class PipelineMonitorViewModelTest {
                     timeoutSec = 60,
                 ),
             )
-            advanceUntilIdle()
+            // runCurrent instead of advanceUntilIdle to avoid exhausting the countdown before responding
+            runCurrent()
 
             assertNotNull(vm.uiState.value.pendingApproval)
 
@@ -335,6 +336,8 @@ class PipelineMonitorViewModelTest {
             assertEquals(1, fakeApprovalRepo.respondCallCount)
             assertEquals("a1", fakeApprovalRepo.lastApprovalId)
             assertEquals("split_execute", fakeApprovalRepo.lastDecision)
+            // Finding 4: verify comment is sent as empty string, not null
+            assertEquals("", fakeApprovalRepo.lastComment)
             assertNull(vm.uiState.value.pendingApproval)
             assertNull(vm.uiState.value.remainingTimeSec)
 
@@ -347,7 +350,7 @@ class PipelineMonitorViewModelTest {
             val fakeApprovalRepo = FakeApprovalRepository()
             fakeApprovalRepo.respondResult = Result.failure(RuntimeException("Network error"))
             val useCase = RespondToApprovalUseCase(fakeApprovalRepo)
-            val vm = PipelineMonitorViewModel("p1", repository, useCase)
+            val vm = PipelineMonitorViewModel("p1", repository, useCase, nowMs = { testDispatcher.scheduler.currentTime })
 
             vm.loadPipeline()
             advanceUntilIdle()
@@ -362,9 +365,11 @@ class PipelineMonitorViewModelTest {
                     approvalId = "a1",
                     approvalType = "strategy",
                     options = listOf("approve"),
+                    timeoutSec = 60,
                 ),
             )
-            advanceUntilIdle()
+            // runCurrent instead of advanceUntilIdle to avoid exhausting the countdown before responding
+            runCurrent()
 
             vm.respondToApproval("approve")
             advanceUntilIdle()
@@ -372,6 +377,45 @@ class PipelineMonitorViewModelTest {
             assertEquals("Network error", vm.uiState.value.error)
             // Approval should remain since the call failed
             assertNotNull(vm.uiState.value.pendingApproval)
+
+            vm.onCleared()
+        }
+
+    @Test
+    fun `respondToApproval is ignored when approval is already timed out`() =
+        runTest {
+            val fakeApprovalRepo = FakeApprovalRepository()
+            val useCase = RespondToApprovalUseCase(fakeApprovalRepo)
+            val vm = PipelineMonitorViewModel("p1", repository, useCase, nowMs = { testDispatcher.scheduler.currentTime })
+
+            vm.loadPipeline()
+            advanceUntilIdle()
+
+            vm.startObserving()
+            advanceUntilIdle()
+
+            repository.eventsFlow.emit(
+                PipelineEventDto(
+                    type = "approval.requested",
+                    pipelineId = "p1",
+                    approvalId = "a1",
+                    approvalType = "strategy",
+                    options = listOf("approve"),
+                    timeoutSec = 3,
+                ),
+            )
+            // Let the countdown run to completion
+            advanceUntilIdle()
+
+            assertTrue(vm.uiState.value.isApprovalTimedOut)
+
+            // Simulate user clicking a button at the exact moment the timer expires
+            vm.respondToApproval("split_execute")
+            advanceUntilIdle()
+
+            // Should be ignored — no API call made, timed-out state preserved
+            assertEquals(0, fakeApprovalRepo.respondCallCount)
+            assertTrue(vm.uiState.value.isApprovalTimedOut)
 
             vm.onCleared()
         }
