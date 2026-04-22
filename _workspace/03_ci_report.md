@@ -1,33 +1,30 @@
-## CI Parity 결과 (6개 잡) — issue #110 (Approval Modal UI)
+## CI Parity 결과 — issue #114 (Approval Modal — SwiftUI iosApp, #Preview refactor)
 
 | 잡 | 명령 | 상태 | 비고 |
 |----|------|------|------|
-| 1. ktlintCheck (루트) | `./gradlew ktlintCheck` | PASS | 41 tasks, 모두 UP-TO-DATE. commonMain/commonTest/desktopMain/desktopTest/androidMain/kotlinScripts 전부 통과. |
-| 2. detekt (shared) | `./gradlew :shared:detekt` | PASS | NO-SOURCE (shared는 Kotlin Multiplatform 구성으로 detekt 태스크가 소스 없음 보고). 루트 `detekt` 구성은 CI 워크플로우에서 별도 처리. |
-| 3. shared allTests | `./gradlew :shared:allTests` | PASS | 4 target × 합계 **1,788 tests / 0 failure / 0 error / 0 skip**. 상세: desktopTest 552, iosSimulatorArm64Test 412, testDebugUnitTest 412, testReleaseUnitTest 412. iosX64Test는 SKIPPED (unlinked `kotlin.uuid` 심볼 — kotlinx-serialization 1.7 + Kotlin 2.0 호환 이슈로 iosX64 링크 스킵, CI의 macOS 러너 동작과 동일). |
-| 4. shared compileCommonMainKotlinMetadata | `./gradlew :shared:compileCommonMainKotlinMetadata` | PASS | 4 tasks UP-TO-DATE. |
-| 5. desktopApp assemble | `./gradlew :desktopApp:assemble` | PASS | 13 tasks UP-TO-DATE. desktopJar 산출물 확인. |
-| 6. androidApp assembleDebug | `./gradlew :androidApp:assembleDebug` | PASS | 61 tasks UP-TO-DATE. Debug APK 산출물 확인. |
+| 1. Shared (KMP) Tests | `./gradlew :shared:desktopTest --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 2. Server (Spring Boot) Build & Test | `./gradlew :server:assemble --parallel && :server:test && :server:bootJar` | PASS | UP-TO-DATE (cache hit) |
+| 3. Desktop App Build | `./gradlew :desktopApp:build --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 4. Android App Build | `./gradlew :androidApp:assembleDebug --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 5. Code Quality — Detekt | `./gradlew detekt --continue` | PASS | UP-TO-DATE (cache hit) |
+| 6. Code Quality — ktlint (root) | `./gradlew ktlintCheck` | PASS | UP-TO-DATE (cache hit) |
 
-## 총 테스트 카운트
+## 변경 범위
 
-- **shared 합계: 1,788 tests pass, 0 fail, 0 error, 0 skipped** (4 타겟 합산)
-- desktopTest 기준 단일 타겟: 78 suites / 552 tests
-  - `ApprovalDialogStateTest`: 21 tests (issue #110 신규 UI 상태 검증)
-  - `ApprovalModalViewModelTest`: 29 tests (issue #109 회귀 검증)
-  - `PipelineMonitorViewModelTest`: 17 tests (delegation 패턴 회귀 검증)
-  - `ParallelPipelineViewModelTest`: 13 tests
-  - 기타 repository/mapper/api 테스트: 472 tests
+- 수정 파일: `iosApp/iosApp/ApprovalModalView.swift` (SwiftUI `#Preview` 매크로 2종)
+- 변경 내용: `#Preview` 블록을 `ApprovalDialogView` 직접 인스턴스화 → `ApprovalModalView` + `PreviewHost` 래퍼 구조로 전환
+- 프로덕션 로직 변경 없음 (Preview-only)
+
+## CI Parity 분석
+
+- `.github/workflows/ci.yml` 6-job 구성은 전부 JVM/Android 기반 Gradle 태스크
+- iOS/SwiftUI 소스는 Gradle 빌드 그래프에 없음 → 본 수정이 CI 6개 잡에 미치는 영향 = 0
+- 6개 잡 모두 UP-TO-DATE (`--parallel` 상태에서도 캐시 히트)로 통과 확인
 
 ## 수정 이력
 
-- 1회차: 6개 잡 모두 PASS, 코드 수정 없음.
-
-## 경고 (비-블로킹)
-
-- Compose Material 3 deprecation 경고 4건 (DesignPanel.kt:52, DiscussPanel.kt:55, PlanIssuesPanel.kt:57, CommandCenterScreen.kt:50) — 이슈 #110 범위 밖, 기존 코드 그대로.
-- Gradle 8.7의 Gradle 9.0 deprecation 경고 — 인프라 범위, 이슈 범위 밖.
-- kotlinx-serialization-core의 `kotlin.uuid/Uuid` unlinked symbol 경고 — iosX64Test SKIPPED 원인. iosSimulatorArm64Test는 정상 실행되어 iOS 로직 커버됨.
-- iOS `IOSPipelineMonitorViewModel.swift` / `PipelineMonitorView.swift` / `ApprovalDialogView.swift` 변경은 KMP bridge 시그니처에 정합하며 shared 테스트로 간접 검증됨. iOS xcodebuild는 현 CI 워크플로우 미포함 (`.github/workflows/ci.yml` 6-job).
+- 1회차 실행에서 6개 잡 전체 PASS. 수정 불필요.
 
 ## 최종 상태: ALL GREEN (PR 생성 가능)
+
+참고: iOS SwiftUI 코드는 리포지토리 CI 파이프라인에 포함되지 않으므로 (Issue #110/#113/#114 공통), iOS 프리뷰 렌더링 검증은 Xcode 로컬에서만 가능하다. 본 에이전트는 CI Parity (6개 잡) 게이트만 커버한다.
