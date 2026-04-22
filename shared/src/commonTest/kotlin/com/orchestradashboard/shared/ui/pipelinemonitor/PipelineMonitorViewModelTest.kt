@@ -31,7 +31,7 @@ class PipelineMonitorViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         repository = FakePipelineMonitorRepository()
-        viewModel = PipelineMonitorViewModel("p1", repository)
+        viewModel = PipelineMonitorViewModel("p1", repository, ApprovalModalViewModel())
     }
 
     @AfterTest
@@ -273,6 +273,7 @@ class PipelineMonitorViewModelTest {
             assertNotNull(viewModel.uiState.value.error)
 
             viewModel.clearError()
+            advanceUntilIdle()
 
             assertNull(viewModel.uiState.value.error)
         }

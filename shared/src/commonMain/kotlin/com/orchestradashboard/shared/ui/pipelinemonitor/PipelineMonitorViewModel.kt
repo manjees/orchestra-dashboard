@@ -1,7 +1,9 @@
 package com.orchestradashboard.shared.ui.pipelinemonitor
 
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineEventDto
+import com.orchestradashboard.shared.domain.model.ApprovalDecisionValue
 import com.orchestradashboard.shared.domain.model.ConnectionStatus
+import com.orchestradashboard.shared.domain.model.GenericDecision
 import com.orchestradashboard.shared.domain.model.MonitoredPipeline
 import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 import com.orchestradashboard.shared.domain.model.StepStatus
@@ -12,9 +14,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -24,11 +28,24 @@ private const val MAX_LOG_LINES = 500
 class PipelineMonitorViewModel(
     private val pipelineId: String,
     private val repository: PipelineMonitorRepository,
-    val approvalModal: ApprovalModalViewModel = ApprovalModalViewModel(),
+    val approvalModal: ApprovalModalViewModel,
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(PipelineMonitorUiState())
-    val uiState: StateFlow<PipelineMonitorUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<PipelineMonitorUiState> =
+        combine(_uiState, approvalModal.uiState) { pipelineState, approvalState ->
+            pipelineState.copy(
+                pendingApproval = approvalState.pendingApproval,
+                approvalRemainingTimeSec = approvalState.remainingTimeSec,
+                isApprovalTimedOut = approvalState.isTimedOut,
+                isApprovalSubmitting = approvalState.isSubmitting,
+                approvalError = approvalState.error,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = PipelineMonitorUiState(),
+        )
 
     fun loadPipeline() {
         viewModelScope.launch {
@@ -209,6 +226,21 @@ class PipelineMonitorViewModel(
 
     fun clearError() {
         _uiState.update { it.copy(error = null) }
+    }
+
+    fun respondToApproval(
+        decision: ApprovalDecisionValue,
+        comment: String = "",
+    ) {
+        approvalModal.respond(GenericDecision(decision.value), comment)
+    }
+
+    fun dismissApproval() {
+        approvalModal.dismiss()
+    }
+
+    fun clearApprovalError() {
+        approvalModal.clearError()
     }
 
     fun refresh() {

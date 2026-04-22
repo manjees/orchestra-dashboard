@@ -1,5 +1,6 @@
 package com.orchestradashboard.shared.ui.pipelinemonitor
 
+import com.orchestradashboard.shared.domain.model.ApprovalRequest
 import com.orchestradashboard.shared.domain.model.ConnectionStatus
 import com.orchestradashboard.shared.domain.model.MonitoredPipeline
 import com.orchestradashboard.shared.domain.model.ParallelPipelineGroup
@@ -13,6 +14,11 @@ data class PipelineMonitorUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED,
+    val pendingApproval: ApprovalRequest? = null,
+    val approvalRemainingTimeSec: Int? = null,
+    val isApprovalTimedOut: Boolean = false,
+    val isApprovalSubmitting: Boolean = false,
+    val approvalError: String? = null,
 ) {
     val isParallel: Boolean get() = pipeline?.isParallel == true
 
