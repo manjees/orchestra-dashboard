@@ -14,6 +14,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.jpa.domain.Specification
 import java.util.Optional
 
 class PipelineHistoryServiceTest {
@@ -36,13 +37,17 @@ class PipelineHistoryServiceTest {
             prUrl = "https://github.com/org/repo/pull/1",
         )
 
+    private fun stubFindAll(pageable: PageRequest) {
+        whenever(historyRepository.findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>()))
+            .thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
+    }
+
     @Test
     fun `getHistory without filters returns all`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(historyRepository.findAll(pageable))
-            .thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
+        stubFindAll(pageable)
 
-        val result = service.getHistory(null, null, pageable)
+        val result = service.getHistory(null, null, null, null, null, pageable)
 
         assertEquals(1, result.totalElements)
         assertEquals("h-1", result.content[0].id)
@@ -50,36 +55,146 @@ class PipelineHistoryServiceTest {
     }
 
     @Test
-    fun `getHistory with project filter`() {
+    fun `getHistory with project filter uses specification`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(historyRepository.findByProjectName("my-project", pageable))
-            .thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
+        stubFindAll(pageable)
 
-        val result = service.getHistory("my-project", null, pageable)
+        val result = service.getHistory("my-project", null, null, null, null, pageable)
 
         assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
     }
 
     @Test
-    fun `getHistory with status filter`() {
+    fun `getHistory with status filter uses specification`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(historyRepository.findByStatus("PASSED", pageable))
-            .thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
+        stubFindAll(pageable)
 
-        val result = service.getHistory(null, "PASSED", pageable)
+        val result = service.getHistory(null, "PASSED", null, null, null, pageable)
 
         assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
     }
 
     @Test
-    fun `getHistory with project and status filters`() {
+    fun `getHistory with project and status filter uses specification`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(historyRepository.findByProjectNameAndStatus("my-project", "PASSED", pageable))
-            .thenReturn(PageImpl(listOf(sampleEntity), pageable, 1))
+        stubFindAll(pageable)
 
-        val result = service.getHistory("my-project", "PASSED", pageable)
+        val result = service.getHistory("my-project", "PASSED", null, null, null, pageable)
 
         assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with keyword filter uses specification`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory(null, null, "bug", null, null, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with project and keyword filter uses specification`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory("my-project", null, "bug", null, null, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with status and keyword filter uses specification`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory(null, "PASSED", "bug", null, null, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with project status and keyword filter uses specification`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory("my-project", "PASSED", "bug", null, null, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with empty keyword returns all`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory(null, null, "", null, null, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with date range only uses specification`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory(null, null, null, 1000L, 2000L, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with project and date range combines both filters`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory("my-project", null, null, 1000L, 2000L, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with status and date range combines both filters`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory(null, "PASSED", null, 1000L, 2000L, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with keyword and date range combines both filters`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory(null, null, "bug", 1000L, 2000L, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
+    }
+
+    @Test
+    fun `getHistory with all filters combined uses specification`() {
+        val pageable = PageRequest.of(0, 20)
+        stubFindAll(pageable)
+
+        val result = service.getHistory("my-project", "PASSED", "bug", 1000L, 2000L, pageable)
+
+        assertEquals(1, result.totalElements)
+        verify(historyRepository).findAll(any<Specification<PipelineHistoryEntity>>(), any<org.springframework.data.domain.Pageable>())
     }
 
     @Test

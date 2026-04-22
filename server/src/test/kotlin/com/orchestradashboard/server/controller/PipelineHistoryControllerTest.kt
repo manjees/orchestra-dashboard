@@ -58,7 +58,7 @@ class PipelineHistoryControllerTest {
     @Test
     fun `GET api-v1-pipeline-history returns 200 with page`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(historyService.getHistory(null, null, pageable))
+        whenever(historyService.getHistory(null, null, null, null, null, pageable))
             .thenReturn(PageImpl(listOf(sampleResponse), pageable, 1))
 
         mockMvc.get("/api/v1/pipeline-history")
@@ -74,7 +74,7 @@ class PipelineHistoryControllerTest {
     @Test
     fun `GET api-v1-pipeline-history with project filter`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(historyService.getHistory(eq("my-project"), eq(null), any()))
+        whenever(historyService.getHistory(eq("my-project"), eq(null), eq(null), eq(null), eq(null), any()))
             .thenReturn(PageImpl(listOf(sampleResponse), pageable, 1))
 
         mockMvc.get("/api/v1/pipeline-history?project=my-project")
@@ -87,7 +87,7 @@ class PipelineHistoryControllerTest {
     @Test
     fun `GET api-v1-pipeline-history with status filter`() {
         val pageable = PageRequest.of(0, 20)
-        whenever(historyService.getHistory(eq(null), eq("PASSED"), any()))
+        whenever(historyService.getHistory(eq(null), eq("PASSED"), eq(null), eq(null), eq(null), any()))
             .thenReturn(PageImpl(listOf(sampleResponse), pageable, 1))
 
         mockMvc.get("/api/v1/pipeline-history?status=PASSED")
@@ -123,12 +123,73 @@ class PipelineHistoryControllerTest {
     @Test
     fun `GET api-v1-pipeline-history clamps size to 100`() {
         val clampedPageable = PageRequest.of(0, 100)
-        whenever(historyService.getHistory(eq(null), eq(null), eq(clampedPageable)))
+        whenever(historyService.getHistory(eq(null), eq(null), eq(null), eq(null), eq(null), eq(clampedPageable)))
             .thenReturn(PageImpl(emptyList(), clampedPageable, 0))
 
         mockMvc.get("/api/v1/pipeline-history?size=200")
             .andExpect {
                 status { isOk() }
+            }
+    }
+
+    @Test
+    fun `GET api-v1-pipeline-history with q keyword filter`() {
+        val pageable = PageRequest.of(0, 20)
+        whenever(historyService.getHistory(eq(null), eq(null), eq("bug"), eq(null), eq(null), any()))
+            .thenReturn(PageImpl(listOf(sampleResponse), pageable, 1))
+
+        mockMvc.get("/api/v1/pipeline-history?q=bug")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.content[0].issue_title") { value("Fix bug") }
+            }
+    }
+
+    @Test
+    fun `GET api-v1-pipeline-history with empty q returns all`() {
+        val pageable = PageRequest.of(0, 20)
+        whenever(historyService.getHistory(eq(null), eq(null), eq(""), eq(null), eq(null), any()))
+            .thenReturn(PageImpl(listOf(sampleResponse), pageable, 1))
+
+        mockMvc.get("/api/v1/pipeline-history?q=")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.content[0].id") { value("h-1") }
+            }
+    }
+
+    @Test
+    fun `GET api-v1-pipeline-history with hours filter computes timestamps on server`() {
+        val pageable = PageRequest.of(0, 20)
+        whenever(historyService.getHistory(eq(null), eq(null), eq(null), any(), any(), any()))
+            .thenReturn(PageImpl(listOf(sampleResponse), pageable, 1))
+
+        mockMvc.get("/api/v1/pipeline-history?hours=24")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.content[0].id") { value("h-1") }
+            }
+    }
+
+    @Test
+    fun `GET api-v1-pipeline-history combining project status and keyword`() {
+        val pageable = PageRequest.of(0, 20)
+        whenever(
+            historyService.getHistory(
+                eq("my-project"),
+                eq("PASSED"),
+                eq("bug"),
+                eq(null),
+                eq(null),
+                any(),
+            ),
+        ).thenReturn(PageImpl(listOf(sampleResponse), pageable, 1))
+
+        mockMvc.get("/api/v1/pipeline-history?project=my-project&status=PASSED&q=bug")
+            .andExpect {
+                status { isOk() }
+                jsonPath("$.content[0].project_name") { value("my-project") }
+                jsonPath("$.content[0].status") { value("PASSED") }
             }
     }
 }

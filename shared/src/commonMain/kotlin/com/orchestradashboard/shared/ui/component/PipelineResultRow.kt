@@ -1,5 +1,6 @@
 package com.orchestradashboard.shared.ui.component
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,11 +24,18 @@ import com.orchestradashboard.shared.domain.model.PipelineRunStatus
 fun PipelineResultRow(
     result: PipelineResult,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
     val isPassed = result.status == PipelineRunStatus.PASSED
+    val rowModifier =
+        if (onClick != null) {
+            modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = 16.dp, vertical = 8.dp)
+        } else {
+            modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+        }
 
     Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = rowModifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(

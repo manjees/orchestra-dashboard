@@ -26,6 +26,11 @@ struct ContentView: View {
                         Label("Commands", systemImage: "terminal")
                     }
 
+                HistoryView()
+                    .tabItem {
+                        Label("History", systemImage: "clock")
+                    }
+
                 SettingsView()
                     .tabItem {
                         Label("Settings", systemImage: "gearshape")

@@ -25,7 +25,9 @@ import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDt
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryPageDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
@@ -201,6 +203,26 @@ class DashboardApiClient(
 
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> =
         httpClient.get("$baseUrl/api/v1/orchestrator/pipelines/history").body()
+
+    override suspend fun getPagedHistory(
+        project: String?,
+        status: String?,
+        keyword: String?,
+        hours: Int?,
+        page: Int,
+        size: Int,
+    ): PipelineHistoryPageDto =
+        httpClient.get("$baseUrl/api/v1/pipeline-history") {
+            if (project != null) parameter("project", project)
+            if (status != null) parameter("status", status)
+            if (keyword != null && keyword.isNotEmpty()) parameter("q", keyword)
+            if (hours != null) parameter("hours", hours)
+            parameter("page", page)
+            parameter("size", size)
+        }.body()
+
+    override suspend fun getHistoryDetail(id: String): PipelineHistoryDetailDto =
+        httpClient.get("$baseUrl/api/v1/pipeline-history/$id").body()
 
     override suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto =
         httpClient.get("$baseUrl/api/v1/orchestrator/pipelines/$parentId/parallel").body()

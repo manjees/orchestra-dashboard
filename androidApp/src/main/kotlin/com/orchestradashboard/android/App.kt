@@ -48,6 +48,9 @@ class MainActivity : ComponentActivity() {
                     settingsViewModelFactory = {
                         AppContainer.createSettingsViewModel()
                     },
+                    historyViewModelFactory = {
+                        AppContainer.createHistoryViewModel()
+                    },
                 )
             }
         }

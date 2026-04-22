@@ -8,6 +8,7 @@ import com.orchestradashboard.shared.data.mapper.AnalyticsMapper
 import com.orchestradashboard.shared.data.mapper.ApprovalMapper
 import com.orchestradashboard.shared.data.mapper.CheckpointMapper
 import com.orchestradashboard.shared.data.mapper.CommandMapper
+import com.orchestradashboard.shared.data.mapper.HistoryDetailMapper
 import com.orchestradashboard.shared.data.mapper.IssueMapper
 import com.orchestradashboard.shared.data.mapper.MonitoredPipelineMapper
 import com.orchestradashboard.shared.data.mapper.PipelineHistoryMapper
@@ -24,6 +25,7 @@ import com.orchestradashboard.shared.data.repository.CommandRepositoryImpl
 import com.orchestradashboard.shared.data.repository.DesktopSettingsRepository
 import com.orchestradashboard.shared.data.repository.DesktopTokenRepository
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
+import com.orchestradashboard.shared.data.repository.HistoryRepositoryImpl
 import com.orchestradashboard.shared.data.repository.MetricRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineMonitorRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
@@ -38,6 +40,7 @@ import com.orchestradashboard.shared.domain.repository.ApprovalRepository
 import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 import com.orchestradashboard.shared.domain.repository.CommandRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
+import com.orchestradashboard.shared.domain.repository.HistoryRepository
 import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.repository.PipelineMonitorRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
@@ -55,6 +58,8 @@ import com.orchestradashboard.shared.domain.usecase.GetAgentUseCase
 import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetDurationTrendsUseCase
+import com.orchestradashboard.shared.domain.usecase.GetHistoryDetailUseCase
+import com.orchestradashboard.shared.domain.usecase.GetPagedHistoryUseCase
 import com.orchestradashboard.shared.domain.usecase.GetPipelineAnalyticsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetPipelineHistoryUseCase
 import com.orchestradashboard.shared.domain.usecase.GetProjectIssuesUseCase
@@ -75,6 +80,7 @@ import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import com.orchestradashboard.shared.ui.approvalmodal.ApprovalModalViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
+import com.orchestradashboard.shared.ui.history.HistoryViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 import com.orchestradashboard.shared.ui.settings.SettingsViewModel
@@ -193,6 +199,7 @@ object AppContainer {
     private val approvalMapper: ApprovalMapper by lazy { ApprovalMapper() }
     private val solveCommandMapper: SolveCommandMapper by lazy { SolveCommandMapper() }
     private val analyticsMapper: AnalyticsMapper by lazy { AnalyticsMapper() }
+    private val historyDetailMapper: HistoryDetailMapper by lazy { HistoryDetailMapper() }
 
     // ─── Repositories ───────────────────────────────────────────
 
@@ -248,6 +255,10 @@ object AppContainer {
 
     private val analyticsRepository: AnalyticsRepository by lazy {
         AnalyticsRepositoryImpl(apiClient, analyticsMapper)
+    }
+
+    private val historyRepository: HistoryRepository by lazy {
+        HistoryRepositoryImpl(apiClient, historyDetailMapper)
     }
 
     // ─── UseCases ───────────────────────────────────────────────
@@ -332,6 +343,14 @@ object AppContainer {
         GetDurationTrendsUseCase(analyticsRepository)
     }
 
+    private val getPagedHistoryUseCase: GetPagedHistoryUseCase by lazy {
+        GetPagedHistoryUseCase(historyRepository)
+    }
+
+    private val getHistoryDetailUseCase: GetHistoryDetailUseCase by lazy {
+        GetHistoryDetailUseCase(historyRepository)
+    }
+
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 
     fun createDashboardViewModel(): DashboardViewModel =
@@ -380,4 +399,10 @@ object AppContainer {
         )
 
     fun createSettingsViewModel(): SettingsViewModel = SettingsViewModel(getSettingsUseCase, saveSettingsUseCase)
+
+    fun createHistoryViewModel(): HistoryViewModel =
+        HistoryViewModel(
+            getPagedHistoryUseCase = getPagedHistoryUseCase,
+            getHistoryDetailUseCase = getHistoryDetailUseCase,
+        )
 }

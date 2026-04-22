@@ -21,7 +21,9 @@ import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDt
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryPageDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
@@ -104,6 +106,17 @@ interface DashboardApi {
     suspend fun getActivePipeline(id: String): OrchestratorPipelineDto
 
     suspend fun getPipelineHistory(): List<PipelineHistoryDto>
+
+    suspend fun getPagedHistory(
+        project: String? = null,
+        status: String? = null,
+        keyword: String? = null,
+        hours: Int? = null,
+        page: Int = 0,
+        size: Int = 20,
+    ): PipelineHistoryPageDto
+
+    suspend fun getHistoryDetail(id: String): PipelineHistoryDetailDto
 
     suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto
 
