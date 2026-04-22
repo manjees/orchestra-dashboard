@@ -65,6 +65,10 @@ final class IOSAppContainer {
         fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
     }
 
+    func createApprovalModalViewModel() -> ApprovalModalViewModel {
+        fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
+    }
+
     func createCommandCenterViewModel() -> CommandCenterViewModel {
         fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
     }

@@ -70,6 +70,7 @@ kotlin {
             dependencies {
                 implementation(libs.coroutines.swing)
                 implementation(libs.ktor.client.cio)
+                implementation(compose.desktop.currentOs)
             }
         }
 
