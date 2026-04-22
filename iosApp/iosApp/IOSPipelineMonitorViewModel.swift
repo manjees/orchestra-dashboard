@@ -10,6 +10,8 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
     @Published var pendingApproval: ApprovalRequest? = nil
     @Published var remainingTimeSec: Int32? = nil
     @Published var isApprovalTimedOut: Bool = false
+    @Published var isApprovalSubmitting: Bool = false
+    @Published var approvalError: String? = nil
     @Published var isLoading: Bool = false
     @Published var error: String? = nil
     @Published var connectionStatus: ConnectionStatus = .disconnected
@@ -43,13 +45,6 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
     private func updateFromState(_ state: PipelineMonitorUiState) {
         self.pipeline = state.pipeline
         self.logLines = state.logLines as? [String] ?? []
-        self.pendingApproval = state.pendingApproval
-        if let remaining = state.remainingTimeSec {
-            self.remainingTimeSec = remaining.int32Value
-        } else {
-            self.remainingTimeSec = nil
-        }
-        self.isApprovalTimedOut = state.isApprovalTimedOut
         self.isLoading = state.isLoading
         self.error = state.error
         self.connectionStatus = state.connectionStatus
@@ -58,6 +53,16 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
         self.parallelGroup = state.parallelGroup
         self.isParallelView = state.isParallelView
         self.dependencies = state.dependencies as? [PipelineDependency] ?? []
+        // Approval state from combined uiState
+        self.pendingApproval = state.pendingApproval
+        if let remaining = state.approvalRemainingTimeSec {
+            self.remainingTimeSec = remaining.int32Value
+        } else {
+            self.remainingTimeSec = nil
+        }
+        self.isApprovalTimedOut = state.isApprovalTimedOut
+        self.isApprovalSubmitting = state.isApprovalSubmitting
+        self.approvalError = state.approvalError
     }
 
     func loadPipeline() {
@@ -72,12 +77,16 @@ final class IOSPipelineMonitorViewModel: ObservableObject {
         viewModel.refresh()
     }
 
-    func respondToApproval(decision: String) {
+    func respondToApproval(decision: ApprovalDecisionValue) {
         viewModel.respondToApproval(decision: decision, comment: "")
     }
 
     func dismissApproval() {
         viewModel.dismissApproval()
+    }
+
+    func clearApprovalError() {
+        viewModel.clearApprovalError()
     }
 
     func clearError() {
@@ -104,3 +113,4 @@ private final class PipelineUiStateCollector: Kotlinx_coroutines_coreFlowCollect
         completionHandler(nil)
     }
 }
+

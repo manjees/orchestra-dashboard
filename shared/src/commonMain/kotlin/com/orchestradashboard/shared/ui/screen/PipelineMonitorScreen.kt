@@ -47,10 +47,13 @@ fun PipelineMonitorScreen(
     uiState.pendingApproval?.let { approval ->
         ApprovalDialog(
             approval = approval,
-            remainingTimeSec = uiState.remainingTimeSec,
+            remainingTimeSec = uiState.approvalRemainingTimeSec,
             isTimedOut = uiState.isApprovalTimedOut,
-            onRespond = { decision -> viewModel.respondToApproval(decision) },
-            onDismiss = { viewModel.dismissApproval() },
+            isSubmitting = uiState.isApprovalSubmitting,
+            error = uiState.approvalError,
+            onRespond = { decision -> viewModel.approvalModal.respond(decision) },
+            onDismiss = { viewModel.approvalModal.dismiss() },
+            onClearError = { viewModel.approvalModal.clearError() },
         )
     }
 

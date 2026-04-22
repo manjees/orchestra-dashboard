@@ -51,14 +51,24 @@ struct PipelineMonitorView: View {
         } message: {
             Text(viewModel.error ?? "")
         }
+        // NOTE: This sheet is intentionally inline and bound to the
+        // pipeline-owned approval modal (via `IOSPipelineMonitorViewModel`
+        // → KMP `PipelineMonitorViewModel.approvalModal`). Do NOT replace
+        // it with `ApprovalModalView(viewModel: IOSApprovalModalViewModel())`
+        // — that would create a second, disconnected approval modal that
+        // never receives pipeline events. Use `ApprovalModalView` only on
+        // screens that do NOT already own a `PipelineMonitorViewModel`.
         .sheet(isPresented: .constant(viewModel.pendingApproval != nil)) {
             if let approval = viewModel.pendingApproval {
                 ApprovalDialogView(
                     approval: approval,
                     remainingTimeSec: viewModel.remainingTimeSec,
                     isTimedOut: viewModel.isApprovalTimedOut,
+                    isSubmitting: viewModel.isApprovalSubmitting,
+                    error: viewModel.approvalError,
                     onRespond: { decision in viewModel.respondToApproval(decision: decision) },
-                    onDismiss: { viewModel.dismissApproval() }
+                    onDismiss: { viewModel.dismissApproval() },
+                    onClearError: { viewModel.clearApprovalError() }
                 )
             }
         }

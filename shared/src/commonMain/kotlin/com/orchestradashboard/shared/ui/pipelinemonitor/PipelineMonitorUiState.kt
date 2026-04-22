@@ -9,13 +9,16 @@ import com.orchestradashboard.shared.domain.model.PipelineDependency
 data class PipelineMonitorUiState(
     val pipeline: MonitoredPipeline? = null,
     val logLines: List<String> = emptyList(),
-    val pendingApproval: ApprovalRequest? = null,
-    val remainingTimeSec: Int? = null,
     val parallelPipelines: List<MonitoredPipeline> = emptyList(),
     val parallelGroup: ParallelPipelineGroup? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
     val connectionStatus: ConnectionStatus = ConnectionStatus.DISCONNECTED,
+    val pendingApproval: ApprovalRequest? = null,
+    val approvalRemainingTimeSec: Int? = null,
+    val isApprovalTimedOut: Boolean = false,
+    val isApprovalSubmitting: Boolean = false,
+    val approvalError: String? = null,
 ) {
     val isParallel: Boolean get() = pipeline?.isParallel == true
 
@@ -24,6 +27,4 @@ data class PipelineMonitorUiState(
     val currentStepName: String? get() = pipeline?.currentRunningStep?.name
 
     val dependencies: List<PipelineDependency> get() = parallelGroup?.dependencies ?: emptyList()
-
-    val isApprovalTimedOut: Boolean get() = remainingTimeSec != null && remainingTimeSec <= 0
 }

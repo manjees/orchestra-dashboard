@@ -1,33 +1,30 @@
-## CI Parity 결과 (6개 잡)
+## CI Parity 결과 — issue #114 (Approval Modal — SwiftUI iosApp, #Preview refactor)
 
-| 잡 | 상태 | 비고 |
-|----|------|------|
-| Shared Tests (`:shared:desktopTest`) | PASS | 507 tests, 0 failures, 0 errors, 0 skipped. PipelineMonitorViewModelTest: 22/22 pass |
-| Server Build+Test (`:server:build` + `:server:test` + `:server:bootJar`) | PASS | assemble/test/jacoco/ktlint/detekt 모두 통과, bootJar 생성 |
-| Desktop Build (`:desktopApp:build`) | PASS | compile + ktlint + test 모두 통과 |
-| Android Build (`:androidApp:assembleDebug`) | PASS | Debug APK 생성 성공 |
-| Detekt (`detekt --continue`) | PASS | shared/desktopApp/server/androidApp 모두 통과, SARIF 생성 |
-| ktlint (`ktlintCheck` 루트) | PASS | commonMain/commonTest/desktopMain/desktopTest/androidMain/iosMain 전부 통과 |
+| 잡 | 명령 | 상태 | 비고 |
+|----|------|------|------|
+| 1. Shared (KMP) Tests | `./gradlew :shared:desktopTest --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 2. Server (Spring Boot) Build & Test | `./gradlew :server:assemble --parallel && :server:test && :server:bootJar` | PASS | UP-TO-DATE (cache hit) |
+| 3. Desktop App Build | `./gradlew :desktopApp:build --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 4. Android App Build | `./gradlew :androidApp:assembleDebug --parallel` | PASS | UP-TO-DATE (cache hit) |
+| 5. Code Quality — Detekt | `./gradlew detekt --continue` | PASS | UP-TO-DATE (cache hit) |
+| 6. Code Quality — ktlint (root) | `./gradlew ktlintCheck` | PASS | UP-TO-DATE (cache hit) |
 
-## 요청된 추가 확인
+## 변경 범위
 
-사용자 요청 명령 `./gradlew :shared:compileKotlinJvm` 은 존재하지 않음 (태스크 이름 불일치). 이 KMP 모듈은 JVM 타겟 이름이 `desktop` 이므로 실제 태스크는 `:shared:compileKotlinDesktop` 이며, CI 워크플로우(`.github/workflows/ci.yml`)도 `:shared:desktopTest` 를 사용. 두 태스크 모두 직접 실행해 BUILD SUCCESSFUL 확인.
+- 수정 파일: `iosApp/iosApp/ApprovalModalView.swift` (SwiftUI `#Preview` 매크로 2종)
+- 변경 내용: `#Preview` 블록을 `ApprovalDialogView` 직접 인스턴스화 → `ApprovalModalView` + `PreviewHost` 래퍼 구조로 전환
+- 프로덕션 로직 변경 없음 (Preview-only)
 
-- `:shared:compileKotlinDesktop` → BUILD SUCCESSFUL (4개 Compose deprecation 경고만, 에러 없음)
-- `:shared:desktopTest` → BUILD SUCCESSFUL (507/507 pass)
-- PipelineMonitorViewModelTest.xml → tests=22 failures=0 errors=0 skipped=0
+## CI Parity 분석
 
-## 경고 (비-블로킹)
-
-shared/commonMain 에서 Compose Material 3 deprecation 경고 4건:
-- `DesignPanel.kt:52` `Modifier.menuAnchor()` deprecated
-- `DiscussPanel.kt:55` `Modifier.menuAnchor()` deprecated
-- `PlanIssuesPanel.kt:57` `Modifier.menuAnchor()` deprecated
-- `CommandCenterScreen.kt:50` `Icons.Filled.ArrowBack` (→ `Icons.AutoMirrored.Filled.ArrowBack` 권장)
-
-CI 실패 요인 아님. 이번 이슈 #64 범위 밖이므로 수정 보류.
+- `.github/workflows/ci.yml` 6-job 구성은 전부 JVM/Android 기반 Gradle 태스크
+- iOS/SwiftUI 소스는 Gradle 빌드 그래프에 없음 → 본 수정이 CI 6개 잡에 미치는 영향 = 0
+- 6개 잡 모두 UP-TO-DATE (`--parallel` 상태에서도 캐시 히트)로 통과 확인
 
 ## 수정 이력
-- 수정 없음. 전 잡 1회차에 PASS.
+
+- 1회차 실행에서 6개 잡 전체 PASS. 수정 불필요.
 
 ## 최종 상태: ALL GREEN (PR 생성 가능)
+
+참고: iOS SwiftUI 코드는 리포지토리 CI 파이프라인에 포함되지 않으므로 (Issue #110/#113/#114 공통), iOS 프리뷰 렌더링 검증은 Xcode 로컬에서만 가능하다. 본 에이전트는 CI Parity (6개 잡) 게이트만 커버한다.

@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -19,7 +21,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.orchestradashboard.shared.domain.model.ApprovalDecision
 import com.orchestradashboard.shared.domain.model.ApprovalRequest
+import com.orchestradashboard.shared.domain.model.GenericDecision
+import com.orchestradashboard.shared.domain.model.StrategyDecision
+import com.orchestradashboard.shared.domain.model.SupremeCourtDecision
 
 private const val SECONDS_PER_MINUTE = 60
 
@@ -28,15 +34,18 @@ fun ApprovalDialog(
     approval: ApprovalRequest,
     remainingTimeSec: Int?,
     isTimedOut: Boolean,
-    onRespond: (decision: String) -> Unit,
+    isSubmitting: Boolean,
+    error: String?,
+    onRespond: (ApprovalDecision) -> Unit,
     onDismiss: () -> Unit,
+    onClearError: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
         title = {
-            Text(buildTitle(approval.approvalType))
+            Text(buildDialogTitle(approval.approvalType))
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -45,6 +54,18 @@ fun ApprovalDialog(
 
                 // Timeout countdown
                 CountdownSection(remainingTimeSec, approval.timeoutSec, isTimedOut)
+
+                // Error display
+                error?.let { errorMsg ->
+                    Text(
+                        text = errorMsg,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    TextButton(onClick = onClearError) {
+                        Text("Dismiss error")
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -59,13 +80,22 @@ fun ApprovalDialog(
                     ApprovalActionButtons(
                         approvalType = approval.approvalType,
                         onRespond = onRespond,
+                        enabled = !isSubmitting,
                     )
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Dismiss")
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isSubmitting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.padding(end = 8.dp).size(16.dp),
+                        strokeWidth = 2.dp,
+                    )
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Dismiss")
+                }
             }
         },
     )
@@ -110,9 +140,7 @@ private fun CountdownSection(
 ) {
     if (remainingTimeSec == null) return
 
-    val progress = if (timeoutSec > 0) remainingTimeSec.toFloat() / timeoutSec else 0f
-    val minutes = remainingTimeSec / SECONDS_PER_MINUTE
-    val seconds = remainingTimeSec % SECONDS_PER_MINUTE
+    val progress = calculateProgress(remainingTimeSec, timeoutSec)
 
     Column(modifier = Modifier.fillMaxWidth()) {
         LinearProgressIndicator(
@@ -126,7 +154,7 @@ private fun CountdownSection(
                 },
         )
         Text(
-            text = if (isTimedOut) "Timed out" else "$minutes:${seconds.toString().padStart(2, '0')} remaining",
+            text = formatCountdownText(remainingTimeSec, isTimedOut),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.End).padding(top = 4.dp),
@@ -137,36 +165,43 @@ private fun CountdownSection(
 @Composable
 private fun ApprovalActionButtons(
     approvalType: String,
-    onRespond: (String) -> Unit,
+    onRespond: (ApprovalDecision) -> Unit,
+    enabled: Boolean,
 ) {
     when (approvalType) {
-        "strategy" -> StrategyButtons(onRespond)
-        "supreme_court" -> SupremeCourtButtons(onRespond)
-        else -> GenericButtons(onRespond)
+        "strategy" -> StrategyButtons(onRespond, enabled)
+        "supreme_court" -> SupremeCourtButtons(onRespond, enabled)
+        else -> GenericButtons(onRespond, enabled)
     }
 }
 
 @Composable
-private fun StrategyButtons(onRespond: (String) -> Unit) {
+private fun StrategyButtons(
+    onRespond: (ApprovalDecision) -> Unit,
+    enabled: Boolean,
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Button(
-            onClick = { onRespond("split_execute") },
+            onClick = { onRespond(StrategyDecision.SplitExecute) },
             modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
         ) {
             Text("Split & Execute")
         }
         OutlinedButton(
-            onClick = { onRespond("no_split") },
+            onClick = { onRespond(StrategyDecision.NoSplit) },
             modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
         ) {
             Text("No Split (Full)")
         }
         TextButton(
-            onClick = { onRespond("cancel") },
+            onClick = { onRespond(StrategyDecision.Cancel) },
             modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
             colors =
                 ButtonDefaults.textButtonColors(
                     contentColor = MaterialTheme.colorScheme.error,
@@ -178,26 +213,32 @@ private fun StrategyButtons(onRespond: (String) -> Unit) {
 }
 
 @Composable
-private fun SupremeCourtButtons(onRespond: (String) -> Unit) {
+private fun SupremeCourtButtons(
+    onRespond: (ApprovalDecision) -> Unit,
+    enabled: Boolean,
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Button(
-            onClick = { onRespond("uphold") },
+            onClick = { onRespond(SupremeCourtDecision.Uphold) },
             modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
         ) {
             Text("Uphold")
         }
         OutlinedButton(
-            onClick = { onRespond("overturn") },
+            onClick = { onRespond(SupremeCourtDecision.Overturn) },
             modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
         ) {
             Text("Overturn")
         }
         OutlinedButton(
-            onClick = { onRespond("redesign") },
+            onClick = { onRespond(SupremeCourtDecision.Redesign) },
             modifier = Modifier.fillMaxWidth(),
+            enabled = enabled,
         ) {
             Text("Redesign")
         }
@@ -205,29 +246,70 @@ private fun SupremeCourtButtons(onRespond: (String) -> Unit) {
 }
 
 @Composable
-private fun GenericButtons(onRespond: (String) -> Unit) {
+private fun GenericButtons(
+    onRespond: (ApprovalDecision) -> Unit,
+    enabled: Boolean,
+) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Button(
-            onClick = { onRespond("approve") },
+            onClick = { onRespond(GenericDecision("approve")) },
             modifier = Modifier.weight(1f),
+            enabled = enabled,
         ) {
             Text("Approve")
         }
         OutlinedButton(
-            onClick = { onRespond("reject") },
+            onClick = { onRespond(GenericDecision("reject")) },
             modifier = Modifier.weight(1f),
+            enabled = enabled,
         ) {
             Text("Reject")
         }
     }
 }
 
-private fun buildTitle(approvalType: String): String =
+internal fun buildDialogTitle(approvalType: String): String =
     when (approvalType) {
         "strategy" -> "Strategy Approval Required"
         "supreme_court" -> "Supreme Court Review Required"
         else -> "Approval Required: $approvalType"
+    }
+
+internal fun formatCountdownText(
+    remainingTimeSec: Int,
+    isTimedOut: Boolean,
+): String {
+    if (isTimedOut) return "Timed out"
+    val minutes = remainingTimeSec / SECONDS_PER_MINUTE
+    val seconds = remainingTimeSec % SECONDS_PER_MINUTE
+    return "$minutes:${seconds.toString().padStart(2, '0')} remaining"
+}
+
+internal fun calculateProgress(
+    remainingTimeSec: Int,
+    timeoutSec: Int,
+): Float = if (timeoutSec > 0) remainingTimeSec.toFloat() / timeoutSec else 0f
+
+internal fun approvalDecisionsForType(approvalType: String): List<ApprovalDecision> =
+    when (approvalType) {
+        "strategy" ->
+            listOf(
+                StrategyDecision.SplitExecute,
+                StrategyDecision.NoSplit,
+                StrategyDecision.Cancel,
+            )
+        "supreme_court" ->
+            listOf(
+                SupremeCourtDecision.Uphold,
+                SupremeCourtDecision.Overturn,
+                SupremeCourtDecision.Redesign,
+            )
+        else ->
+            listOf(
+                GenericDecision("approve"),
+                GenericDecision("reject"),
+            )
     }
