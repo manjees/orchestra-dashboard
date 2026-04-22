@@ -215,6 +215,6 @@ struct ApprovalDialogView: View {
     private func formatTime(_ totalSeconds: Int) -> String {
         let minutes = totalSeconds / 60
         let seconds = totalSeconds % 60
-        return "\(minutes):\(String(format: "%02d", seconds)) remaining"
+        return "\(String(format: "%02d", minutes)):\(String(format: "%02d", seconds)) remaining"
     }
 }
