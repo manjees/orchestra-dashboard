@@ -4,6 +4,7 @@ import Shared
 /// Pipeline Monitor screen — displays step timeline, live logs, and approval dialogs.
 struct PipelineMonitorView: View {
     @StateObject private var viewModel: IOSPipelineMonitorViewModel
+    @StateObject private var logStreamViewModel = IOSLogStreamViewModel()
 
     init(pipelineId: String) {
         _viewModel = StateObject(wrappedValue: IOSPipelineMonitorViewModel(pipelineId: pipelineId))
@@ -22,10 +23,24 @@ struct PipelineMonitorView: View {
                                 dependencies: viewModel.dependencies
                             )
                         } else if let pipeline = viewModel.pipeline {
-                            StepTimelineView(steps: pipeline.steps)
+                            StepTimelineView(
+                                steps: pipeline.steps,
+                                selectedStepName: logStreamViewModel.selectedStepId,
+                                onStepTap: { stepName in
+                                    if logStreamViewModel.selectedStepId == stepName {
+                                        logStreamViewModel.stopStream()
+                                    } else {
+                                        logStreamViewModel.startStream(stepId: stepName)
+                                    }
+                                }
+                            )
                         }
 
-                        logPanel
+                        if logStreamViewModel.selectedStepId != nil {
+                            LogStreamPanelView(viewModel: logStreamViewModel)
+                        } else {
+                            logPanel
+                        }
                     }
                     .padding()
                 }
@@ -45,7 +60,10 @@ struct PipelineMonitorView: View {
             viewModel.loadPipeline()
             viewModel.startObserving()
         }
-        .onDisappear { viewModel.onCleared() }
+        .onDisappear {
+            viewModel.onCleared()
+            logStreamViewModel.onCleared()
+        }
         .alert("Error", isPresented: .constant(viewModel.error != nil)) {
             Button("OK") { viewModel.clearError() }
         } message: {
