@@ -15,6 +15,8 @@ object PipelineHistorySpec {
             cb.like(cb.lower(root.get("issueTitle")), "%${keyword.lowercase()}%")
         }
 
-    fun byDateRange(from: Long, to: Long): Specification<PipelineHistoryEntity> =
-        Specification { root, _, cb -> cb.between(root.get("startedAt"), from, to) }
+    fun byDateRange(
+        from: Long,
+        to: Long,
+    ): Specification<PipelineHistoryEntity> = Specification { root, _, cb -> cb.between(root.get("startedAt"), from, to) }
 }
