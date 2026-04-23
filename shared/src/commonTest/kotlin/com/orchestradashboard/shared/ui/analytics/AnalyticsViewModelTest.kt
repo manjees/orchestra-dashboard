@@ -194,6 +194,22 @@ class AnalyticsViewModelTest {
         }
 
     @Test
+    fun `selectPeriod sets isLoading true before data arrives`() =
+        runTest {
+            val blocker = repository.blockSummary()
+
+            viewModel.selectPeriod(PeriodFilter.WEEK)
+            testScheduler.runCurrent()
+
+            assertTrue(viewModel.uiState.value.isLoading)
+
+            blocker.complete(Unit)
+            advanceUntilIdle()
+
+            assertFalse(viewModel.uiState.value.isLoading)
+        }
+
+    @Test
     fun `selectPeriod with WEEK reloads data`() =
         runTest {
             repository.summaryResult = Result.success(testSummary)

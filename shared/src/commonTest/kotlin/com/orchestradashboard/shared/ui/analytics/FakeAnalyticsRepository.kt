@@ -4,6 +4,7 @@ import com.orchestradashboard.shared.domain.model.DurationTrend
 import com.orchestradashboard.shared.domain.model.PipelineAnalytics
 import com.orchestradashboard.shared.domain.model.StepFailureRate
 import com.orchestradashboard.shared.domain.repository.AnalyticsRepository
+import kotlinx.coroutines.CompletableDeferred
 
 class FakeAnalyticsRepository : AnalyticsRepository {
     var summaryResult: Result<PipelineAnalytics> =
@@ -26,6 +27,14 @@ class FakeAnalyticsRepository : AnalyticsRepository {
     var lastGranularity: String? = null
         private set
 
+    private var summaryBlocker: CompletableDeferred<Unit>? = null
+
+    fun blockSummary(): CompletableDeferred<Unit> {
+        val deferred = CompletableDeferred<Unit>()
+        summaryBlocker = deferred
+        return deferred
+    }
+
     override suspend fun getAnalyticsSummary(
         project: String,
         from: Long?,
@@ -34,6 +43,8 @@ class FakeAnalyticsRepository : AnalyticsRepository {
         getSummaryCallCount++
         lastProject = project
         lastFrom = from
+        summaryBlocker?.await()
+        summaryBlocker = null
         return summaryResult
     }
 

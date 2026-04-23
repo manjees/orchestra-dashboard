@@ -77,6 +77,7 @@ import com.orchestradashboard.shared.domain.usecase.RespondToApprovalUseCase
 import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
 import com.orchestradashboard.shared.domain.usecase.SaveSettingsUseCase
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
+import com.orchestradashboard.shared.ui.analytics.AnalyticsViewModel
 import com.orchestradashboard.shared.ui.approvalmodal.ApprovalModalViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
@@ -328,17 +329,14 @@ object AppContainer {
     }
     private val executeShellUseCase: ExecuteShellUseCase by lazy { ExecuteShellUseCase(commandRepository) }
 
-    @Suppress("UnusedPrivateProperty")
     private val getPipelineAnalyticsUseCase: GetPipelineAnalyticsUseCase by lazy {
         GetPipelineAnalyticsUseCase(analyticsRepository)
     }
 
-    @Suppress("UnusedPrivateProperty")
     private val getStepFailureRatesUseCase: GetStepFailureRatesUseCase by lazy {
         GetStepFailureRatesUseCase(analyticsRepository)
     }
 
-    @Suppress("UnusedPrivateProperty")
     private val getDurationTrendsUseCase: GetDurationTrendsUseCase by lazy {
         GetDurationTrendsUseCase(analyticsRepository)
     }
@@ -404,5 +402,13 @@ object AppContainer {
         HistoryViewModel(
             getPagedHistoryUseCase = getPagedHistoryUseCase,
             getHistoryDetailUseCase = getHistoryDetailUseCase,
+        )
+
+    fun createAnalyticsViewModel(project: String = "default"): AnalyticsViewModel =
+        AnalyticsViewModel(
+            getPipelineAnalyticsUseCase,
+            getDurationTrendsUseCase,
+            getStepFailureRatesUseCase,
+            project,
         )
 }

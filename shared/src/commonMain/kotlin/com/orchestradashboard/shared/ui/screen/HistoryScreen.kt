@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,6 +48,7 @@ private const val LOAD_MORE_THRESHOLD = 3
 fun HistoryScreen(
     viewModel: HistoryViewModel,
     onBackClick: () -> Unit,
+    onAnalyticsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -76,6 +78,9 @@ fun HistoryScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onAnalyticsClick) {
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Analytics")
+                    }
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
