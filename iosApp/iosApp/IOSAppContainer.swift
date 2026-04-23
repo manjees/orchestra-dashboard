@@ -43,6 +43,13 @@ final class IOSAppContainer {
 
     private lazy var saveSettingsUseCase = SaveSettingsUseCase(repository: settingsRepository)
 
+    // MARK: - Notifications (local-only; APNs stub)
+    // TODO: APNs integration deferred — requires Apple Developer paid account.
+    // Track in a follow-up issue. Until then, notification push/unregister are stubs
+    // and local UNUserNotificationCenter alerts are driven via Shared framework.
+
+    private lazy var pushNotificationProvider = IOSPushNotificationProvider()
+
     // MARK: - ViewModel Factories
 
     func createDashboardViewModel() -> DashboardViewModel {
@@ -74,9 +81,18 @@ final class IOSAppContainer {
     }
 
     func createSettingsViewModel() -> SettingsViewModel {
+        // TODO: Replace stub NotificationRepository with a wired implementation
+        // once APNs integration lands. For now local-only toggles persist via
+        // NSUserDefaults via IOSNotificationLocalStore.
+        let notificationRepo = IOSNotificationRepositoryStub(
+            localStore: IOSNotificationLocalStore(),
+            pushProvider: pushNotificationProvider
+        )
         return SettingsViewModel(
             getSettingsUseCase: getSettingsUseCase,
-            saveSettingsUseCase: saveSettingsUseCase
+            saveSettingsUseCase: saveSettingsUseCase,
+            getNotificationSettingsUseCase: GetNotificationSettingsUseCase(repository: notificationRepo),
+            saveNotificationSettingsUseCase: SaveNotificationSettingsUseCase(repository: notificationRepo)
         )
     }
 

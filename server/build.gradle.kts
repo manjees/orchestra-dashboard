@@ -57,8 +57,13 @@ tasks.named<JacocoReport>("jacocoTestReport") {
                         "**/model/*Request*",
                         "**/model/EventType*",
                         "**/model/*Mapper*",
+                        "**/model/notification/DeviceTokenRecord*",
+                        "**/model/notification/NotificationDispatchResult*",
+                        "**/model/notification/PipelineNotificationPayload*",
                         "**/config/*",
                         "**/service/PipelineEventConsumerService*",
+                        "**/service/notification/FcmSenderImpl*",
+                        "**/service/notification/ApnsSenderImpl*",
                         "**/*Application*",
                     )
                 }

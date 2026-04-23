@@ -1,6 +1,9 @@
 package com.orchestradashboard.shared.ui.settings
 
+import com.orchestradashboard.shared.domain.model.NotificationSettings
+import com.orchestradashboard.shared.domain.usecase.GetNotificationSettingsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetSettingsUseCase
+import com.orchestradashboard.shared.domain.usecase.SaveNotificationSettingsUseCase
 import com.orchestradashboard.shared.domain.usecase.SaveSettingsUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +18,8 @@ import kotlinx.coroutines.launch
 class SettingsViewModel(
     private val getSettingsUseCase: GetSettingsUseCase,
     private val saveSettingsUseCase: SaveSettingsUseCase,
+    private val getNotificationSettingsUseCase: GetNotificationSettingsUseCase,
+    private val saveNotificationSettingsUseCase: SaveNotificationSettingsUseCase,
 ) {
     private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -25,10 +30,14 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 val settings = getSettingsUseCase()
+                val notif = getNotificationSettingsUseCase()
                 _uiState.update {
                     it.copy(
                         baseUrl = settings.baseUrl,
                         apiKey = settings.apiKey,
+                        notificationsEnabled = notif.enabled,
+                        notifyOnSuccess = notif.notifyOnSuccess,
+                        notifyOnFailure = notif.notifyOnFailure,
                         isLoading = false,
                     )
                 }
@@ -51,6 +60,21 @@ class SettingsViewModel(
         _uiState.update { it.copy(apiKey = key, saveSuccess = false) }
     }
 
+    fun toggleNotifications(enabled: Boolean) {
+        _uiState.update { it.copy(notificationsEnabled = enabled, saveSuccess = false) }
+        persistNotificationSettings()
+    }
+
+    fun toggleNotifyOnSuccess(enabled: Boolean) {
+        _uiState.update { it.copy(notifyOnSuccess = enabled, saveSuccess = false) }
+        persistNotificationSettings()
+    }
+
+    fun toggleNotifyOnFailure(enabled: Boolean) {
+        _uiState.update { it.copy(notifyOnFailure = enabled, saveSuccess = false) }
+        persistNotificationSettings()
+    }
+
     fun saveSettings() {
         val state = _uiState.value
         if (state.baseUrl.isBlank()) {
@@ -64,6 +88,13 @@ class SettingsViewModel(
                 saveSettingsUseCase(
                     baseUrl = state.baseUrl.trim(),
                     apiKey = state.apiKey.trim(),
+                )
+                saveNotificationSettingsUseCase(
+                    NotificationSettings(
+                        enabled = state.notificationsEnabled,
+                        notifyOnSuccess = state.notifyOnSuccess,
+                        notifyOnFailure = state.notifyOnFailure,
+                    ),
                 )
                 _uiState.update { it.copy(isSaving = false, saveSuccess = true) }
             } catch (e: Exception) {
@@ -83,5 +114,22 @@ class SettingsViewModel(
 
     fun onCleared() {
         viewModelScope.cancel()
+    }
+
+    private fun persistNotificationSettings() {
+        val state = _uiState.value
+        viewModelScope.launch {
+            try {
+                saveNotificationSettingsUseCase(
+                    NotificationSettings(
+                        enabled = state.notificationsEnabled,
+                        notifyOnSuccess = state.notifyOnSuccess,
+                        notifyOnFailure = state.notifyOnFailure,
+                    ),
+                )
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.message ?: "Failed to save notifications") }
+            }
+        }
     }
 }
