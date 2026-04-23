@@ -21,7 +21,9 @@ import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDt
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryDto
+import com.orchestradashboard.shared.data.dto.orchestrator.PipelineHistoryPageDto
 import com.orchestradashboard.shared.data.dto.orchestrator.PlanIssuesResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDetailDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ProjectDto
@@ -188,6 +190,17 @@ class FakeDashboardApiClient(
     override suspend fun getActivePipeline(id: String): OrchestratorPipelineDto = throw NotImplementedError()
 
     override suspend fun getPipelineHistory(): List<PipelineHistoryDto> = throw NotImplementedError()
+
+    override suspend fun getPagedHistory(
+        project: String?,
+        status: String?,
+        keyword: String?,
+        hours: Int?,
+        page: Int,
+        size: Int,
+    ): PipelineHistoryPageDto = throw NotImplementedError()
+
+    override suspend fun getHistoryDetail(id: String): PipelineHistoryDetailDto = throw NotImplementedError()
 
     override suspend fun getParallelPipelines(parentId: String): ParallelPipelineGroupDto = throw NotImplementedError()
 

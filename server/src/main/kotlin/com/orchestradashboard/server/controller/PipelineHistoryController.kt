@@ -20,12 +20,17 @@ class PipelineHistoryController(
     fun getHistory(
         @RequestParam project: String?,
         @RequestParam status: String?,
+        @RequestParam q: String?,
+        @RequestParam hours: Int?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
     ): ResponseEntity<Page<PipelineHistoryResponse>> {
         val clampedSize = size.coerceIn(1, 100)
         val pageable = PageRequest.of(page, clampedSize)
-        return ResponseEntity.ok(historyService.getHistory(project, status, pageable))
+        val nowMs = System.currentTimeMillis()
+        val fromMs = hours?.let { nowMs - it.toLong() * 3_600_000L }
+        val toMs = hours?.let { nowMs }
+        return ResponseEntity.ok(historyService.getHistory(project, status, q, fromMs, toMs, pageable))
     }
 
     @GetMapping("/{id}")

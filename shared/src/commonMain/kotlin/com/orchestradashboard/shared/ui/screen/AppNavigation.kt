@@ -11,6 +11,7 @@ import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
+import com.orchestradashboard.shared.ui.history.HistoryViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 import com.orchestradashboard.shared.ui.settings.SettingsViewModel
@@ -30,6 +31,8 @@ sealed class Screen {
     data object CommandCenter : Screen()
 
     data object Settings : Screen()
+
+    data object History : Screen()
 }
 
 @Composable
@@ -42,6 +45,7 @@ fun AppNavigation(
     pipelineMonitorViewModelFactory: (String) -> PipelineMonitorViewModel,
     commandCenterViewModelFactory: () -> CommandCenterViewModel,
     settingsViewModelFactory: () -> SettingsViewModel,
+    historyViewModelFactory: () -> HistoryViewModel,
     modifier: Modifier = Modifier,
 ) {
     var currentScreen: Screen by remember { mutableStateOf(Screen.DashboardHome) }
@@ -59,6 +63,7 @@ fun AppNavigation(
                 onCommandCenterClick = { currentScreen = Screen.CommandCenter },
                 onPipelineClick = { pipelineId -> currentScreen = Screen.PipelineMonitor(pipelineId) },
                 onSettingsClick = { currentScreen = Screen.Settings },
+                onHistoryClick = { currentScreen = Screen.History },
                 modifier = modifier,
             )
         }
@@ -128,6 +133,17 @@ fun AppNavigation(
                 onDispose { vm.onCleared() }
             }
             SettingsScreen(
+                viewModel = vm,
+                onBackClick = { currentScreen = Screen.DashboardHome },
+                modifier = modifier,
+            )
+        }
+        is Screen.History -> {
+            val vm = remember { historyViewModelFactory() }
+            DisposableEffect(Unit) {
+                onDispose { vm.onCleared() }
+            }
+            HistoryScreen(
                 viewModel = vm,
                 onBackClick = { currentScreen = Screen.DashboardHome },
                 modifier = modifier,

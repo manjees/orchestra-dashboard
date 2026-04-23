@@ -44,6 +44,9 @@ fun main() =
                     settingsViewModelFactory = {
                         AppContainer.createSettingsViewModel()
                     },
+                    historyViewModelFactory = {
+                        AppContainer.createHistoryViewModel()
+                    },
                 )
             }
         }

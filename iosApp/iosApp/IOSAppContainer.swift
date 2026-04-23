@@ -79,4 +79,8 @@ final class IOSAppContainer {
             saveSettingsUseCase: saveSettingsUseCase
         )
     }
+
+    func createHistoryViewModel() -> HistoryViewModel {
+        fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
+    }
 }
