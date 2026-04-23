@@ -51,6 +51,9 @@ class MainActivity : ComponentActivity() {
                     historyViewModelFactory = {
                         AppContainer.createHistoryViewModel()
                     },
+                    analyticsViewModelFactory = {
+                        AppContainer.createAnalyticsViewModel()
+                    },
                 )
             }
         }

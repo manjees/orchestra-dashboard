@@ -47,6 +47,9 @@ fun main() =
                     historyViewModelFactory = {
                         AppContainer.createHistoryViewModel()
                     },
+                    analyticsViewModelFactory = {
+                        AppContainer.createAnalyticsViewModel()
+                    },
                 )
             }
         }
