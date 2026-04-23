@@ -247,16 +247,51 @@ class FakeDashboardApiClient : DashboardApi {
 
     // ─── Analytics stubs ────────────────────────────────────────
 
+    var analyticsSummaryResponse: AnalyticsSummaryDto =
+        AnalyticsSummaryDto(
+            project = "",
+            successRate = 0.0,
+            avgDurationSec = 0.0,
+            totalRuns = 0,
+            failedRuns = 0,
+        )
+    var stepFailuresResponse: List<StepFailureDto> = emptyList()
+    var durationTrendsResponse: List<DurationTrendDto> = emptyList()
+
+    var lastAnalyticsProject: String? = null
+        private set
+    var lastAnalyticsFrom: Long? = null
+        private set
+    var lastAnalyticsTo: Long? = null
+        private set
+    var lastDurationGranularity: String? = null
+        private set
+
     override suspend fun getAnalyticsSummary(
         project: String,
         from: Long?,
         to: Long?,
-    ): AnalyticsSummaryDto = throw NotImplementedError()
+    ): AnalyticsSummaryDto {
+        maybeThrow()
+        lastAnalyticsProject = project
+        lastAnalyticsFrom = from
+        lastAnalyticsTo = to
+        return analyticsSummaryResponse
+    }
 
-    override suspend fun getStepFailures(project: String): List<StepFailureDto> = throw NotImplementedError()
+    override suspend fun getStepFailures(project: String): List<StepFailureDto> {
+        maybeThrow()
+        lastAnalyticsProject = project
+        return stepFailuresResponse
+    }
 
     override suspend fun getDurationTrends(
         project: String,
         granularity: String,
-    ): List<DurationTrendDto> = throw NotImplementedError()
+    ): List<DurationTrendDto> {
+        maybeThrow()
+        lastAnalyticsProject = project
+        lastDurationGranularity = granularity
+        return durationTrendsResponse
+    }
 }
