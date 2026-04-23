@@ -10,6 +10,7 @@ import com.orchestradashboard.shared.data.mapper.CheckpointMapper
 import com.orchestradashboard.shared.data.mapper.CommandMapper
 import com.orchestradashboard.shared.data.mapper.HistoryDetailMapper
 import com.orchestradashboard.shared.data.mapper.IssueMapper
+import com.orchestradashboard.shared.data.mapper.LogEntryMapper
 import com.orchestradashboard.shared.data.mapper.MonitoredPipelineMapper
 import com.orchestradashboard.shared.data.mapper.NotificationMapper
 import com.orchestradashboard.shared.data.mapper.PipelineHistoryMapper
@@ -27,6 +28,7 @@ import com.orchestradashboard.shared.data.repository.DesktopSettingsRepository
 import com.orchestradashboard.shared.data.repository.DesktopTokenRepository
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.HistoryRepositoryImpl
+import com.orchestradashboard.shared.data.repository.LogStreamRepositoryImpl
 import com.orchestradashboard.shared.data.repository.MetricRepositoryImpl
 import com.orchestradashboard.shared.data.repository.NotificationRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineMonitorRepositoryImpl
@@ -43,6 +45,7 @@ import com.orchestradashboard.shared.domain.repository.CheckpointRepository
 import com.orchestradashboard.shared.domain.repository.CommandRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.HistoryRepository
+import com.orchestradashboard.shared.domain.repository.LogStreamRepository
 import com.orchestradashboard.shared.domain.repository.MetricRepository
 import com.orchestradashboard.shared.domain.repository.NotificationRepository
 import com.orchestradashboard.shared.domain.repository.PipelineMonitorRepository
@@ -75,6 +78,7 @@ import com.orchestradashboard.shared.domain.usecase.InitProjectUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveIncomingNotificationsUseCase
+import com.orchestradashboard.shared.domain.usecase.ObserveLogStreamUseCase
 import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveSystemEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.PlanIssuesUseCase
@@ -90,6 +94,7 @@ import com.orchestradashboard.shared.ui.approvalmodal.ApprovalModalViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.history.HistoryViewModel
+import com.orchestradashboard.shared.ui.logstream.LogStreamViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 import com.orchestradashboard.shared.ui.settings.SettingsViewModel
@@ -210,6 +215,7 @@ object AppContainer {
     private val analyticsMapper: AnalyticsMapper by lazy { AnalyticsMapper() }
     private val historyDetailMapper: HistoryDetailMapper by lazy { HistoryDetailMapper() }
     private val notificationMapper: NotificationMapper by lazy { NotificationMapper() }
+    private val logEntryMapper: LogEntryMapper by lazy { LogEntryMapper() }
 
     // ─── Repositories ───────────────────────────────────────────
 
@@ -269,6 +275,10 @@ object AppContainer {
 
     private val historyRepository: HistoryRepository by lazy {
         HistoryRepositoryImpl(apiClient, historyDetailMapper)
+    }
+
+    private val logStreamRepository: LogStreamRepository by lazy {
+        LogStreamRepositoryImpl(orchestratorApiClient, logEntryMapper)
     }
 
     // ─── Push Notifications ─────────────────────────────────────
@@ -389,6 +399,10 @@ object AppContainer {
         ObserveIncomingNotificationsUseCase(notificationRepository)
     }
 
+    private val observeLogStreamUseCase: ObserveLogStreamUseCase by lazy {
+        ObserveLogStreamUseCase(logStreamRepository)
+    }
+
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 
     fun createDashboardViewModel(): DashboardViewModel =
@@ -457,4 +471,6 @@ object AppContainer {
             getStepFailureRatesUseCase,
             project,
         )
+
+    fun createLogStreamViewModel(): LogStreamViewModel = LogStreamViewModel(observeLogStreamUseCase)
 }

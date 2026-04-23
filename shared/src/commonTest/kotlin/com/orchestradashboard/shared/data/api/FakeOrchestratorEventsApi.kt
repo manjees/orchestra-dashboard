@@ -8,6 +8,7 @@ import com.orchestradashboard.shared.data.dto.orchestrator.DiscussRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DiscussResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.LogEntryDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
@@ -33,6 +34,8 @@ class FakeOrchestratorEventsApi : OrchestratorApi {
     override fun connectEvents(): Flow<PipelineEventDto> = eventsResult.asFlow()
 
     override fun connectEvents(pipelineId: String): Flow<PipelineEventDto> = eventsResult.filter { it.pipelineId == pipelineId }.asFlow()
+
+    override fun connectLogStream(stepId: String): Flow<LogEntryDto> = throw NotImplementedError()
 
     override suspend fun getStatus(): SystemStatusDto = throw NotImplementedError()
 

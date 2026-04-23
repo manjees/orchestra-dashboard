@@ -78,6 +78,7 @@ complexity:
     active: true
     thresholdInFiles: 20
     thresholdInClasses: 15
+    thresholdInObjects: 15
 
 coroutines:
   active: true
