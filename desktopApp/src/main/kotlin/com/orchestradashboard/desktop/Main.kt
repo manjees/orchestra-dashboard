@@ -5,11 +5,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import com.orchestradashboard.desktop.di.AppContainer
+import com.orchestradashboard.desktop.notification.DesktopNotificationService
 import com.orchestradashboard.shared.ui.screen.AppNavigation
 import com.orchestradashboard.shared.ui.theme.DashboardTheme
 
 fun main() =
     application {
+        val notificationService =
+            remember {
+                DesktopNotificationService(
+                    notificationRepository = AppContainer.notificationRepository,
+                    pushProvider = AppContainer.pushNotificationProvider,
+                ).also { it.start() }
+            }
+
+        DisposableEffect(notificationService) {
+            onDispose { notificationService.stop() }
+        }
+
         Window(
             onCloseRequest = ::exitApplication,
             title = "Orchestra Dashboard",
@@ -50,6 +63,7 @@ fun main() =
                     analyticsViewModelFactory = {
                         AppContainer.createAnalyticsViewModel()
                     },
+                    deepLinkPipelineIds = notificationService.deepLinkPipelineIds,
                 )
             }
         }

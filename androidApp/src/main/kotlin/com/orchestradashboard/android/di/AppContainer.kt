@@ -12,6 +12,7 @@ import com.orchestradashboard.shared.data.mapper.CommandMapper
 import com.orchestradashboard.shared.data.mapper.HistoryDetailMapper
 import com.orchestradashboard.shared.data.mapper.IssueMapper
 import com.orchestradashboard.shared.data.mapper.MonitoredPipelineMapper
+import com.orchestradashboard.shared.data.mapper.NotificationMapper
 import com.orchestradashboard.shared.data.mapper.PipelineHistoryMapper
 import com.orchestradashboard.shared.data.mapper.PipelineRunMapper
 import com.orchestradashboard.shared.data.mapper.ProjectMapper
@@ -28,6 +29,7 @@ import com.orchestradashboard.shared.data.repository.CommandRepositoryImpl
 import com.orchestradashboard.shared.data.repository.EventRepositoryImpl
 import com.orchestradashboard.shared.data.repository.HistoryRepositoryImpl
 import com.orchestradashboard.shared.data.repository.MetricRepositoryImpl
+import com.orchestradashboard.shared.data.repository.NotificationRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineMonitorRepositoryImpl
 import com.orchestradashboard.shared.data.repository.PipelineRepositoryImpl
 import com.orchestradashboard.shared.data.repository.ProjectRepositoryImpl
@@ -43,6 +45,7 @@ import com.orchestradashboard.shared.domain.repository.CommandRepository
 import com.orchestradashboard.shared.domain.repository.EventRepository
 import com.orchestradashboard.shared.domain.repository.HistoryRepository
 import com.orchestradashboard.shared.domain.repository.MetricRepository
+import com.orchestradashboard.shared.domain.repository.NotificationRepository
 import com.orchestradashboard.shared.domain.repository.PipelineMonitorRepository
 import com.orchestradashboard.shared.domain.repository.PipelineRepository
 import com.orchestradashboard.shared.domain.repository.ProjectRepository
@@ -60,6 +63,7 @@ import com.orchestradashboard.shared.domain.usecase.GetAggregatedMetricsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetCheckpointsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetDurationTrendsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetHistoryDetailUseCase
+import com.orchestradashboard.shared.domain.usecase.GetNotificationSettingsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetPagedHistoryUseCase
 import com.orchestradashboard.shared.domain.usecase.GetPipelineAnalyticsUseCase
 import com.orchestradashboard.shared.domain.usecase.GetPipelineHistoryUseCase
@@ -71,12 +75,17 @@ import com.orchestradashboard.shared.domain.usecase.GetSystemStatusUseCase
 import com.orchestradashboard.shared.domain.usecase.InitProjectUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveAgentsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveEventsUseCase
+import com.orchestradashboard.shared.domain.usecase.ObserveIncomingNotificationsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObservePipelineRunsUseCase
 import com.orchestradashboard.shared.domain.usecase.ObserveSystemEventsUseCase
 import com.orchestradashboard.shared.domain.usecase.PlanIssuesUseCase
+import com.orchestradashboard.shared.domain.usecase.RegisterDeviceTokenUseCase
 import com.orchestradashboard.shared.domain.usecase.RespondToApprovalUseCase
 import com.orchestradashboard.shared.domain.usecase.RetryCheckpointUseCase
+import com.orchestradashboard.shared.domain.usecase.SaveNotificationSettingsUseCase
 import com.orchestradashboard.shared.domain.usecase.SaveSettingsUseCase
+import com.orchestradashboard.shared.push.AndroidNotificationLocalStore
+import com.orchestradashboard.shared.push.AndroidPushNotificationProvider
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
 import com.orchestradashboard.shared.ui.analytics.AnalyticsViewModel
 import com.orchestradashboard.shared.ui.approvalmodal.ApprovalModalViewModel
@@ -99,6 +108,7 @@ import kotlinx.serialization.json.Json
  * Manual dependency injection container for the Android app.
  * All dependencies are lazily initialized and singletons unless noted.
  */
+@Suppress("TooManyFunctions")
 object AppContainer {
     private lateinit var applicationContext: Context
 
@@ -186,6 +196,7 @@ object AppContainer {
     private val solveCommandMapper: SolveCommandMapper by lazy { SolveCommandMapper() }
     private val analyticsMapper: AnalyticsMapper by lazy { AnalyticsMapper() }
     private val historyDetailMapper: HistoryDetailMapper by lazy { HistoryDetailMapper() }
+    private val notificationMapper: NotificationMapper by lazy { NotificationMapper() }
 
     // ─── Repositories ───────────────────────────────────────────
 
@@ -245,6 +256,25 @@ object AppContainer {
 
     private val historyRepository: HistoryRepository by lazy {
         HistoryRepositoryImpl(apiClient, historyDetailMapper)
+    }
+
+    // ─── Push Notifications ─────────────────────────────────────
+
+    val pushNotificationProvider: AndroidPushNotificationProvider by lazy {
+        AndroidPushNotificationProvider()
+    }
+
+    private val notificationLocalStore: AndroidNotificationLocalStore by lazy {
+        AndroidNotificationLocalStore(applicationContext)
+    }
+
+    val notificationRepository: NotificationRepository by lazy {
+        NotificationRepositoryImpl(
+            api = apiClient,
+            mapper = notificationMapper,
+            localStore = notificationLocalStore,
+            pushProvider = pushNotificationProvider,
+        )
     }
 
     // ─── UseCases ───────────────────────────────────────────────
@@ -334,6 +364,22 @@ object AppContainer {
         GetHistoryDetailUseCase(historyRepository)
     }
 
+    private val getNotificationSettingsUseCase: GetNotificationSettingsUseCase by lazy {
+        GetNotificationSettingsUseCase(notificationRepository)
+    }
+
+    private val saveNotificationSettingsUseCase: SaveNotificationSettingsUseCase by lazy {
+        SaveNotificationSettingsUseCase(notificationRepository)
+    }
+
+    val registerDeviceTokenUseCase: RegisterDeviceTokenUseCase by lazy {
+        RegisterDeviceTokenUseCase(notificationRepository)
+    }
+
+    val observeIncomingNotificationsUseCase: ObserveIncomingNotificationsUseCase by lazy {
+        ObserveIncomingNotificationsUseCase(notificationRepository)
+    }
+
     // ─── ViewModels (new instance per screen lifecycle) ─────────
 
     fun createDashboardViewModel(): DashboardViewModel =
@@ -381,7 +427,13 @@ object AppContainer {
             getProjectsUseCase = getProjectsUseCase,
         )
 
-    fun createSettingsViewModel(): SettingsViewModel = SettingsViewModel(getSettingsUseCase, saveSettingsUseCase)
+    fun createSettingsViewModel(): SettingsViewModel =
+        SettingsViewModel(
+            getSettingsUseCase = getSettingsUseCase,
+            saveSettingsUseCase = saveSettingsUseCase,
+            getNotificationSettingsUseCase = getNotificationSettingsUseCase,
+            saveNotificationSettingsUseCase = saveNotificationSettingsUseCase,
+        )
 
     fun createHistoryViewModel(): HistoryViewModel =
         HistoryViewModel(

@@ -14,6 +14,8 @@ import com.orchestradashboard.shared.data.dto.RefreshRequestDto
 import com.orchestradashboard.shared.data.dto.analytics.AnalyticsSummaryDto
 import com.orchestradashboard.shared.data.dto.analytics.DurationTrendDto
 import com.orchestradashboard.shared.data.dto.analytics.StepFailureDto
+import com.orchestradashboard.shared.data.dto.notification.DeviceTokenRequestDto
+import com.orchestradashboard.shared.data.dto.notification.DeviceTokenResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ApprovalRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
@@ -304,4 +306,16 @@ class DashboardApiClient(
             parameter("project", project)
             parameter("granularity", granularity)
         }.body()
+
+    // ─── BFF: Notifications ─────────────────────────────────────
+
+    override suspend fun registerDeviceToken(request: DeviceTokenRequestDto): DeviceTokenResponseDto =
+        httpClient.post("$baseUrl/api/v1/notifications/devices") {
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+
+    override suspend fun unregisterDeviceToken(token: String) {
+        httpClient.delete("$baseUrl/api/v1/notifications/devices/$token")
+    }
 }

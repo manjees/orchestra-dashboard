@@ -2,6 +2,7 @@ package com.orchestradashboard.shared.ui.screen
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,6 +18,8 @@ import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 import com.orchestradashboard.shared.ui.settings.SettingsViewModel
 import com.orchestradashboard.shared.ui.solvedialog.SolveDialogViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 sealed class Screen {
     data object DashboardHome : Screen()
@@ -51,8 +54,24 @@ fun AppNavigation(
     historyViewModelFactory: () -> HistoryViewModel,
     analyticsViewModelFactory: () -> AnalyticsViewModel,
     modifier: Modifier = Modifier,
+    initialPipelineId: String? = null,
+    deepLinkPipelineIds: Flow<String> = emptyFlow(),
 ) {
-    var currentScreen: Screen by remember { mutableStateOf(Screen.DashboardHome) }
+    var currentScreen: Screen by remember {
+        mutableStateOf(
+            if (initialPipelineId != null) {
+                Screen.PipelineMonitor(initialPipelineId)
+            } else {
+                Screen.DashboardHome
+            },
+        )
+    }
+
+    LaunchedEffect(deepLinkPipelineIds) {
+        deepLinkPipelineIds.collect { pipelineId ->
+            currentScreen = Screen.PipelineMonitor(pipelineId)
+        }
+    }
 
     when (val screen = currentScreen) {
         is Screen.DashboardHome -> {

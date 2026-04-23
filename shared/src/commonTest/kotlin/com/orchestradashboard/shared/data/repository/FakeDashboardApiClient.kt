@@ -10,6 +10,8 @@ import com.orchestradashboard.shared.data.dto.PipelineRunDto
 import com.orchestradashboard.shared.data.dto.analytics.AnalyticsSummaryDto
 import com.orchestradashboard.shared.data.dto.analytics.DurationTrendDto
 import com.orchestradashboard.shared.data.dto.analytics.StepFailureDto
+import com.orchestradashboard.shared.data.dto.notification.DeviceTokenRequestDto
+import com.orchestradashboard.shared.data.dto.notification.DeviceTokenResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ApprovalRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.CheckpointDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DesignRequestDto
@@ -239,4 +241,13 @@ class FakeDashboardApiClient(
         project: String,
         granularity: String,
     ): List<DurationTrendDto> = throw NotImplementedError()
+
+    // ─── Notifications stubs ────────────────────────────────────
+
+    override suspend fun registerDeviceToken(request: DeviceTokenRequestDto): DeviceTokenResponseDto =
+        DeviceTokenResponseDto(registeredAt = 0L)
+
+    override suspend fun unregisterDeviceToken(token: String) {
+        // no-op
+    }
 }

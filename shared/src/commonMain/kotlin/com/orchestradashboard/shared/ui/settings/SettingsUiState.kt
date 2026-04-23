@@ -7,4 +7,7 @@ data class SettingsUiState(
     val isLoading: Boolean = false,
     val saveSuccess: Boolean = false,
     val error: String? = null,
+    val notificationsEnabled: Boolean = true,
+    val notifyOnSuccess: Boolean = true,
+    val notifyOnFailure: Boolean = true,
 )

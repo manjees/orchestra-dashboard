@@ -29,6 +29,7 @@ android {
 
         buildConfigField("String", "ORCHESTRATOR_URL", "\"${props.getProperty("orchestrator.url", "http://localhost:9000")}\"")
         buildConfigField("String", "ORCHESTRATOR_API_KEY", "\"${props.getProperty("orchestrator.apiKey", "")}\"")
+        buildConfigField("boolean", "FCM_ENABLED", props.getProperty("fcm.enabled", "false"))
     }
 
     buildTypes {
@@ -67,4 +68,5 @@ dependencies {
     implementation(libs.ktor.client.logging)
     implementation(libs.ktor.serialization.kotlinx.json)
     implementation(libs.serialization.json)
+    implementation("com.google.firebase:firebase-messaging:24.0.3")
 }

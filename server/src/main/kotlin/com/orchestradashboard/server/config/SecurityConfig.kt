@@ -31,6 +31,7 @@ class SecurityConfig(
                     .requestMatchers("/api/v1/checkpoints/**").permitAll()
                     .requestMatchers("/api/v1/pipeline-history/**").permitAll()
                     .requestMatchers("/api/v1/analytics/**").permitAll()
+                    .requestMatchers("/api/v1/notifications/**").permitAll()
                     .requestMatchers("/ws/**").permitAll()
                     .requestMatchers("/h2-console/**").permitAll()
                     .anyRequest().authenticated()
