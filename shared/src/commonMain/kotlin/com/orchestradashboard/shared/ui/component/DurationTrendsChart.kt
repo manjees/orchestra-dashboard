@@ -104,9 +104,7 @@ private fun TrendLineChart(
 }
 
 @Composable
-private fun TrendAxisLabels(
-    trends: List<DurationTrend>,
-) {
+private fun TrendAxisLabels(trends: List<DurationTrend>) {
     if (trends.isEmpty()) return
     val first = trends.first().date.takeLast(5)
     val last = trends.last().date.takeLast(5)
