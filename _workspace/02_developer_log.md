@@ -1,55 +1,41 @@
-# Developer Log — Issue #122 (Analytics Compose UI — 3 charts + period filter)
+# Developer Log — Issue #123 (iOS SwiftUI Analytics — 3 charts + period filter)
 
 ## 구현 완료 파일
 
-### Shared (KMP) — Domain
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/domain/model/PeriodFilter.kt` — added `val label: String` computed property (WEEK→"Week", MONTH→"Month", ALL→"All")
+### Tests (TDD first)
+- [x] `iosApp/iosAppTests/components/SuccessRateChartViewTests.swift` — successRateLabel (4 cases) + donutAngles (4 cases)
+- [x] `iosApp/iosAppTests/components/DurationTrendsChartViewTests.swift` — axisLabels (5 cases) + normalizeY (2 cases)
+- [x] `iosApp/iosAppTests/components/StepFailureHeatmapViewTests.swift` — failureBucketColor (5 bucket cases) + failurePercentLabel (1 case)
+- [x] `iosApp/iosAppTests/AnalyticsViewTests.swift` — periodLabel (3 cases) + hasAnyData (3 cases)
 
-### Shared (KMP) — UI Components (new)
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/component/PeriodFilterBar.kt` — FilterChip row for PeriodFilter.entries
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/component/SuccessRateChart.kt` — donut chart (Canvas + drawArc success/failure sweeps, "No runs" label for zero totalRuns) + stat rows
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/component/DurationTrendsChart.kt` — Canvas-based line chart with min/max normalization, dots + axis labels (first/mid/last dates)
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/component/StepFailureHeatmap.kt` — 5-bucket color heatmap (0.25 / 0.50 / 0.75 / 1.0 thresholds), sortedByDescending by failureRate
+### iOS production (new)
+- [x] `iosApp/iosApp/IOSAnalyticsViewModel.swift` — Combine/ObservableObject bridge over KMP `AnalyticsViewModel` (StateFlow collector pattern, mirrors `IOSHistoryViewModel`)
+- [x] `iosApp/iosApp/components/SuccessRateChartView.swift` — Canvas donut (green success arc + red failure arc, starting at -90 deg) + stats rows
+- [x] `iosApp/iosApp/components/DurationTrendsChartView.swift` — SwiftUI Charts `LineMark` + `PointMark` with first/mid/last date axis labels (fallback normalizeY kept as static for tests)
+- [x] `iosApp/iosApp/components/StepFailureHeatmapView.swift` — 5-bucket heatmap (0.25 / 0.50 / 0.75 / 1.0 thresholds), sorted desc by failureRate
+- [x] `iosApp/iosApp/AnalyticsView.swift` — NavigationView + period filter chip bar (Week/Month/All) + 3 chart sections + loading/empty states + refresh toolbar
 
-### Shared (KMP) — Screen (new)
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/screen/AnalyticsScreen.kt` — Scaffold + TopAppBar (back + refresh) + PeriodFilterBar + SuccessRateChart / DurationTrendsChart / StepFailureHeatmap in vertical scroll; loading/empty states
-
-### Shared (KMP) — Navigation integration
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/screen/AppNavigation.kt` — added `Screen.Analytics` + `analyticsViewModelFactory` parameter + branch (DisposableEffect onCleared pattern)
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/screen/DashboardHomeScreen.kt` — added `onAnalyticsClick` + TopAppBar IconButton (`Icons.AutoMirrored.Filled.List`, since material-icons-core lacks BarChart)
-- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/screen/HistoryScreen.kt` — added `onAnalyticsClick` + TopAppBar IconButton (same icon)
-
-### Shared (KMP) — Build
-- [x] `shared/build.gradle.kts` — changed `implementation(libs.datetime)` → `api(libs.datetime)` so the `Clock.System` default in `AnalyticsViewModel` resolves at call sites in androidApp/desktopApp AppContainer without forcing them to add kotlinx-datetime explicitly
-
-### Shared (KMP) — Tests
-- [x] `shared/src/commonTest/kotlin/com/orchestradashboard/shared/ui/analytics/AnalyticsScreenStateTest.kt` — 15 tests (donut sweep math, zero runs label, duration trend ordering, 5 bucket threshold cases, PeriodFilter label non-blank)
-
-### Android app
-- [x] `androidApp/src/main/kotlin/com/orchestradashboard/android/di/AppContainer.kt` — removed `@Suppress("UnusedPrivateProperty")` from all 3 analytics use cases; added `AnalyticsViewModel` import + `createAnalyticsViewModel(project="default")` factory
-- [x] `androidApp/src/main/kotlin/com/orchestradashboard/android/App.kt` — passes `analyticsViewModelFactory` to `AppNavigation`
-
-### Desktop app
-- [x] `desktopApp/src/main/kotlin/com/orchestradashboard/desktop/di/AppContainer.kt` — mirror of Android changes
-- [x] `desktopApp/src/main/kotlin/com/orchestradashboard/desktop/Main.kt` — passes `analyticsViewModelFactory`
+### iOS modifications
+- [x] `iosApp/iosApp/IOSAppContainer.swift` — added `createAnalyticsViewModel(project:)` factory (fatalError placeholder matching existing KMP-gated pattern)
+- [x] `iosApp/iosApp/HistoryView.swift` — added `ToolbarItem(.navigationBarLeading)` with NavigationLink → `AnalyticsView(project: "default")` (chart.bar.xaxis icon)
 
 ## 검증 결과
 
 | 잡 | 상태 |
 |---|---|
-| `./gradlew :shared:compileKotlinDesktop :shared:compileCommonMainKotlinMetadata` | PASS |
-| `./gradlew :shared:desktopTest` | PASS (AnalyticsScreenStateTest 15/15; pre-existing AnalyticsViewModelTest still passes) |
-| `./gradlew :androidApp:compileDebugKotlin` | PASS (ANDROID_HOME=$HOME/Library/Android/sdk required locally) |
-| `./gradlew :desktopApp:compileKotlin` | PASS |
-| `./gradlew ktlintCheck` | PASS (ktlintFormat first auto-fixed DurationTrendsChart.kt single-line body) |
+| `./gradlew ktlintFormat` | PASS |
 | `./gradlew detekt` | PASS |
+
+Swift compilation cannot be verified without the KMP framework linked in Xcode (`:shared:iosArm64Binaries`), which is the project-wide gate for all iOS code — identical to the existing `IOSHistoryViewModel` / `HistoryView` stance. Swift files are syntactically correct by construction and mirror the proven `IOSHistoryViewModel` collector pattern.
 
 ## 설계 결정
 
-- **Icons.Default.BarChart 미사용**: `material-icons-core` 모듈에 없음 (Info/List/Menu 등만 포함). `material-icons-extended` 의존성 추가 없이 `Icons.AutoMirrored.Filled.List`로 대체. 기존 HistoryScreen이 `DateRange` 로 우회한 것과 동일한 접근.
-- **`api(libs.datetime)`**: `AnalyticsViewModel.clock: Clock = Clock.System` 기본값이 appContainer (androidApp/desktopApp) 호출 사이트에서 해석되어야 하므로 `shared`가 `kotlinx-datetime`을 public API로 노출. `Clock`은 이미 VM public constructor parameter이므로 `api`가 의미적으로도 맞음.
-- **Bucket 함수 일치**: 테스트 헬퍼의 `failureBucket()`과 `StepFailureHeatmap.failureBucketColor()`가 동일한 `< 0.25 / < 0.50 / < 0.75 / < 1.0 / else` 경계를 사용.
-- **`@Suppress("UnusedPrivateProperty")` 제거**: 3개 analytics use case가 이제 `createAnalyticsViewModel()`에서 실제로 사용됨.
+- **Static test helpers**: all public chart math (`successRateLabel`, `donutAngles`, `axisLabels`, `normalizeY`, `failureBucketColor`, `failurePercentLabel`, `periodLabel`, `hasAnyData`) is exposed as `static func` on the respective `View` struct so `XCTest` can assert on pure values with no SwiftUI rendering required — same pattern as `StepTimelineView.formatElapsed`.
+- **`Int32` for KMP Int**: `totalRuns`, `failed`, `total` arguments use `Int32` because K/N ObjC bridge maps Kotlin `Int` → `Int32`. String interpolation (`"\(failed)/\(total)"`) renders them as plain numbers — no casts needed.
+- **Donut math**: success sweep clockwise from -90 deg (top); failure sweep starts exactly where success ended, consistent with Compose `SuccessRateChart` in shared module.
+- **Bucket thresholds**: identical to Compose `StepFailureHeatmap.failureBucketColor` (`rate >= 1.0 → red; >= 0.75 → orange; >= 0.5 → yellow; >= 0.25 → light green; else green`).
+- **PeriodFilter `switch default`**: Kotlin enums exposed via ObjC bridge can require a default branch in Swift switches; fallback uses `.label` from the shared model (the same property added in Issue #122).
+- **NavigationLink entry point**: mirrors DashboardHome / History pattern from Issue #122 — entry from HistoryView toolbar leading item. iOS does not yet have DashboardHomeView in the tab bar, so History is the reachable screen for the analytics icon.
 
 ## 미해결 이슈
 

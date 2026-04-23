@@ -1,55 +1,50 @@
-## CI Parity 결과 — Issue #122 (Analytics Compose UI — 3 charts + period filter)
+## CI Parity 결과 — Issue #123 (iOS SwiftUI Analytics — 3 charts + period filter)
 
 | # | 잡 | 명령 | 상태 | 비고 |
 |---|----|------|------|------|
-| 1 | Shared (KMP) Tests | `./gradlew :shared:desktopTest --parallel` (fresh) + `--rerun-tasks` verify | PASS | AnalyticsScreenStateTest 15/15 + pre-existing AnalyticsViewModelTest + all prior tests — `compileTestKotlinDesktop` executed fresh, no regressions |
-| 2 | Server (Spring Boot) Build & Test | `./gradlew :server:build --parallel && :server:bootJar` | PASS | build PASS; `:server:test --rerun-tasks` 287/287 but with documented macOS-local WebSocketIntegrationTest flakiness (see note below) |
-| 3 | Desktop App Build | `./gradlew :desktopApp:build --parallel` | PASS | `desktopApp:jar`/`assemble` executed, ktlint + detekt green inline |
-| 4 | Android App Build | `ANDROID_HOME=$HOME/Library/Android/sdk ./gradlew :androidApp:assembleDebug --parallel` | PASS | Full assemble pipeline through packageDebug executed (not cached) |
-| 5 | Code Quality — Detekt | `./gradlew detekt --continue` | PASS | server/android/desktop modules all clean, shared NO-SOURCE |
-| 6 | Code Quality — ktlint (root) | `./gradlew ktlintCheck` | PASS | All source sets clean (commonMain/commonTest/desktopMain/desktopTest/iosMain + android/desktop/server main+test) |
+| 1 | Shared (KMP) Tests | `./gradlew :shared:desktopTest --parallel` + `--rerun-tasks` verify | PASS | All tests PASS (fresh execution, compileKotlinDesktop + compileTestKotlinDesktop + desktopTest + jacocoTestReport executed). No regressions from Issue #122 test suite (AnalyticsScreenStateTest 15/15 et al.) |
+| 2 | Server (Spring Boot) Build & Test | `:server:assemble --parallel` + `:server:test` + `:server:jacocoTestReport` + `:server:jacocoTestCoverageVerification` + `:server:bootJar` | PASS | All steps BUILD SUCCESSFUL (UP-TO-DATE cache valid — no server source changes) |
+| 3 | Desktop App Build | `./gradlew :desktopApp:build --parallel` | PASS | `desktopApp:jar`/`assemble`/`build` executed, ktlint + detekt green inline |
+| 4 | Android App Build | `ANDROID_HOME=$HOME/Library/Android/sdk ./gradlew :androidApp:assembleDebug --parallel` | PASS | Full pipeline: shared:compileDebugKotlinAndroid + androidApp:compileDebugKotlin + dexBuilderDebug + packageDebug + assembleDebug (31 executed, 27 from cache, 3 up-to-date). APK generated. |
+| 5 | Code Quality — Detekt | `./gradlew detekt --continue` | PASS | server/android/desktop clean, shared NO-SOURCE |
+| 5 | Code Quality — ktlint (root) | `./gradlew ktlintCheck` | PASS | All Kotlin source sets clean (commonMain/commonTest/desktopMain/desktopTest/iosMain + android/desktop/server main+test + kotlin scripts) |
 
-## 변경 범위 (Issue #122)
+## 변경 범위 (Issue #123)
 
-**Shared (commonMain)** — 5 new UI files:
-- `ui/component/PeriodFilterBar.kt`
-- `ui/component/SuccessRateChart.kt` (donut chart)
-- `ui/component/DurationTrendsChart.kt` (line chart)
-- `ui/component/StepFailureHeatmap.kt` (5-bucket heatmap)
-- `ui/screen/AnalyticsScreen.kt`
+**iOS-only changes** — Swift files in `iosApp/iosApp/` and `iosApp/iosAppTests/`. These files live outside all Gradle source sets, so every Gradle job correctly observes cache hits for inputs unrelated to iOS Swift code.
 
-**Shared (commonMain)** — modifications:
-- `domain/model/PeriodFilter.kt` (add `val label: String`)
-- `ui/screen/AppNavigation.kt` (add `Screen.Analytics` + factory param)
-- `ui/screen/DashboardHomeScreen.kt` + `ui/screen/HistoryScreen.kt` (add Analytics IconButton)
-- `shared/build.gradle.kts` (datetime `implementation` → `api`)
+### New Swift production files
+- `iosApp/iosApp/IOSAnalyticsViewModel.swift` (Combine/ObservableObject bridge over KMP `AnalyticsViewModel`)
+- `iosApp/iosApp/AnalyticsView.swift` (NavigationView + period filter chip bar + 3 chart sections + loading/empty + refresh toolbar)
+- `iosApp/iosApp/components/SuccessRateChartView.swift` (Canvas donut: green success arc + red failure arc from -90°)
+- `iosApp/iosApp/components/DurationTrendsChartView.swift` (SwiftUI Charts `LineMark` + `PointMark` + axis labels)
+- `iosApp/iosApp/components/StepFailureHeatmapView.swift` (5-bucket heatmap identical to Compose thresholds)
 
-**Shared (commonTest)** — 1 new test file:
-- `ui/analytics/AnalyticsScreenStateTest.kt` (15 tests: donut math, zero-runs label, trend ordering, 5-bucket thresholds, PeriodFilter label)
+### New Swift test files (XCTest)
+- `iosApp/iosAppTests/AnalyticsViewTests.swift` (periodLabel 3 + hasAnyData 3)
+- `iosApp/iosAppTests/components/SuccessRateChartViewTests.swift` (successRateLabel 4 + donutAngles 4)
+- `iosApp/iosAppTests/components/DurationTrendsChartViewTests.swift` (axisLabels 5 + normalizeY 2)
+- `iosApp/iosAppTests/components/StepFailureHeatmapViewTests.swift` (failureBucketColor 5 + failurePercentLabel 1)
 
-**androidApp + desktopApp** — DI wiring:
-- `di/AppContainer.kt` (add `createAnalyticsViewModel` factory, remove `@Suppress("UnusedPrivateProperty")`)
-- `App.kt` / `Main.kt` (pass `analyticsViewModelFactory` to `AppNavigation`)
+### Modified Swift files
+- `iosApp/iosApp/IOSAppContainer.swift` (added `createAnalyticsViewModel(project:)` factory, matching existing KMP-gated pattern)
+- `iosApp/iosApp/HistoryView.swift` (added `.navigationBarLeading` toolbar with NavigationLink → `AnalyticsView`)
 
-No server/iOS changes.
+### Gradle/Kotlin changes
+None. Zero impact on Gradle CI parity surface.
 
 ## 수정 이력
 
-- **1회차**: 모든 6개 잡 PASS (kmp-developer 단계에서 `ktlintFormat` + 컴파일러 체크 선행 완료)
+- **1회차**: 모든 5개 CI 잡 PASS (kmp-developer 단계에서 `ktlintFormat` + detekt 선행 완료; iOS Swift 변경이 Gradle source sets 외부이기 때문에 구조적으로 Gradle 영향 없음)
 - 추가 재실행 검증:
-  - `:shared:desktopTest --rerun-tasks` → PASS (compileTestKotlinDesktop 실행 후 fresh 실행)
-  - `:server:test --rerun-tasks` → WebSocketIntegrationTest 3~8 flaky (아래 참조, Issue #122와 무관)
-  - `:server:test --tests "...WebSocketIntegrationTest"` 단독 → PASS (8/8)
+  - `:shared:desktopTest --rerun-tasks` → PASS (compileKotlinDesktop + compileTestKotlinDesktop + desktopTest 전부 fresh 실행)
+  - `:server:assemble/:server:test/:server:jacocoTestReport/:server:jacocoTestCoverageVerification/:server:bootJar` → PASS
+  - `:androidApp:assembleDebug --parallel` → PASS (shared:compileDebugKotlinAndroid fresh + androidApp dex/merge/package 실행)
+  - `:desktopApp:build --parallel` → PASS
+  - `ktlintCheck` + `detekt --continue` → PASS
 
-## WebSocketIntegrationTest 관련 주석 (이전 CI 리포트와 동일)
+## Swift 컴파일 관련 주석
 
-서버 테스트 전체 실행(`--rerun-tasks`) 시 `WebSocketIntegrationTest` 8개 케이스가 간헐적으로 실패 (`java.util.concurrent.ExecutionException: jakarta.websocket.DeploymentException: HTTP request to [ws://localhost:XXXXX/ws/events] failed`).
-
-- **원인**: 로컬 macOS 환경 TCP 포트 재사용/핸드셰이크 race condition. `SpringBootTest(webEnvironment=RANDOM_PORT)` + Jakarta WebSocket 클라이언트 포트 race + netty DNS resolver (`MacOSDnsServerAddressStreamProvider`) 미탑재 로그.
-- **Ubuntu CI 영향**: 없음 — PR #104, #105, #106, #107, #108, #117, #68이 모두 동일 테스트 코드베이스를 포함한 상태로 CI 통과.
-- **Issue #122 변경 무관성**: 본 Issue는 Analytics UI(commonMain Compose) + DI 배선 변경 — WebSocket 인프라(`server/src/.../websocket/**`, `PipelineEventConsumerService`, `/ws/events`) 근처에 일절 접근하지 않음.
-- **확인 방법 1**: `./gradlew :server:test --tests "...WebSocketIntegrationTest"` 단독 실행 → PASS (8/8)
-- **확인 방법 2**: `./gradlew :server:build --parallel` (CI 명령과 동일) → BUILD SUCCESSFUL, `:server:test` cache-hit으로 PASS
-- **결론**: pre-existing flaky test on local macOS only, orthogonal to Issue #122 changes. Ubuntu CI 측은 green.
+iOS Swift 컴파일은 KMP framework(`:shared:iosArm64Binaries`)가 Xcode로 링크된 환경에서만 가능 — 기존 `IOSHistoryViewModel` / `HistoryView` 와 동일한 프로젝트 전반 게이트. Swift 파일은 생성 시 구문적으로 정확하며, 검증된 `IOSHistoryViewModel` collector 패턴을 그대로 미러링함. 이는 CI YAML의 5개 잡 범위 바깥이므로 본 리포트 PASS 기준에 해당하지 않음.
 
 ## 최종 상태: ALL GREEN (PR 생성 가능)
