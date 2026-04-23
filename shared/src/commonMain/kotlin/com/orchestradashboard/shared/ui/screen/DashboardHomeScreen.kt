@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -44,6 +45,7 @@ fun DashboardHomeScreen(
     onPipelineClick: (String) -> Unit,
     onSettingsClick: () -> Unit = {},
     onHistoryClick: () -> Unit = {},
+    onAnalyticsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -61,6 +63,9 @@ fun DashboardHomeScreen(
                 actions = {
                     IconButton(onClick = onHistoryClick) {
                         Icon(Icons.Default.DateRange, contentDescription = "History")
+                    }
+                    IconButton(onClick = onAnalyticsClick) {
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Analytics")
                     }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")

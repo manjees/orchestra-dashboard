@@ -51,6 +51,11 @@ struct HistoryView: View {
             }
             .navigationTitle("History")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    NavigationLink(destination: AnalyticsView(project: "default")) {
+                        Image(systemName: "chart.bar.xaxis")
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button(action: { viewModel.refresh() }) {
                         Image(systemName: "arrow.clockwise")

@@ -41,7 +41,7 @@ kotlin {
                 implementation(libs.ktor.serialization.kotlinx.json)
                 implementation(libs.ktor.client.websockets)
                 implementation(libs.ktor.client.logging)
-                implementation(libs.datetime)
+                api(libs.datetime)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.material3)

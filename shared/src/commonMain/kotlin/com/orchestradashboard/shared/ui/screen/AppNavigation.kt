@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.orchestradashboard.shared.domain.model.DashboardViewModel
 import com.orchestradashboard.shared.ui.agentdetail.AgentDetailViewModel
+import com.orchestradashboard.shared.ui.analytics.AnalyticsViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.history.HistoryViewModel
@@ -33,6 +34,8 @@ sealed class Screen {
     data object Settings : Screen()
 
     data object History : Screen()
+
+    data object Analytics : Screen()
 }
 
 @Composable
@@ -46,6 +49,7 @@ fun AppNavigation(
     commandCenterViewModelFactory: () -> CommandCenterViewModel,
     settingsViewModelFactory: () -> SettingsViewModel,
     historyViewModelFactory: () -> HistoryViewModel,
+    analyticsViewModelFactory: () -> AnalyticsViewModel,
     modifier: Modifier = Modifier,
 ) {
     var currentScreen: Screen by remember { mutableStateOf(Screen.DashboardHome) }
@@ -64,6 +68,7 @@ fun AppNavigation(
                 onPipelineClick = { pipelineId -> currentScreen = Screen.PipelineMonitor(pipelineId) },
                 onSettingsClick = { currentScreen = Screen.Settings },
                 onHistoryClick = { currentScreen = Screen.History },
+                onAnalyticsClick = { currentScreen = Screen.Analytics },
                 modifier = modifier,
             )
         }
@@ -144,6 +149,18 @@ fun AppNavigation(
                 onDispose { vm.onCleared() }
             }
             HistoryScreen(
+                viewModel = vm,
+                onBackClick = { currentScreen = Screen.DashboardHome },
+                onAnalyticsClick = { currentScreen = Screen.Analytics },
+                modifier = modifier,
+            )
+        }
+        is Screen.Analytics -> {
+            val vm = remember { analyticsViewModelFactory() }
+            DisposableEffect(Unit) {
+                onDispose { vm.onCleared() }
+            }
+            AnalyticsScreen(
                 viewModel = vm,
                 onBackClick = { currentScreen = Screen.DashboardHome },
                 modifier = modifier,
