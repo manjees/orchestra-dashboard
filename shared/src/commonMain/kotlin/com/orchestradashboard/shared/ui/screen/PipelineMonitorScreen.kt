@@ -1,5 +1,6 @@
 package com.orchestradashboard.shared.ui.screen
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,18 +27,22 @@ import com.orchestradashboard.shared.ui.component.ApprovalDialog
 import com.orchestradashboard.shared.ui.component.ErrorBanner
 import com.orchestradashboard.shared.ui.component.LiveLogPanel
 import com.orchestradashboard.shared.ui.component.LoadingOverlay
+import com.orchestradashboard.shared.ui.component.LogStreamPanel
 import com.orchestradashboard.shared.ui.component.ParallelPipelineView
 import com.orchestradashboard.shared.ui.component.StepTimeline
+import com.orchestradashboard.shared.ui.logstream.LogStreamViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PipelineMonitorScreen(
     viewModel: PipelineMonitorViewModel,
+    logStreamViewModel: LogStreamViewModel,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val logStreamState by logStreamViewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
         viewModel.loadPipeline()
@@ -120,14 +125,33 @@ fun PipelineMonitorScreen(
                     StepTimeline(
                         steps = uiState.pipeline!!.steps,
                         modifier = Modifier.fillMaxWidth(),
+                        selectedStepName = logStreamState.selectedStepId,
+                        onStepClick = { stepName ->
+                            if (logStreamState.selectedStepId == stepName) {
+                                logStreamViewModel.stopStream()
+                            } else {
+                                logStreamViewModel.startStream(stepName)
+                            }
+                        },
                     )
                 }
             }
 
-            LiveLogPanel(
-                logLines = uiState.logLines,
-                modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp),
-            )
+            val hasSelectedStep = logStreamState.selectedStepId != null
+            AnimatedVisibility(visible = hasSelectedStep) {
+                LogStreamPanel(
+                    uiState = logStreamState,
+                    onStopStream = { logStreamViewModel.stopStream() },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                )
+            }
+
+            if (!hasSelectedStep) {
+                LiveLogPanel(
+                    logLines = uiState.logLines,
+                    modifier = Modifier.fillMaxWidth().weight(1f).padding(horizontal = 16.dp),
+                )
+            }
         }
     }
 }

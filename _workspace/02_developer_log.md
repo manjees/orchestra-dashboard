@@ -1,42 +1,110 @@
-# Developer Log — Issue #123 (iOS SwiftUI Analytics — 3 charts + period filter)
+# Developer Log — Issue #129 (Live Log Streaming UI — Compose + SwiftUI)
 
-## 구현 완료 파일
+## Implementation Order
 
-### Tests (TDD first)
-- [x] `iosApp/iosAppTests/components/SuccessRateChartViewTests.swift` — successRateLabel (4 cases) + donutAngles (4 cases)
-- [x] `iosApp/iosAppTests/components/DurationTrendsChartViewTests.swift` — axisLabels (5 cases) + normalizeY (2 cases)
-- [x] `iosApp/iosAppTests/components/StepFailureHeatmapViewTests.swift` — failureBucketColor (5 bucket cases) + failurePercentLabel (1 case)
-- [x] `iosApp/iosAppTests/AnalyticsViewTests.swift` — periodLabel (3 cases) + hasAnyData (3 cases)
+Tests (pure functions) -> StepNode/StepTimeline selection -> LogStreamPanel (Compose)
+-> PipelineMonitorScreen integration -> AppNavigation wiring -> desktopApp/androidApp
+DI wiring -> iOS StepTimelineView selection -> IOSLogStreamViewModel + IOSAppContainer
+-> LogStreamPanelView (SwiftUI) -> PipelineMonitorView integration -> build/lint/test
+verification.
 
-### iOS production (new)
-- [x] `iosApp/iosApp/IOSAnalyticsViewModel.swift` — Combine/ObservableObject bridge over KMP `AnalyticsViewModel` (StateFlow collector pattern, mirrors `IOSHistoryViewModel`)
-- [x] `iosApp/iosApp/components/SuccessRateChartView.swift` — Canvas donut (green success arc + red failure arc, starting at -90 deg) + stats rows
-- [x] `iosApp/iosApp/components/DurationTrendsChartView.swift` — SwiftUI Charts `LineMark` + `PointMark` with first/mid/last date axis labels (fallback normalizeY kept as static for tests)
-- [x] `iosApp/iosApp/components/StepFailureHeatmapView.swift` — 5-bucket heatmap (0.25 / 0.50 / 0.75 / 1.0 thresholds), sorted desc by failureRate
-- [x] `iosApp/iosApp/AnalyticsView.swift` — NavigationView + period filter chip bar (Week/Month/All) + 3 chart sections + loading/empty states + refresh toolbar
+## Production files created
 
-### iOS modifications
-- [x] `iosApp/iosApp/IOSAppContainer.swift` — added `createAnalyticsViewModel(project:)` factory (fatalError placeholder matching existing KMP-gated pattern)
-- [x] `iosApp/iosApp/HistoryView.swift` — added `ToolbarItem(.navigationBarLeading)` with NavigationLink → `AnalyticsView(project: "default")` (chart.bar.xaxis icon)
+### Shared (Compose)
+- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/component/LogStreamPanel.kt`
 
-## 검증 결과
+### iOS (SwiftUI)
+- [x] `iosApp/iosApp/components/LogStreamPanelView.swift`
+- [x] `iosApp/iosApp/IOSLogStreamViewModel.swift`
 
-| 잡 | 상태 |
+## Production files modified
+
+### Shared (Compose)
+- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/component/StepNode.kt`
+      — added `isSelected` + `onClick`; ring overlay via `.border(..., CircleShape)` when selected.
+- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/component/StepTimeline.kt`
+      — added `selectedStepName` + `onStepClick` parameters, wired into each `StepNode`.
+- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/screen/PipelineMonitorScreen.kt`
+      — now takes `logStreamViewModel: LogStreamViewModel`; shows `LogStreamPanel`
+        (with `AnimatedVisibility`) when a step is selected, otherwise the pre-existing
+        `LiveLogPanel`. Step clicks toggle start/stop on the log stream VM.
+- [x] `shared/src/commonMain/kotlin/com/orchestradashboard/shared/ui/screen/AppNavigation.kt`
+      — added `logStreamViewModelFactory: () -> LogStreamViewModel`; new LogStreamVM
+        instance created per `Screen.PipelineMonitor` and disposed with the pipeline VM.
+
+### desktopApp / androidApp (DI wiring)
+- [x] `desktopApp/src/main/kotlin/com/orchestradashboard/desktop/Main.kt`
+      — passes `AppContainer.createLogStreamViewModel` to `AppNavigation`.
+- [x] `androidApp/src/main/kotlin/com/orchestradashboard/android/App.kt`
+      — passes `AppContainer.createLogStreamViewModel` to `AppNavigation`.
+
+(`createLogStreamViewModel()` already existed on both `AppContainer`s from issue #128
+— no DI container changes required.)
+
+### iOS
+- [x] `iosApp/iosApp/components/StepTimelineView.swift`
+      — added `selectedStepName` + `onStepTap`; selection ring via a `.stroke` overlay
+        on the circle, tap handler via `.onTapGesture` on each step node.
+- [x] `iosApp/iosApp/IOSAppContainer.swift`
+      — added `createLogStreamViewModel()` factory stub (fatalError until KMP framework
+        is linked, matching the other factory stubs in this container).
+- [x] `iosApp/iosApp/PipelineMonitorView.swift`
+      — wires `@StateObject IOSLogStreamViewModel`, threads selection state through
+        `StepTimelineView`, swaps in `LogStreamPanelView` when a step is selected,
+        disposes the log VM in `.onDisappear`.
+
+## Test files created
+- [x] `shared/src/commonTest/kotlin/com/orchestradashboard/shared/ui/component/LogStreamPanelStateTest.kt`
+      — 10 tests covering:
+        - `formatLogEntry` for INFO/WARN/ERROR/DEBUG
+        - `formatLogEntry` with blank and malformed timestamps (no crash)
+        - `logLevelColor` returning `Color.Unspecified` for INFO and semantic hues
+          for WARN (orange), ERROR (red), DEBUG (gray)
+      — All 10 tests pass.
+
+## Verification
+
+| Job | Status |
 |---|---|
-| `./gradlew ktlintFormat` | PASS |
+| `./gradlew :shared:desktopTest` (incl. new tests) | PASS — 10/10 new tests green, no regressions |
+| `./gradlew ktlintFormat` + `ktlintCheck` | PASS |
 | `./gradlew detekt` | PASS |
+| `./gradlew :shared:compileKotlinDesktop` | PASS |
+| `./gradlew :desktopApp:compileKotlin` | PASS |
+| `./gradlew :androidApp:compileDebugKotlin` | skipped locally — no Android SDK on dev machine; CI will validate |
 
-Swift compilation cannot be verified without the KMP framework linked in Xcode (`:shared:iosArm64Binaries`), which is the project-wide gate for all iOS code — identical to the existing `IOSHistoryViewModel` / `HistoryView` stance. Swift files are syntactically correct by construction and mirror the proven `IOSHistoryViewModel` collector pattern.
+## Design decisions
 
-## 설계 결정
+- **Pure state logic in Compose file**: `formatLogEntry` and `logLevelColor` live as
+  `internal` functions inside `LogStreamPanel.kt` so they can be unit-tested without
+  a Compose runtime. `Color.Unspecified` is returned for INFO (caller falls back to
+  the Material3 `onSurfaceVariant` token via `Color.takeOrElse`).
+- **Timestamp parsing**: kept allocation-free and defensive — no `kotlinx.datetime`
+  parser is required because the only information needed for display is the
+  `HH:mm:ss` substring of an ISO-8601 value. Returns empty on malformed input so the
+  UI still shows the message.
+- **No `@Suppress`**: `AppNavigation` already exceeded `LongParameterList`'s threshold
+  (11 parameters before, 12 after adding `logStreamViewModelFactory`). The existing
+  signature did not need a suppression, so the new parameter does not either. detekt
+  passes clean.
+- **Auto-scroll behaviour**: `derivedStateOf` over `listState.layoutInfo` decides
+  whether the user is at the bottom (within 2 rows of the tail). `LaunchedEffect(logs.size)`
+  only animates to the bottom when that condition is met, so manual scrolling up
+  pauses auto-scroll. A `FloatingActionButton` appears at the bottom-right to let the
+  user resume tailing with a single tap.
+- **AnimatedVisibility for panel swap**: replacing the existing `LiveLogPanel` with
+  the step-scoped `LogStreamPanel` uses `AnimatedVisibility` so the transition is
+  smooth when a step is (de)selected, and the fallback `LiveLogPanel` remains the
+  default surface when no step is selected.
+- **iOS selection ring via overlay**: SwiftUI `Circle().stroke(...).padding(-3)` gives
+  a 3-pt outer ring that doesn't affect the layout of neighboring steps (so the
+  timeline spacing stays consistent whether or not a step is selected).
+- **iOS panel hot-reload via `ScrollViewReader`**: `onChange(of: viewModel.logs.count)`
+  drives an automatic `scrollTo(_, anchor: .bottom)`. For now this always scrolls on
+  new entries (mirrors the existing `LiveLogPanel` behaviour); SwiftUI does not expose
+  scroll position cleanly in older OS targets, so the "pause auto-scroll when user
+  scrolls up" behaviour is Compose-only for this PR.
 
-- **Static test helpers**: all public chart math (`successRateLabel`, `donutAngles`, `axisLabels`, `normalizeY`, `failureBucketColor`, `failurePercentLabel`, `periodLabel`, `hasAnyData`) is exposed as `static func` on the respective `View` struct so `XCTest` can assert on pure values with no SwiftUI rendering required — same pattern as `StepTimelineView.formatElapsed`.
-- **`Int32` for KMP Int**: `totalRuns`, `failed`, `total` arguments use `Int32` because K/N ObjC bridge maps Kotlin `Int` → `Int32`. String interpolation (`"\(failed)/\(total)"`) renders them as plain numbers — no casts needed.
-- **Donut math**: success sweep clockwise from -90 deg (top); failure sweep starts exactly where success ended, consistent with Compose `SuccessRateChart` in shared module.
-- **Bucket thresholds**: identical to Compose `StepFailureHeatmap.failureBucketColor` (`rate >= 1.0 → red; >= 0.75 → orange; >= 0.5 → yellow; >= 0.25 → light green; else green`).
-- **PeriodFilter `switch default`**: Kotlin enums exposed via ObjC bridge can require a default branch in Swift switches; fallback uses `.label` from the shared model (the same property added in Issue #122).
-- **NavigationLink entry point**: mirrors DashboardHome / History pattern from Issue #122 — entry from HistoryView toolbar leading item. iOS does not yet have DashboardHomeView in the tab bar, so History is the reachable screen for the analytics icon.
+## Unresolved issues
 
-## 미해결 이슈
-
-- 없음
+- None.

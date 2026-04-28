@@ -14,6 +14,7 @@ import com.orchestradashboard.shared.ui.analytics.AnalyticsViewModel
 import com.orchestradashboard.shared.ui.commandcenter.CommandCenterViewModel
 import com.orchestradashboard.shared.ui.dashboardhome.DashboardHomeViewModel
 import com.orchestradashboard.shared.ui.history.HistoryViewModel
+import com.orchestradashboard.shared.ui.logstream.LogStreamViewModel
 import com.orchestradashboard.shared.ui.pipelinemonitor.PipelineMonitorViewModel
 import com.orchestradashboard.shared.ui.projectexplorer.ProjectExplorerViewModel
 import com.orchestradashboard.shared.ui.settings.SettingsViewModel
@@ -49,6 +50,7 @@ fun AppNavigation(
     projectExplorerViewModelFactory: () -> ProjectExplorerViewModel,
     solveDialogViewModelFactory: () -> SolveDialogViewModel,
     pipelineMonitorViewModelFactory: (String) -> PipelineMonitorViewModel,
+    logStreamViewModelFactory: () -> LogStreamViewModel,
     commandCenterViewModelFactory: () -> CommandCenterViewModel,
     settingsViewModelFactory: () -> SettingsViewModel,
     historyViewModelFactory: () -> HistoryViewModel,
@@ -131,11 +133,19 @@ fun AppNavigation(
                 remember(screen.pipelineId) {
                     pipelineMonitorViewModelFactory(screen.pipelineId)
                 }
+            val logVm =
+                remember(screen.pipelineId) {
+                    logStreamViewModelFactory()
+                }
             DisposableEffect(screen.pipelineId) {
-                onDispose { vm.onCleared() }
+                onDispose {
+                    vm.onCleared()
+                    logVm.onCleared()
+                }
             }
             PipelineMonitorScreen(
                 viewModel = vm,
+                logStreamViewModel = logVm,
                 onBackClick = { currentScreen = Screen.DashboardHome },
                 modifier = modifier,
             )

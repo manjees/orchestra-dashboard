@@ -51,6 +51,9 @@ fun main() =
                     pipelineMonitorViewModelFactory = { pipelineId ->
                         AppContainer.createPipelineMonitorViewModel(pipelineId)
                     },
+                    logStreamViewModelFactory = {
+                        AppContainer.createLogStreamViewModel()
+                    },
                     commandCenterViewModelFactory = {
                         AppContainer.createCommandCenterViewModel()
                     },

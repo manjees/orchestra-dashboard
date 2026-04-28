@@ -8,6 +8,7 @@ import com.orchestradashboard.shared.data.dto.orchestrator.DiscussRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.DiscussResponseDto
 import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectRequestDto
 import com.orchestradashboard.shared.data.dto.orchestrator.InitProjectResponseDto
+import com.orchestradashboard.shared.data.dto.orchestrator.LogEntryDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorIssueDto
 import com.orchestradashboard.shared.data.dto.orchestrator.OrchestratorPipelineDto
 import com.orchestradashboard.shared.data.dto.orchestrator.ParallelPipelineGroupDto
@@ -104,6 +105,23 @@ class OrchestratorApiClient(
                     if (frame is Frame.Text) {
                         val event = json.decodeFromString<PipelineEventDto>(frame.readText())
                         emit(event)
+                    }
+                }
+            }
+        }
+
+    override fun connectLogStream(stepId: String): Flow<LogEntryDto> =
+        flow {
+            httpClient.webSocket(
+                request = {
+                    url("$baseUrl/ws/logs/$stepId")
+                    header("X-API-Key", apiKey)
+                },
+            ) {
+                for (frame in incoming) {
+                    if (frame is Frame.Text) {
+                        val entry = json.decodeFromString<LogEntryDto>(frame.readText())
+                        emit(entry)
                     }
                 }
             }

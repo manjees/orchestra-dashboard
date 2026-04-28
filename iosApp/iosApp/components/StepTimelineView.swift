@@ -4,6 +4,8 @@ import Shared
 /// Horizontal step timeline displaying pipeline steps with status colors.
 struct StepTimelineView: View {
     let steps: [MonitoredStep]
+    var selectedStepName: String? = nil
+    var onStepTap: ((String) -> Void)? = nil
 
     var body: some View {
         if steps.isEmpty {
@@ -31,8 +33,9 @@ struct StepTimelineView: View {
     }
 
     private func stepNode(_ step: MonitoredStep) -> some View {
-        VStack(spacing: 4) {
-            StepCircleView(status: step.status)
+        let isSelected = step.name == selectedStepName
+        return VStack(spacing: 4) {
+            StepCircleView(status: step.status, isSelected: isSelected)
 
             Text(step.name)
                 .font(.caption2)
@@ -46,6 +49,11 @@ struct StepTimelineView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+        }
+        .padding(2)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onStepTap?(step.name)
         }
     }
 
@@ -78,6 +86,7 @@ struct StepTimelineView: View {
 
 struct StepCircleView: View {
     let status: StepStatus
+    var isSelected: Bool = false
     @State private var isPulsing: Bool = false
 
     var body: some View {
@@ -90,6 +99,11 @@ struct StepCircleView: View {
                     ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true)
                     : .default,
                 value: isPulsing
+            )
+            .overlay(
+                Circle()
+                    .stroke(Color.accentColor, lineWidth: isSelected ? 2 : 0)
+                    .padding(-3)
             )
             .onAppear {
                 if status == .running { isPulsing = true }
