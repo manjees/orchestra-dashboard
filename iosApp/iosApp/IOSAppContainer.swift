@@ -103,4 +103,8 @@ final class IOSAppContainer {
     func createAnalyticsViewModel(project: String) -> AnalyticsViewModel {
         fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
     }
+
+    func createLogStreamViewModel() -> LogStreamViewModel {
+        fatalError("KMP framework must be linked via Gradle :shared:iosArm64Binaries")
+    }
 }

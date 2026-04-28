@@ -22,6 +22,8 @@ import com.orchestradashboard.shared.domain.model.StepStatus
 fun StepTimeline(
     steps: List<MonitoredStep>,
     modifier: Modifier = Modifier,
+    selectedStepName: String? = null,
+    onStepClick: ((String) -> Unit)? = null,
 ) {
     if (steps.isEmpty()) {
         Text(
@@ -40,7 +42,12 @@ fun StepTimeline(
     ) {
         itemsIndexed(steps) { index, step ->
             Row(verticalAlignment = Alignment.CenterVertically) {
-                StepNode(step = step, modifier = Modifier.width(72.dp))
+                StepNode(
+                    step = step,
+                    modifier = Modifier.width(72.dp),
+                    isSelected = step.name == selectedStepName,
+                    onClick = onStepClick?.let { handler -> { handler(step.name) } },
+                )
 
                 if (index < steps.lastIndex) {
                     StepConnector(step.status)

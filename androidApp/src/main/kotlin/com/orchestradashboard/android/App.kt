@@ -54,6 +54,9 @@ class MainActivity : ComponentActivity() {
                     pipelineMonitorViewModelFactory = { pipelineId ->
                         AppContainer.createPipelineMonitorViewModel(pipelineId)
                     },
+                    logStreamViewModelFactory = {
+                        AppContainer.createLogStreamViewModel()
+                    },
                     commandCenterViewModelFactory = {
                         AppContainer.createCommandCenterViewModel()
                     },

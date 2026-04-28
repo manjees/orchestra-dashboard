@@ -6,9 +6,12 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -37,15 +40,30 @@ private const val TIMER_INTERVAL_MS = 1000L
 fun StepNode(
     step: MonitoredStep,
     modifier: Modifier = Modifier,
+    isSelected: Boolean = false,
+    onClick: (() -> Unit)? = null,
 ) {
     val color = stepStatusColor(step.status)
+    val ringColor = MaterialTheme.colorScheme.primary
+
+    val clickableModifier =
+        if (onClick != null) {
+            Modifier.clickable { onClick() }
+        } else {
+            Modifier
+        }
 
     Column(
-        modifier = modifier,
+        modifier = modifier.then(clickableModifier).padding(2.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        StepCircle(step.status, color)
+        StepCircle(
+            status = step.status,
+            color = color,
+            isSelected = isSelected,
+            ringColor = ringColor,
+        )
 
         Text(
             text = step.name,
@@ -63,8 +81,21 @@ fun StepNode(
 private fun StepCircle(
     status: StepStatus,
     color: Color,
+    isSelected: Boolean,
+    ringColor: Color,
     modifier: Modifier = Modifier,
 ) {
+    // Always reserve the 2dp ring space so selecting/deselecting a step does not
+    // shift the layout of neighboring steps. The border is only painted when
+    // `isSelected` is true; the padding always consumes the 2dp.
+    val borderModifier =
+        if (isSelected) {
+            Modifier.border(width = 2.dp, color = ringColor, shape = CircleShape)
+        } else {
+            Modifier
+        }
+    val ringSpacing = Modifier.padding(2.dp)
+
     if (status == StepStatus.RUNNING) {
         val infiniteTransition = rememberInfiniteTransition()
         val alpha by infiniteTransition.animateFloat(
@@ -73,11 +104,22 @@ private fun StepCircle(
             animationSpec = infiniteRepeatable(tween(800), RepeatMode.Reverse),
         )
         Box(
-            modifier = modifier.size(24.dp).alpha(alpha).background(color, CircleShape),
+            modifier =
+                modifier
+                    .then(borderModifier)
+                    .then(ringSpacing)
+                    .size(24.dp)
+                    .alpha(alpha)
+                    .background(color, CircleShape),
         )
     } else {
         Box(
-            modifier = modifier.size(24.dp).background(color, CircleShape),
+            modifier =
+                modifier
+                    .then(borderModifier)
+                    .then(ringSpacing)
+                    .size(24.dp)
+                    .background(color, CircleShape),
         )
     }
 }
